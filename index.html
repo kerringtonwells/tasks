@@ -320,6 +320,10 @@
   overflow-wrap: break-word;
 }
 
+.note-title {
+    font-family: Courier, monospace;
+}
+
 .note-button-wrapper {
   display: flex;
 }
@@ -1260,20 +1264,22 @@
             return subjectContainer;
           }
         // END SUBJECT ELEMENT -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+        // what is the code below doing?
 
         // CREATE NOTE ELEMENT -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
         function createNoteElement(note) {
           const noteElement = document.createElement('li');
           noteElement.classList.add('note');
-
+          
           const noteTitleWrapper = document.createElement('div');
           noteTitleWrapper.classList.add('note-title-wrapper');
           noteElement.appendChild(noteTitleWrapper);
 
-          const noteTitle = document.createElement('span');
+          const noteTitle = document.createElement('pre');
           noteTitle.classList.add('note-title');
           // Convert newline characters into <br> tags
-          noteTitle.innerHTML = note.replace(/\n/g, '<br>');
+          noteTitle.innerText = note;
+          noteElement.originalNote = note;
           noteTitleWrapper.appendChild(noteTitle);
 
           const buttonWrapper = document.createElement('div');
@@ -1311,7 +1317,7 @@
             // Create a textarea and a confirm button
             const textarea = document.createElement('textarea');
             // Convert <br> tags back into newline characters
-            textarea.value = noteTitle.textContent.replace(/<br>/g, '\n');
+            textarea.value = noteElement.originalNote;
             const confirmBtn = document.createElement('button');
             confirmBtn.innerText = 'OK';
 
@@ -1325,8 +1331,10 @@
               event.stopPropagation();
               const newNote = textarea.value;
               if (newNote) {
-                // Again, convert newline characters into <br> tags
-                noteTitle.innerHTML = newNote.replace(/\n/g, '<br>');
+                // Save the new note to noteElement.originalNote
+                noteElement.originalNote = newNote;
+                // Format the new note for display
+                noteTitle.innerHTML = newNote.replace(/^ +/gm, match => '&nbsp;'.repeat(match.length)).replace(/\n/g, '<br>');
               }
               // Remove the textarea and the confirm button from the document
               noteElement.removeChild(textarea);
@@ -1340,7 +1348,7 @@
           });
 
 
-            buttonWrapper.appendChild(editBtn);
+          buttonWrapper.appendChild(editBtn);
 
           const deleteBtn = document.createElement('button');
           deleteBtn.innerText = 'Delete';
@@ -1356,22 +1364,20 @@
           const copyBtn = document.createElement('button');
           copyBtn.innerText = 'Copy';
           copyBtn.addEventListener('click', () => {
-            event.stopPropagation();
-            const textArea = document.createElement('textarea');
-            textArea.value = noteTitle.textContent
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            //alert('Note copied to clipboard!');
-            showTemporaryMessage('Copied to clipboard!', buttonWrapper);
+              event.stopPropagation();
+              const textArea = document.createElement('textarea');
+              textArea.value = noteElement.originalNote;
+              document.body.appendChild(textArea);
+              textArea.select();
+              document.execCommand('copy');
+              document.body.removeChild(textArea);
+              showTemporaryMessage('Copied to clipboard!', buttonWrapper);
           });
           buttonWrapper.appendChild(copyBtn);
 
           return noteElement;
-        }
+      }
         // END CREATE NOTE ELEMENT -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
         function saveData(subjects) {
           localStorage.setItem('subjects', JSON.stringify(subjects));
         }
@@ -1379,37 +1385,36 @@
         function saveSubjects() {
           const subjects = [];
           document.querySelectorAll('.subject-container').forEach(subjectContainer => {
-            const subject = {
-              name: subjectContainer.querySelector('.subject-title').textContent,
-              notes: []
-            };
+              const subject = {
+                  name: subjectContainer.querySelector('.subject-title').textContent,
+                  notes: []
+              };
 
-            subjectContainer.querySelectorAll('.note').forEach(noteElement => {
-              // Encode note as URI component before saving
-              const encodedNote = encodeURIComponent(noteElement.querySelector('.note-title').innerHTML);
-              subject.notes.push(encodedNote);
-            });
+              subjectContainer.querySelectorAll('.note').forEach(noteElement => {
+                  // Save noteElement.originalNote instead of the formatted HTML
+                  const encodedNote = encodeURIComponent(noteElement.originalNote);
+                  subject.notes.push(encodedNote);
+              });
 
-            subjects.push(subject);
+              subjects.push(subject);
           });
 
           saveData(subjects);
 
           // Show or hide the export button based on the number of subjects
           exportButtonNotes.style.display = subjects.length > 0 ? 'block' : 'none';
-        }
+      }
 
-        function loadData() {
+      function loadData() {
           const storedData = localStorage.getItem('subjects');
           const subjects = storedData ? JSON.parse(storedData) : [];
 
-          // Decode notes from URI components after retrieving
           subjects.forEach(subject => {
-            subject.notes = subject.notes.map(note => decodeURIComponent(note));
+              subject.notes = subject.notes.map(note => decodeURIComponent(note));
           });
 
           return subjects;
-        }
+      }
 
 
 
@@ -1534,7 +1539,7 @@
 
 
 
-        // Initializations
+        // Initialization
         loadLinksList();
         renderTable();
         updateCurrentTime();
@@ -1543,6 +1548,5 @@
     </script>
 </body>
 </html>
-
 
 
