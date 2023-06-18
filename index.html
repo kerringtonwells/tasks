@@ -757,38 +757,36 @@
             li.addEventListener('dragleave', (e) => {
                 e.target.classList.remove('drag-over');
             });
-
             li.addEventListener('drop', (e) => {
-            e.preventDefault();
+              e.preventDefault();
 
-            // Find the closest <li> element as the drop target
-            let dropTarget = e.target;
-            while (dropTarget.tagName !== 'LI' && dropTarget.parentElement) {
+              // Find the closest <li> element as the drop target
+              let dropTarget = e.target;
+              while (dropTarget.tagName !== 'LI' && dropTarget.parentElement) {
                 dropTarget = dropTarget.parentElement;
-            }
-            if (dropTarget.tagName !== 'LI') return;
+              }
+              if (dropTarget.tagName !== 'LI') return;
 
-            dropTarget.classList.remove('drag-over');
+              dropTarget.classList.remove('drag-over');
 
-            const droppedText = e.dataTransfer.getData('text/plain');
+              const droppedText = e.dataTransfer.getData('text/plain');
 
-            if (droppedText !== itemText) {
+              if (droppedText !== itemText) {
                 const droppedItemIndex = Array.from(todoListElement.children).findIndex(child => child.querySelector('span').textContent.includes(droppedText));
                 const currentItemIndex = Array.from(todoListElement.children).findIndex(child => child.querySelector('span').textContent.includes(itemText));
                 if (droppedItemIndex > -1 && currentItemIndex > -1) {
-                    const temp = todoListElement.children[droppedItemIndex];
-                    if (currentItemIndex < droppedItemIndex) {
-                        todoListElement.insertBefore(temp, todoListElement.children[currentItemIndex]);
-                        todoListElement.insertBefore(todoListElement.children[currentItemIndex], temp.nextSibling);
-                    } else {
-                        todoListElement.insertBefore(todoListElement.children[currentItemIndex], temp);
-                        todoListElement.insertBefore(temp, todoListElement.children[currentItemIndex]);
-                    }
-                    saveTodoList(todoListElement);
+                  const temp = todoListElement.children[droppedItemIndex];
+                  if (currentItemIndex < droppedItemIndex) {
+                    todoListElement.insertBefore(temp, todoListElement.children[currentItemIndex]);
+                    todoListElement.insertBefore(todoListElement.children[currentItemIndex], temp.nextSibling);
+                  } else {
+                    todoListElement.insertBefore(todoListElement.children[currentItemIndex], temp);
+                    todoListElement.insertBefore(temp, todoListElement.children[currentItemIndex]);
+                  }
+                  saveTodoList(todoListElement);
                 }
-            }
-        });
-
+              }
+            });
 
             const contentWrapper = document.createElement('div');
             const span = document.createElement('span');
@@ -806,60 +804,60 @@
             const deleteButton = document.createElement('button');
             deleteButton.textContent = 'Delete';
             deleteButton.addEventListener('click', () => {
-                todoListElement.removeChild(li);
-                saveTodoList(todoListElement);
+              todoListElement.removeChild(li);
+              saveTodoList(todoListElement);
             });
             buttonWrapper.appendChild(deleteButton);
 
             const editButton = document.createElement('button');
             editButton.textContent = ' Edit/Add Subtask';
             editButton.addEventListener('click', () => {
-                // Check if already editing
-                if (editButton.disabled) return;
+              // Check if already editing
+              if (editButton.disabled) return;
 
-                // Disable the edit button while editing
-                editButton.disabled = true;
+              // Disable the edit button while editing
+              editButton.disabled = true;
 
-                const message = span.textContent;
-                const messageParts = message.split('\n');
-                let newMessage = messageParts[0] + '\n';
-                for (let i = 1; i < messageParts.length; i++) {
-                    newMessage += '- ' + messageParts[i].replace(/^- /, '') + '\n';
+              const message = span.textContent;
+              const messageParts = message.split('\n');
+              let newMessage = messageParts[0] + '\n';
+              for (let i = 1; i < messageParts.length; i++) {
+                newMessage += '- ' + messageParts[i].replace(/^- /, '') + '\n';
+              }
+              newMessage += '- ';
+              span.innerHTML = `<textarea>${newMessage}</textarea><button>Save</button>`;
+              const saveButton = span.querySelector('button');
+              saveButton.addEventListener('click', () => {
+                const textarea = span.querySelector('textarea');
+                const newMessageParts = textarea.value.split('\n');
+                let savedMessage = newMessageParts[0];
+                for (let i = 1; i < newMessageParts.length; i++) {
+                  if (newMessageParts[i].startsWith('- ')) {
+                    savedMessage += '\n' + newMessageParts[i];
+                  } else {
+                    savedMessage += '\n' + newMessageParts[i].substr(2);
+                  }
                 }
-                newMessage += '- ';
-                span.innerHTML = `<textarea>${newMessage}</textarea><button>Save</button>`;
-                const saveButton = span.querySelector('button');
-                saveButton.addEventListener('click', () => {
-                    const textarea = span.querySelector('textarea');
-                    const newMessageParts = textarea.value.split('\n');
-                    let savedMessage = newMessageParts[0];
-                    for (let i = 1; i < newMessageParts.length; i++) {
-                        if (newMessageParts[i].startsWith('- ')) {
-                            savedMessage += '\n' + newMessageParts[i];
-                        } else {
-                            savedMessage += '\n' + newMessageParts[i].substr(2);
-                        }
-                    }
-                    span.textContent = savedMessage;
-                    saveTodoList(todoListElement);
+                span.textContent = savedMessage;
+                saveTodoList(todoListElement);
 
-                    // Re-enable the edit button after saving
-                    editButton.disabled = false;
-                });
+                // Re-enable the edit button after saving
+                editButton.disabled = false;
+              });
             });
             buttonWrapper.appendChild(editButton);
             const copyButton = document.createElement('button');
             copyButton.textContent = 'Copy';
             copyButton.addEventListener('click', () => {
-                copyToClipboard(itemText);
-                showTemporaryMessage('Copied to clipboard!', buttonWrapper);
+              copyToClipboard(itemText);
+              showTemporaryMessage('Copied to clipboard!', buttonWrapper);
             });
             buttonWrapper.appendChild(copyButton);
 
             todoListElement.appendChild(li);
-        };
+            };
 
-        const showTemporaryMessage = (message, element) => {
+            const showTemporaryMessage = (message, element) => {
             const tempMessage = document.createElement('span');
             tempMessage.textContent = message;
             tempMessage.style.display = 'inline-block';
@@ -871,15 +869,15 @@
 
             // Show the message and then fade it out after 2 seconds
             setTimeout(() => {
-                tempMessage.style.opacity = '1';
+              tempMessage.style.opacity = '1';
+              setTimeout(() => {
+                tempMessage.style.opacity = '0';
                 setTimeout(() => {
-                    tempMessage.style.opacity = '0';
-                    setTimeout(() => {
-                        element.removeChild(tempMessage);
-                    }, 1000);
-                }, 2000);
+                  element.removeChild(tempMessage);
+                }, 1000);
+              }, 2000);
             }, 50);
-        };
+            };
         //End To-Do Section  ===================================================================================================
         document.getElementById('moveUp').addEventListener('click', moveUp);
         document.getElementById('moveDown').addEventListener('click', moveDown);
@@ -1356,7 +1354,7 @@
           buttonWrapper.appendChild(copyBtn);
 
           return noteElement;
-      }
+        }
         // END CREATE NOTE ELEMENT -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
         function saveData(subjects) {
           localStorage.setItem('subjects', JSON.stringify(subjects));
@@ -1383,24 +1381,24 @@
 
           // Show or hide the export button based on the number of subjects
           exportButtonNotes.style.display = subjects.length > 0 ? 'block' : 'none';
-      }
+          }
 
-      function loadData() {
+          function loadData() {
           const storedData = localStorage.getItem('subjects');
           const subjects = storedData ? JSON.parse(storedData) : [];
 
           subjects.forEach(subject => {
-              subject.notes = subject.notes.map(note => decodeURIComponent(note));
+            subject.notes = subject.notes.map(note => decodeURIComponent(note));
           });
 
           return subjects;
-      }
+          }
 
 
 
-        // This is for exorting notes to a text file
+          // This is for exorting notes to a text file
 
-        function exportDataToTxt() {
+          function exportDataToTxt() {
           const subjects = loadData();
           let textData = '';
 
@@ -1408,16 +1406,16 @@
             textData += `Subject ${subjectIndex + 1}: ${subject.name}\n`;
 
             subject.notes.forEach((note, noteIndex) => {
-              textData += `  Note ${noteIndex + 1}: ${note}\n`;
+            textData += `  Note ${noteIndex + 1}: ${note}\n`;
             });
 
             textData += '\n';
           });
 
           download('subjects_and_notes.txt', textData);
-        }
+          }
 
-        function download(filename, text) {
+          function download(filename, text) {
           const element = document.createElement('a');
           element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
           element.setAttribute('download', filename);
@@ -1425,16 +1423,16 @@
           document.body.appendChild(element);
           element.click();
           document.body.removeChild(element);
-        }
+          }
 
-        // Add this code snippet to your existing code
-        // This creates an "Export" button that will call the exportDataToTxt function when clicked
+          // Add this code snippet to your existing code
+          // This creates an "Export" button that will call the exportDataToTxt function when clicked
 
-        exportButtonNotes.addEventListener('click', () => {
+          exportButtonNotes.addEventListener('click', () => {
           exportDataToTxt();
-        });
+          });
 
-        document.addEventListener('DOMContentLoaded', () => {
+          document.addEventListener('DOMContentLoaded', () => {
           const storedSubjects = loadData();
           const subjectList = document.getElementById('subjectList');
 
@@ -1444,26 +1442,26 @@
 
             const notesList = subjectElement.querySelector('.notes-list');
             subject.notes.forEach(note => {
-              const noteElement = createNoteElement(note);
-              notesList.appendChild(noteElement);
+            const noteElement = createNoteElement(note);
+            notesList.appendChild(noteElement);
             });
           });
           saveSubjects(); // Add this line
-        });
+          });
 
 
           // Add event listeners for the showNotes and hideNotes buttons
           document.getElementById('showNotes').addEventListener('click', () => {
-            showNotesOnly();
+          showNotesOnly();
           });
 
           document.getElementById('hideNotes').addEventListener('click', () => {
-            hideNotesContent();
+          hideNotesContent();
           });
 
 
-        // Function to show only the notes section
-        function showNotesOnly() {
+          // Function to show only the notes section
+          function showNotesOnly() {
           document.querySelectorAll('.container').forEach(el => {
             el.style.display = 'none';
           });
@@ -1476,10 +1474,10 @@
 
           // Show notes search, notes section, and export button
           document.querySelector('.new-container .notes-section').style.display = 'flex';
-        }
+          }
 
-        // Function to show all content
-        function hideNotesContent() {
+          // Function to show all content
+          function hideNotesContent() {
           // Show all tasks
           document.querySelectorAll('.container').forEach(el => {
             el.style.display = 'block';
@@ -1499,33 +1497,33 @@
           // Show "Show Notes" button and hide "Hide Notes" button
           document.getElementById('showNotes').style.display = 'inline-block';
           document.getElementById('hideNotes').style.display = 'none';
-        }
+          }
 
 
 
-        document.getElementById('showNotes').addEventListener('click', () => {
+          document.getElementById('showNotes').addEventListener('click', () => {
           document.querySelector('.new-container .notes-section').style.display = 'block';
           document.getElementById('showNotes').style.display = 'none';
           document.getElementById('hideNotes').style.display = 'inline-block';
-        });
+          });
 
-        document.getElementById('hideNotes').addEventListener('click', () => {
+          document.getElementById('hideNotes').addEventListener('click', () => {
           document.querySelector('.new-container .notes-section').style.display = 'none';
           document.getElementById('showNotes').style.display = 'inline-block';
           document.getElementById('hideNotes').style.display = 'none';
-        });
+          });
 
-        //End Notes Section  ===================================================================================================
+          //End Notes Section  ===================================================================================================
 
 
 
-        // Initialization
-        loadLinksList();
-        renderTable();
-        updateCurrentTime();
-        updateCombineCounter();
-        loadTodoList();
-    </script>
+          // Initialization
+          loadLinksList();
+          renderTable();
+          updateCurrentTime();
+          updateCombineCounter();
+          loadTodoList();
+        </script>
 </body>
 </html>
 
