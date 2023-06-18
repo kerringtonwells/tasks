@@ -175,6 +175,8 @@
       height: 100%;
       background-color: #f8f9fa;
       border-right: 1px solid #dee2e6;
+    }
+    .container {
       padding: 20px;
       box-sizing: border-box;
       font-family: Arial, sans-serif;
@@ -182,269 +184,248 @@
       flex: 1;
       min-width: 280px;
     }
-    .links-box h2 {
-      margin-bottom: 20px;
-    }
-    .link-wrapper, #linksList li .buttons-wrapper {
-      display: flex;
-      align-items: center;
-    }
-    .link-wrapper {
-      justify-content: flex-start;
-      width: auto;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    #linksList li .buttons-wrapper {
-      align-items: center;
-    }
-    #linksList li .buttons-wrapper button {
-      margin-left: 2px;
-    }
-    .menu {
-      position: absolute;
-      top: 40%;
-      left: 0;
-      margin: 0;
-      padding: 0;
-      list-style-type: none;
-      background-color: white;
-      border: 1px solid black;
-      z-index: 1;
-      width: 100%;
-      display: none;
-      margin-top: 10px;
-    }
-    #addLink {
-      margin-bottom: 10px;
-    }
-    .menu button {
-      background-color: transparent;
-      color: #333;
-      border: none;
-      cursor: pointer;
-      display: block;
-      padding: 8px 16px;
-      text-align: left;
-      width: 100%;
-      border-radius: 10px;
-    }
-    .no-bullet {
-      list-style-type: none;
-    }
-    .link-text {
-      text-align: left;
-    }
-    .menu-icon {
-      font-size: 24px;
-      cursor: pointer;
-      display: inline-block;
-      vertical-align: middle;
-      margin-right: 8px;
-    }
-    .container h2, .container ul {
-        text-align: left;
-    }
-
-
-
-    .options-button {
-      background-color: #333;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 20px;
-      height: 20px;
-      font-size: 12px;
-      font-weight: bold;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-left: 8px;
-      margin-right: 10px;
-      cursor: pointer;
-      flex-shrink: 0; 
-    }
-
-    .options-menu {
-  position: absolute;
-  background-color: white;
-  border: 1px solid #ccc;
-  padding: 10px;
-  z-index: 1000;
-}
-
-
-    .options-menu button {
-      background-color: #333;
-      color: white;
-      border: none;
-      border-radius: 3px;
-      font-size: 12px;
-      padding: 4px 8px;
-      margin: 2px;
-      cursor: pointer;
-    }
-    .dropdown-icon {
-      cursor: pointer;
-      margin-right: 10px;
-      font-size: 14px;
-    }
-
-    .subject-container {
-  display: flex;
-  flex-direction: column; /* changed from row */
-  align-items: center;
-  padding: 8px 12px;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  margin-bottom: 10px;
-  flex-wrap: wrap; /* added */
-}
-
-.subject-title {
-  flex: 0 1 100%; /* changed from flex: 1 */
-  align-self: flex-start; /* added */
-}
-
-.note {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 10px;
-}
-
-.note-title-wrapper {
-  margin-bottom: 5px;
-  word-break: break-word;
-  overflow-wrap: break-word;
-}
-
-.note-title {
-    font-family: Courier, monospace;
-}
-
-.note-button-wrapper {
-  display: flex;
-}
-
-#exportButtonContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-}
-
-.new-container .notes-section {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-}
-
-.note {
-  padding: 10px;
-  border: 1px solid #ccc;
-  background-color: #f9f9f9;
-}
-
-
-
-
-    </style>
-    
-</head>
-<body>
-    <div class="container">
-        <h2>Useful Links</h2>
-        <ul id="linksList"></ul>
-        <button id="addLink">Add Link</button>
-    </div>
-    
-    <div class="container">
-        <h1>Productivity Booster</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>Time</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody id="timeTable">
-            </tbody>
-        </table>
-        <button id="moveUp">Move Up</button>
-        <button id="moveDown">Move Down</button>
-        <button id="combine">Combine</button>
-        <button id="clearState">Clear State</button>
-        <button id="started">Set or Change Start Time</button>
-        <div id="currentTime"></div>
-        <div id="combineCounter"></div>
-        <h2>To-Do List</h2>
-        <ul id="todoList"></ul>
-        <button id="addTodoItem">Add Task</button>
-        <button id="exportTodoList">Export To-Do List</button>
-        <button id="copyTodoListItem">Export To-Do List</button>
-
-    </div>
-    <div class="new-container">
-      <h2>Stopwatch</h2>
-      <div class="stopwatch">
-        <div class="time-display">
-          <span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>:<span class="milliseconds">000</span>
-        </div>
-        <div class="buttons">
-          <button id="startBtn">Start</button>
-          <button id="pauseBtn" class="hidden">Pause</button>
-          <button id="resetBtn" class="hidden">Reset</button>
-        </div>
-      </div>
-      <h2>Notes</h2>
-      <div class="notes-section">
-        <input type="text" id="searchBar" placeholder="Search notes" />
-        <button id="addSubjectBtn">Add Subject</button>
-        <ul id="subjectList"></ul>
-        <div id="exportButtonContainer">
-          <button id="exportbutton">Export</button>
-        </div>
-      </div>      
-      <div id="notesToggleButtons">
-        <button id="showNotes">Show Notes</button>
-        <button id="hideNotes" style="display: none;">Hide Notes</button>
-      </div>
-    </div>
-    
-    
-    
-    <script>
-        let timeSlots = []; // Initialize an empty array called timeSlots
-        for (let i = 6; i < 24; i++) { // Iterate from 6AM to 11PM
-          for (let j = 0; j < 2; j++) { // Iterate twice for every hour (for 30 minute increments)
-            let startTime = ('0' + i).slice(-2) + ':' + (j === 0 ? '00' : '30'); // Create a start time for the time slot
-            let endTime = ('0' + (j === 1 ? i + 1 : i)).slice(-2) + ':' + (j === 0 ? '30' : '00'); // Create an end time for the time slot
-            timeSlots.push({ time: `${startTime} - ${endTime}`, status: 0 }); // Add the time slot to the timeSlots array with a status of 0
-          }
+        .links-box h2 {
+          margin-bottom: 20px;
         }
-        timeSlots.push({ time: '23:30 - 00:00', status: 0 }); // Add one more time slot for the last half hour of the day
+        .link-wrapper,
+        #linksList li .buttons-wrapper {
+          display: flex;
+          align-items: center;
+        }
+        .link-wrapper {
+          justify-content: flex-start;
+          width: auto;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        #linksList li .buttons-wrapper {
+          align-items: center;
+        }
+        #linksList li .buttons-wrapper button {
+          margin-left: 2px;
+        }
+        .menu {
+          position: absolute;
+          top: 40%;
+          left: 0;
+          margin: 0;
+          padding: 0;
+          list-style-type: none;
+          background-color: white;
+          border: 1px solid black;
+          z-index: 1;
+          width: 100%;
+          display: none;
+          margin-top: 10px;
+        }
+        #addLink {
+          margin-bottom: 10px;
+        }
+        .menu button {
+          background-color: transparent;
+          color: #333;
+          border: none;
+          cursor: pointer;
+          display: block;
+          padding: 8px 16px;
+          text-align: left;
+          width: 100%;
+          border-radius: 10px;
+        }
+        .no-bullet {
+          list-style-type: none;
+        }
+        .link-text {
+          text-align: left;
+        }
+        .menu-icon {
+          font-size: 24px;
+          cursor: pointer;
+          display: inline-block;
+          vertical-align: middle;
+          margin-right: 8px;
+        }
+        .options-button {
+          background-color: #333;
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 20px;
+          height: 20px;
+          font-size: 12px;
+          font-weight: bold;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin-left: 8px;
+          margin-right: 10px;
+          cursor: pointer;
+          flex-shrink: 0;
+        }
+        .options-menu {
+          position: absolute;
+          background-color: white;
+          border: 1px solid #ccc;
+          padding: 10px;
+          z-index: 1000;
+        }
+        .options-menu button {
+          background-color: #333;
+          color: white;
+          border: none;
+          border-radius: 3px;
+          font-size: 12px;
+          padding: 4px 8px;
+          margin: 2px;
+          cursor: pointer;
+        }
+        .dropdown-icon {
+          cursor: pointer;
+          margin-right: 10px;
+          font-size: 14px;
+        }
+        .subject-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          padding: 8px 12px;
+          background-color: white;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          margin-bottom: 10px;
+          flex-wrap: wrap;
+        }
+        .subject-title {
+          flex: 0 1 100%;
+          align-self: flex-start;
+        }
+        .note {
+          display: flex;
+          flex-direction: column;
+          margin-bottom: 10px;
+        }
+        .note-title-wrapper {
+          margin-bottom: 5px;
+          word-break: break-word;
+          overflow-wrap: break-word;
+        }
+        .note-title {
+          font-family: Courier, monospace;
+        }
+        .note-button-wrapper {
+          display: flex;
+        }
+        #exportButtonContainer {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 100%;
+        }
+        .new-container .notes-section {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        }
+        .note {
+          padding: 10px;
+          border: 1px solid #ccc;
+          background-color: #f9f9f9;
+        }
+      </style>
 
-        let selectedIndex = parseInt(localStorage.getItem('selectedIndex')) || 0; // Get the selected index from localStorage or use 0 if it's not set
-        let startedIndex = parseInt(localStorage.getItem('startedIndex')); // Get the started index from localStorage
-        startedIndex = isNaN(startedIndex) ? -1 : startedIndex; // If startedIndex is NaN, set it to -1
-        let combineCounter = parseInt(localStorage.getItem('combineCounter')) || 0; // Get the combine counter from localStorage or use 0 if it's not set
-    
+      <body>
+        <div class="container">
+          <h2>Useful Links</h2>
+          <ul id="linksList"></ul>
+          <button id="addLink">Add Link</button>
+        </div>
 
-      
+        <div class="container">
+          <h1>Productivity Booster</h1>
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="timeTable"></tbody>
+          </table>
+          <button id="moveUp">Move Up</button>
+          <button id="moveDown">Move Down</button>
+          <button id="combine">Combine</button>
+          <button id="clearState">Clear State</button>
+          <button id="started">Set or Change Start Time</button>
+          <div id="currentTime"></div>
+          <div id="combineCounter"></div>
+          <h2>To-Do List</h2>
+          <ul id="todoList"></ul>
+          <button id="addTodoItem">Add Task</button>
+          <button id="exportTodoList">Export To-Do List</button>
+          <button id="copyTodoListItem">Export To-Do List</button>
+        </div>
 
-        const formatTime12Hour = (hour24, minute, second) => { // Define a function that formats a 24-hour time into a 12-hour time
-          const ampm = hour24 >= 12 ? 'pm' : 'am'; // Determine whether it's AM or PM
-          const hour12 = hour24 % 12 || 12; // Convert to 12-hour format
-          return `${hour12.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')} ${ampm}`; // Return the formatted time
-        };
+        <div class="new-container">
+          <h2>Stopwatch</h2>
+          <div class="stopwatch">
+            <div class="time-display">
+              <span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>:<span class="milliseconds">000</span>
+            </div>
+            <div class="buttons">
+              <button id="startBtn">Start</button>
+              <button id="pauseBtn" class="hidden">Pause</button>
+              <button id="resetBtn" class="hidden">Reset</button>
+            </div>
+          </div>
+          <h2>Notes</h2>
+          <div class="notes-section">
+            <input type="text" id="searchBar" placeholder="Search notes" />
+            <button id="addSubjectBtn">Add Subject</button>
+            <ul id="subjectList"></ul>
+            <div id="exportButtonContainer">
+              <button id="exportbutton">Export</button>
+            </div>
+          </div>
+          <div id="notesToggleButtons">
+            <button id="showNotes">Show Notes</button>
+            <button id="hideNotes" style="display: none;">Hide Notes</button>
+          </div>
+        </div>
 
-        const formatTimeSlot12Hour = (startHour, startMinute) => { // Define a function that formats a time slot in 12-hour format
-          const start12Hour = formatTime12Hour(parseInt(startHour), parseInt(startMinute), 0); // Convert the start time to 12-hour format
-          return start12Hour; // Return the formatted time
-        };
+        <script>
+          let timeSlots = []; // Initialize an empty array called timeSlots
+          for (let i = 6; i <= 27; i++) { // Iterate from 6AM to 3AM the next day
+            for (let j = 0; j < 2; j++) { // Iterate twice for every hour (for 30 minute increments)
+              let startTime = ('0' + i).slice(-2) + ':' + (j === 0 ? '00' : '30'); // Create a start time for the time slot
+              let endTime = ('0' + (j === 1 ? i + 1 : i)).slice(-2) + ':' + (j === 0 ? '30' : '00'); // Create an end time for the time slot
+              timeSlots.push({ time: `${startTime} - ${endTime}`, status: 0 }); // Add the time slot to the timeSlots array with a status of 0
+            }
+          }
+
+          let selectedIndex = parseInt(localStorage.getItem('selectedIndex')) || 0; // Get the selected index from localStorage or use 0 if it's not set
+          let startedIndex = parseInt(localStorage.getItem('startedIndex')); // Get the started index from localStorage
+          startedIndex = isNaN(startedIndex) ? -1 : startedIndex; // If startedIndex is NaN, set it to -1
+          let combineCounter = parseInt(localStorage.getItem('combineCounter')) || 0; // Get the combine counter from localStorage or use 0 if it's not set
+
+          const formatTime12Hour = (hour24, minute, second) => {
+            const ampm = hour24 >= 12 ? 'pm' : 'am';
+            const hour12 = hour24 % 12 || 12;
+            if (hour12 === 0) {
+              hour12 = 12;
+            }
+            return `${hour12.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}:${second.toString().padStart(2, '0')} ${ampm}`;
+          };
+
+          const formatTimeSlot12Hour = (startHour, startMinute) => { // Define a function that formats a time slot in 12-hour format
+            let startHour24 = parseInt(startHour);
+            if (startHour24 >= 24) {
+              startHour24 -= 24;
+            }
+            const start12Hour = formatTime12Hour(startHour24, parseInt(startMinute), 0); // Convert the start time to 12-hour format
+            return start12Hour; // Return the formatted time
+          };
+
 
         const createRow = (timeSlot, index) => { // Define a function that creates a row for the time table
           const row = document.createElement('tr'); // Create a new table row
@@ -520,7 +501,6 @@
             timeTable.appendChild(createRow(timeSlots[selectedIndex], selectedIndex));
           }
         };
-
         // Define a function that updates the current time and status
         const updateCurrentTime = () => {
           // Get the current date and time
@@ -537,8 +517,8 @@
           // Set the text of the current time element to the formatted time with AM/PM
           currentTimeElement.textContent = `Current Time: ${currentTime12Hour}`;
 
-        // If there is a selected row
-        if (selectedIndex >= 0 && selectedIndex < timeSlots.length) {
+          // If there is a selected row
+          if (selectedIndex >= 0 && selectedIndex < timeSlots.length) {
             // Get the start time of the selected time slot
             const currentSlotTimeString = timeSlots[selectedIndex].time.split('-')[0].trim();
             // Get the hours and minutes of the start time
