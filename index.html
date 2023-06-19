@@ -395,7 +395,7 @@
 
         <script>
           let timeSlots = []; // Initialize an empty array called timeSlots
-          for (let i = 6; i <= 27; i++) { // Iterate from 6AM to 3AM the next day
+          for (let i = 6; i <= 29; i++) { // Iterate from 6AM to 3AM the next day
             for (let j = 0; j < 2; j++) { // Iterate twice for every hour (for 30 minute increments)
               let startTime = ('0' + i).slice(-2) + ':' + (j === 0 ? '00' : '30'); // Create a start time for the time slot
               let endTime = ('0' + (j === 1 ? i + 1 : i)).slice(-2) + ':' + (j === 0 ? '30' : '00'); // Create an end time for the time slot
