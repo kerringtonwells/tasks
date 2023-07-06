@@ -407,6 +407,7 @@
           let startedIndex = parseInt(localStorage.getItem('startedIndex')); // Get the started index from localStorage
           startedIndex = isNaN(startedIndex) ? -1 : startedIndex; // If startedIndex is NaN, set it to -1
           let combineCounter = parseInt(localStorage.getItem('combineCounter')) || 0; // Get the combine counter from localStorage or use 0 if it's not set
+          let itemCount = 0;
 
           const formatTime12Hour = (hour24, minute, second) => {
             const ampm = hour24 >= 12 ? 'pm' : 'am';
@@ -678,14 +679,25 @@
             // Iterate through the saved todo list items
             savedTodoList.forEach(item => {
                 // Add each todo item to the todoListElement
-                addTodoItem(item, todoListElement);
+                // itemCount is defined here as item.count
+                addTodoItem(item.text, item.count, todoListElement);
             });
         };
 
         const saveTodoList = (todoListElement) => {
-            const todoItems = Array.from(todoListElement.querySelectorAll('li span')).map(span => span.textContent);
-            localStorage.setItem('todoList', JSON.stringify(todoItems));
+        const todoItems = Array.from(todoListElement.querySelectorAll('li')).map(li => {
+              const span = li.querySelector('span');
+              const countSpan = li.querySelector('.count');
+              // Check if the span contains a textarea (which indicates an edit in progress)
+              const textarea = span.querySelector('textarea');
+              return {
+                  text: textarea ? textarea.value.trim() : span.textContent.trim(),
+                  count: parseInt(countSpan.textContent)
+              };
+          });
+          localStorage.setItem('todoList', JSON.stringify(todoItems));
         };
+
 
         const exportTodoList = () => {
             const todoListElement = document.getElementById('todoList');
@@ -730,7 +742,7 @@
           document.body.removeChild(textarea);
         };
 
-        const addTodoItem = (itemText, todoListElement) => {
+        const addTodoItem = (itemText, itemCount, todoListElement) => {
             const li = document.createElement('li');
             li.setAttribute('draggable', 'true'); // Make the list item draggable
 
@@ -800,7 +812,7 @@
 
             const buttonWrapper = document.createElement('div');
             li.appendChild(buttonWrapper);
-
+            //Start delete button ========================================
             const deleteButton = document.createElement('button');
             deleteButton.textContent = 'Delete';
             deleteButton.addEventListener('click', () => {
@@ -808,7 +820,7 @@
               saveTodoList(todoListElement);
             });
             buttonWrapper.appendChild(deleteButton);
-
+            //Start button ========================================
             const editButton = document.createElement('button');
             editButton.textContent = ' Edit/Add Subtask';
             editButton.addEventListener('click', () => {
@@ -846,19 +858,30 @@
               });
             });
             buttonWrapper.appendChild(editButton);
-            
-            // Move down Button
+
+            const counterSpan = document.createElement('span');
+            counterSpan.className = 'count';  // Add a class to the counter span
+            // itemCount is used here as initial value of counterSpan
+            counterSpan.textContent = itemCount || 0;
+            buttonWrapper.appendChild(counterSpan);
+
+            // Move down Button ========================================
             const moveDownButton = document.createElement('button');
             moveDownButton.textContent = 'Move Down';
-            moveDownButton.addEventListener('click', moveDown);
+            moveDownButton.addEventListener('click', () => {
+                moveDown();
+                counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
+                saveTodoList(todoListElement);
+            });
 
             buttonWrapper.appendChild(moveDownButton);
 
+
             // Append button wrapper to list item
             li.appendChild(buttonWrapper);
-
             todoListElement.appendChild(li);
         
+            // Start copy button ========================================
             const copyButton = document.createElement('button');
             copyButton.textContent = 'Copy';
             copyButton.addEventListener('click', () => {
@@ -867,7 +890,7 @@
             });
             buttonWrapper.appendChild(copyButton);
 
-            todoListElement.appendChild(li);
+            
             };
 
             const showTemporaryMessage = (message, element) => {
@@ -891,6 +914,7 @@
               }, 2000);
             }, 50);
 
+
           };
         //End To-Do Section  ===================================================================================================
         document.getElementById('moveUp').addEventListener('click', moveUp);
@@ -902,7 +926,7 @@
             const newItemText = prompt('Enter a task:', '');
             if (newItemText) {
                 const todoListElement = document.getElementById('todoList');
-                addTodoItem(newItemText, todoListElement);
+                addTodoItem(newItemText, 0, todoListElement);
                 saveTodoList(todoListElement);
             }
         });
