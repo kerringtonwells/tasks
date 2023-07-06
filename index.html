@@ -846,6 +846,19 @@
               });
             });
             buttonWrapper.appendChild(editButton);
+            
+            // Move down Button
+            const moveDownButton = document.createElement('button');
+            moveDownButton.textContent = 'Move Down';
+            moveDownButton.addEventListener('click', moveDown);
+
+            buttonWrapper.appendChild(moveDownButton);
+
+            // Append button wrapper to list item
+            li.appendChild(buttonWrapper);
+
+            todoListElement.appendChild(li);
+        
             const copyButton = document.createElement('button');
             copyButton.textContent = 'Copy';
             copyButton.addEventListener('click', () => {
@@ -877,7 +890,8 @@
                 }, 1000);
               }, 2000);
             }, 50);
-            };
+
+          };
         //End To-Do Section  ===================================================================================================
         document.getElementById('moveUp').addEventListener('click', moveUp);
         document.getElementById('moveDown').addEventListener('click', moveDown);
@@ -1526,5 +1540,4 @@
         </script>
 </body>
 </html>
-
 
