@@ -873,14 +873,7 @@
 
             buttonWrapper.appendChild(moveDownButton);
 
-            // Reset Button ========================================
-            const resetButton = document.createElement('button');
-            resetButton.textContent = 'Reset';
-            resetButton.addEventListener('click', () => {
-                counterSpan.textContent = 0;
-                saveTodoList(todoListElement);
-            });
-            buttonWrapper.appendChild(resetButton);
+
 
 
             // Append button wrapper to list item
@@ -895,6 +888,15 @@
               showTemporaryMessage('Copied to clipboard!', buttonWrapper);
             });
             buttonWrapper.appendChild(copyButton);
+
+            // Reset Button ========================================
+            const resetButton = document.createElement('button');
+            resetButton.textContent = 'Reset';
+            resetButton.addEventListener('click', () => {
+                counterSpan.textContent = 0;
+                saveTodoList(todoListElement);
+            });
+            buttonWrapper.appendChild(resetButton);
 
             
             };
