@@ -1,10 +1,11 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kwells: Productivity Booster</title>
-    <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kwells: Productivity Booster</title>
+<style>
     * {
       box-sizing: border-box;
     }
@@ -333,67 +334,63 @@
           background-color: #f9f9f9;
         }
       </style>
-
-      <body>
-        <div class="container">
-          <h2>Useful Links</h2>
-          <ul id="linksList"></ul>
-          <button id="addLink">Add Link</button>
-        </div>
-
-        <div class="container">
-          <h1>Productivity Booster</h1>
-          <table>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="timeTable"></tbody>
-          </table>
-          <button id="moveUp">Move Up</button>
-          <button id="moveDown">Move Down</button>
-          <button id="combine">Combine</button>
-          <button id="clearState">Clear State</button>
-          <button id="started">Set or Change Start Time</button>
-          <div id="currentTime"></div>
-          <div id="combineCounter"></div>
-          <h2>To-Do List</h2>
-          <ul id="todoList"></ul>
-          <button id="addTodoItem">Add Task</button>
-          <button id="exportTodoList">Export To-Do List</button>
-          <button id="copyTodoListItem">Export To-Do List</button>
-        </div>
-
-        <div class="new-container">
-          <h2>Stopwatch</h2>
-          <div class="stopwatch">
-            <div class="time-display">
-              <span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>:<span class="milliseconds">000</span>
-            </div>
-            <div class="buttons">
-              <button id="startBtn">Start</button>
-              <button id="pauseBtn" class="hidden">Pause</button>
-              <button id="resetBtn" class="hidden">Reset</button>
-            </div>
-          </div>
-          <h2>Notes</h2>
-          <div class="notes-section">
-            <input type="text" id="searchBar" placeholder="Search notes" />
-            <button id="addSubjectBtn">Add Subject</button>
-            <ul id="subjectList"></ul>
-            <div id="exportButtonContainer">
-              <button id="exportbutton">Export</button>
-            </div>
-          </div>
-          <div id="notesToggleButtons">
-            <button id="showNotes">Show Notes</button>
-            <button id="hideNotes" style="display: none;">Hide Notes</button>
-          </div>
-        </div>
-
-        <script>
+<body>
+<div class="container">
+<h2>Useful Links</h2>
+<ul id="linksList"></ul>
+<button id="addLink">Add Link</button>
+</div>
+<div class="container">
+<h1>Productivity Booster</h1>
+<table>
+<thead>
+<tr>
+<th>Time</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody id="timeTable"></tbody>
+</table>
+<button id="moveUp">Move Up</button>
+<button id="moveDown">Move Down</button>
+<button id="combine">Combine</button>
+<button id="clearState">Clear State</button>
+<button id="started">Set or Change Start Time</button>
+<div id="currentTime"></div>
+<div id="combineCounter"></div>
+<h2>To-Do List</h2>
+<ul id="todoList"></ul>
+<button id="addTodoItem">Add Task</button>
+<button id="exportTodoList">Export To-Do List</button>
+<button id="copyTodoListItem">Export To-Do List</button>
+</div>
+<div class="new-container">
+<h2>Stopwatch</h2>
+<div class="stopwatch">
+<div class="time-display">
+<span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>:<span class="milliseconds">000</span>
+</div>
+<div class="buttons">
+<button id="startBtn">Start</button>
+<button class="hidden" id="pauseBtn">Pause</button>
+<button class="hidden" id="resetBtn">Reset</button>
+</div>
+</div>
+<h2>Notes</h2>
+<div class="notes-section">
+<input id="searchBar" placeholder="Search notes" type="text"/>
+<button id="addSubjectBtn">Add Subject</button>
+<ul id="subjectList"></ul>
+<div id="exportButtonContainer">
+<button id="exportbutton">Export</button>
+</div>
+</div>
+<div id="notesToggleButtons">
+<button id="showNotes">Show Notes</button>
+<button id="hideNotes" style="display: none;">Hide Notes</button>
+</div>
+</div>
+<script>
           let timeSlots = []; // Initialize an empty array called timeSlots
           for (let i = 6; i <= 29; i++) { // Iterate from 6AM to 3AM the next day
             for (let j = 0; j < 2; j++) { // Iterate twice for every hour (for 30 minute increments)
@@ -875,6 +872,15 @@
             });
 
             buttonWrapper.appendChild(moveDownButton);
+
+            // Reset Button ========================================
+            const resetButton = document.createElement('button');
+            resetButton.textContent = 'Reset';
+            resetButton.addEventListener('click', () => {
+                counterSpan.textContent = 0;
+                saveTodoList(todoListElement);
+            });
+            buttonWrapper.appendChild(resetButton);
 
 
             // Append button wrapper to list item
@@ -1563,5 +1569,4 @@
           loadTodoList();
         </script>
 </body>
-</html>
-
+</head></html>
