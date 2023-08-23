@@ -86,10 +86,23 @@ function getRandomWord() {
             inputBox.setAttribute("type", "text");
             inputBox.setAttribute("id", "box" + i);
             inputArea.appendChild(inputBox);
+    
+            if (document.getElementById("type").value === "numbers") {  // Only for "numbers" type
+                inputBox.addEventListener("input", function() {
+                    if (this.value.length == 2) { // If two digits are entered
+                        if (i < quantity - 1) {  // If it's not the last input box
+                            document.getElementById("box" + (i + 1)).focus();
+                        } else {  // If it's the last input box, focus on the "Check Answers" button
+                            document.querySelector(".check-btn").focus();
+                        }
+                    }
+                });
+            }
         }
         const submitButton = document.createElement("button");
         submitButton.innerText = "Check Answers";
         submitButton.onclick = checkAnswers;
+        submitButton.classList.add("check-btn");  // Add a class for easy targeting
         inputArea.appendChild(submitButton);
     
         // Set focus on the first input box
