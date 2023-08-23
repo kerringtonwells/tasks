@@ -45,13 +45,13 @@ function getRandomWord() {
     
         for (let i = 0; i < quantity; i++) {
             if (type === "numbers") {
-                generatedItems.push(Math.floor(Math.random() * 100).toString());
+                generatedItems.push((Math.floor(Math.random() * 90) + 10).toString());
             } else if (type === "words") {
                 generatedItems.push(getRandomWord());
             } else {
                 const choice = Math.random() < 0.5 ? "number" : "word";
                 if (choice === "number") {
-                    generatedItems.push(Math.floor(Math.random() * 100).toString());
+                    generatedItems.push((Math.floor(Math.random() * 90) + 10).toString());
                 } else {
                     generatedItems.push(getRandomWord());
                 }
@@ -76,6 +76,7 @@ function getRandomWord() {
             }
         }, 1000);
     }
+    
     
 
     function createInputBoxes(quantity) {
