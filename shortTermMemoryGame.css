@@ -98,3 +98,22 @@ button {
 button:hover {
     background-color: #0056b3;
 }
+
+.scoreboard {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.score {
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.correct {
+    color: green;
+}
+
+.incorrect {
+    color: red;
+}
