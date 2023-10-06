@@ -822,7 +822,7 @@
             buttonWrapper.appendChild(deleteButton);
             //Start button ========================================
             const editButton = document.createElement('button');
-            editButton.textContent = ' Edit/Add Subtask';
+            editButton.textContent = ' Edit';
             editButton.addEventListener('click', () => {
               // Check if already editing
               if (editButton.disabled) return;
@@ -867,7 +867,7 @@
 
             // Move down Button ========================================
             const moveDownButton = document.createElement('button');
-            moveDownButton.textContent = 'Move Down';
+            moveDownButton.textContent = '++/All';
             moveDownButton.addEventListener('click', () => {
                 moveDown();
                 counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
@@ -882,6 +882,16 @@
             // Append button wrapper to list item
             li.appendChild(buttonWrapper);
             todoListElement.appendChild(li);
+
+            // Increment Todo 
+            const incrementCounterButton = document.createElement('button');
+            incrementCounterButton.textContent = '++/Todo';
+            incrementCounterButton.addEventListener('click', () => {
+                counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
+                saveTodoList(todoListElement);
+            });
+
+            buttonWrapper.appendChild(incrementCounterButton);
         
             // Start copy button ========================================
             const copyButton = document.createElement('button');
