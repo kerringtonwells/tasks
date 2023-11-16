@@ -348,17 +348,18 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
     const li = document.createElement('li');
     li.lastModified = lastModified || getCurrentDateTime();
 
+    // Corrected Code
     const contentWrapper = document.createElement('div'); // Declare once
     const span = document.createElement('span'); // Declare once
     span.textContent = itemText;
     contentWrapper.appendChild(span);
-
+    
     // Create a span to display the last modified date
     const lastModifiedSpan = document.createElement('span');
     lastModifiedSpan.textContent = `${li.lastModified}: `;
     lastModifiedSpan.className = 'last-modified';
     contentWrapper.appendChild(lastModifiedSpan);
-
+    
     li.appendChild(contentWrapper);
 
     // Add drag and drop event listeners
