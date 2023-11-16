@@ -465,7 +465,7 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
         }
         span.textContent = savedMessage;
         li.lastModified = getCurrentDateTime();
-        lastModifiedSpan.textContent = `Last Modified: ${li.lastModified}`;
+        lastModifiedSpan.textContent = `${li.lastModified}:  `;
         saveTodoList(todoListElement);
 
         // Re-enable the edit button after saving
@@ -487,7 +487,7 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
         moveDown();
         counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
         li.lastModified = getCurrentDateTime();
-        lastModifiedSpan.textContent = `Last Modified: ${li.lastModified}`;
+        lastModifiedSpan.textContent = `${li.lastModified}:  `;
         saveTodoList(todoListElement);
     });
 
@@ -506,7 +506,7 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
     incrementCounterButton.addEventListener('click', () => {
         counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
         li.lastModified = getCurrentDateTime();
-        lastModifiedSpan.textContent = `Last Modified: ${li.lastModified}`;
+        lastModifiedSpan.textContent = `${li.lastModified}:  `;
         saveTodoList(todoListElement);
     });
 
