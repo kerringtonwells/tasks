@@ -355,7 +355,7 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
 
     // Create a span to display the last modified date
     const lastModifiedSpan = document.createElement('span');
-    lastModifiedSpan.textContent = `Last Modified: ${li.lastModified}`;
+    lastModifiedSpan.textContent = `${li.lastModified}: `;
     lastModifiedSpan.className = 'last-modified';
     contentWrapper.appendChild(lastModifiedSpan);
 
