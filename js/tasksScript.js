@@ -275,43 +275,29 @@ const combine = () => {
 
 //Start To-Do Section  ===================================================================================================
 
-function updateLastModifiedDate(li, buttonWrapper) {
-    let lastModifiedDate = new Date().toLocaleString();
-    let lastModifiedSpan = li.querySelector('.last-modified');
-
-    if (!lastModifiedSpan) {
-        let br = document.createElement('br'); // Create a line break element
-        lastModifiedSpan = document.createElement('span');
-        lastModifiedSpan.className = 'last-modified';
-
-        // Append the line break and span to the li element
-        li.appendChild(br); // Append the line break
-        li.appendChild(lastModifiedSpan); // Append the span
-    }
-    lastModifiedSpan.textContent = `Last Modified: ${lastModifiedDate}`;
-}
-
-
-
-
+// Define the "loadTodoList" function
 const loadTodoList = () => {
+    // Load the saved todo list from localStorage, or create an empty array if it doesn't exist
     const savedTodoList = JSON.parse(localStorage.getItem('todoList')) || [];
+    // Get the DOM element for the todo list
     const todoListElement = document.getElementById('todoList');
+    // Iterate through the saved todo list items
     savedTodoList.forEach(item => {
-        addTodoItem(item.text, item.count, item.lastModified, todoListElement);
+        // Add each todo item to the todoListElement
+        // itemCount is defined here as item.count
+        addTodoItem(item.text, item.count, todoListElement);
     });
 };
 
 const saveTodoList = (todoListElement) => {
-    const todoItems = Array.from(todoListElement.querySelectorAll('li')).map(li => {
+const todoItems = Array.from(todoListElement.querySelectorAll('li')).map(li => {
         const span = li.querySelector('span');
         const countSpan = li.querySelector('.count');
-        const lastModifiedSpan = li.querySelector('.last-modified');
+        // Check if the span contains a textarea (which indicates an edit in progress)
         const textarea = span.querySelector('textarea');
         return {
             text: textarea ? textarea.value.trim() : span.textContent.trim(),
-            count: parseInt(countSpan.textContent),
-            lastModified: lastModifiedSpan ? lastModifiedSpan.textContent.replace('Last Modified: ', '') : new Date().toLocaleString()
+            count: parseInt(countSpan.textContent)
         };
     });
     localStorage.setItem('todoList', JSON.stringify(todoItems));
@@ -361,10 +347,9 @@ const copyToClipboard = (text) => {
     document.body.removeChild(textarea);
 };
 
-const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
-  const li = document.createElement('li');
+const addTodoItem = (itemText, itemCount, todoListElement) => {
+    const li = document.createElement('li');
     li.setAttribute('draggable', 'true'); // Make the list item draggable
-
 
     // Add drag and drop event listeners
     li.addEventListener('dragstart', (e) => {
@@ -430,10 +415,8 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
     subtasks.className = 'subtasks';
     contentWrapper.appendChild(subtasks);
 
-    // Define buttonWrapper here
     const buttonWrapper = document.createElement('div');
-
-
+    li.appendChild(buttonWrapper);
     //Start delete button ========================================
     const deleteButton = document.createElement('button');
     deleteButton.textContent = 'Delete';
@@ -473,7 +456,6 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
             }
         }
         span.textContent = savedMessage;
-        updateLastModifiedDate(li, buttonWrapper);
         saveTodoList(todoListElement);
 
         // Re-enable the edit button after saving
@@ -494,7 +476,6 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
     moveDownButton.addEventListener('click', () => {
         moveDown();
         counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
-        updateLastModifiedDate(li, buttonWrapper);
         saveTodoList(todoListElement);
     });
 
@@ -503,12 +484,15 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
 
 
 
+    // Append button wrapper to list item
+    li.appendChild(buttonWrapper);
+    todoListElement.appendChild(li);
+
     // Increment Todo 
     const incrementCounterButton = document.createElement('button');
     incrementCounterButton.textContent = 'Add Todo';
     incrementCounterButton.addEventListener('click', () => {
         counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
-        updateLastModifiedDate(li, buttonWrapper);
         saveTodoList(todoListElement);
     });
 
@@ -528,28 +512,12 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
     resetButton.textContent = 'Reset';
     resetButton.addEventListener('click', () => {
         counterSpan.textContent = 0;
-        updateLastModifiedDate(li, buttonWrapper);
         saveTodoList(todoListElement);
     });
     buttonWrapper.appendChild(resetButton);
 
-    // Append button wrapper to list item
-    li.appendChild(buttonWrapper);
-
-    const br = document.createElement('br');
-    li.appendChild(br); // Append the line break to the 'li' element
-
-    // Last Modified Span
-    const lastModifiedSpan = document.createElement('span');
-    lastModifiedSpan.className = 'last-modified';
-    lastModifiedSpan.textContent = `Last Modified: ${lastModified || new Date().toLocaleString()}`;
-    li.appendChild(lastModifiedSpan); // Append the lastModifiedSpan directly to the 'li' element
-
-    todoListElement.appendChild(li);
-
-    };
-
     
+    };
 
     const showTemporaryMessage = (message, element) => {
     const tempMessage = document.createElement('span');
