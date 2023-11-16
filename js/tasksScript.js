@@ -274,27 +274,30 @@ const combine = () => {
 
 
 //Start To-Do Section  ===================================================================================================
-function getCurrentDateTime() {
-    return new Date().toLocaleString();
-}
 
+// Define the "loadTodoList" function
 const loadTodoList = () => {
+    // Load the saved todo list from localStorage, or create an empty array if it doesn't exist
     const savedTodoList = JSON.parse(localStorage.getItem('todoList')) || [];
+    // Get the DOM element for the todo list
     const todoListElement = document.getElementById('todoList');
+    // Iterate through the saved todo list items
     savedTodoList.forEach(item => {
-        addTodoItem(item.text, item.count, item.lastModified, todoListElement);
+        // Add each todo item to the todoListElement
+        // itemCount is defined here as item.count
+        addTodoItem(item.text, item.count, todoListElement);
     });
 };
 
 const saveTodoList = (todoListElement) => {
-    const todoItems = Array.from(todoListElement.querySelectorAll('li')).map(li => {
+const todoItems = Array.from(todoListElement.querySelectorAll('li')).map(li => {
         const span = li.querySelector('span');
         const countSpan = li.querySelector('.count');
+        // Check if the span contains a textarea (which indicates an edit in progress)
         const textarea = span.querySelector('textarea');
         return {
             text: textarea ? textarea.value.trim() : span.textContent.trim(),
-            count: parseInt(countSpan.textContent),
-            lastModified: li.lastModified || getCurrentDateTime()
+            count: parseInt(countSpan.textContent)
         };
     });
     localStorage.setItem('todoList', JSON.stringify(todoItems));
@@ -344,23 +347,9 @@ const copyToClipboard = (text) => {
     document.body.removeChild(textarea);
 };
 
-const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
+const addTodoItem = (itemText, itemCount, todoListElement) => {
     const li = document.createElement('li');
-    li.lastModified = lastModified || getCurrentDateTime();
-
-    // Corrected Code
-    const contentWrapper = document.createElement('div'); // Declare once
-    const span = document.createElement('span'); // Declare once
-    span.textContent = itemText;
-    contentWrapper.appendChild(span);
-    
-    // Create a span to display the last modified date
-    const lastModifiedSpan = document.createElement('span');
-    lastModifiedSpan.textContent = `${li.lastModified}: `;
-    lastModifiedSpan.className = 'last-modified';
-    contentWrapper.appendChild(lastModifiedSpan);
-    
-    li.appendChild(contentWrapper);
+    li.setAttribute('draggable', 'true'); // Make the list item draggable
 
     // Add drag and drop event listeners
     li.addEventListener('dragstart', (e) => {
@@ -415,7 +404,9 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
         }
         }
     });
-    
+
+    const contentWrapper = document.createElement('div');
+    const span = document.createElement('span');
     span.textContent = itemText;
     contentWrapper.appendChild(span);
     li.appendChild(contentWrapper);
@@ -465,8 +456,6 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
             }
         }
         span.textContent = savedMessage;
-        li.lastModified = getCurrentDateTime();
-        lastModifiedSpan.textContent = `${li.lastModified}:  `;
         saveTodoList(todoListElement);
 
         // Re-enable the edit button after saving
@@ -487,8 +476,6 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
     moveDownButton.addEventListener('click', () => {
         moveDown();
         counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
-        li.lastModified = getCurrentDateTime();
-        lastModifiedSpan.textContent = `${li.lastModified}:  `;
         saveTodoList(todoListElement);
     });
 
@@ -506,8 +493,6 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
     incrementCounterButton.textContent = 'Add Todo';
     incrementCounterButton.addEventListener('click', () => {
         counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
-        li.lastModified = getCurrentDateTime();
-        lastModifiedSpan.textContent = `${li.lastModified}:  `;
         saveTodoList(todoListElement);
     });
 
