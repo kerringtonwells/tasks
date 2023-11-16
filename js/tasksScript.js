@@ -533,16 +533,20 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
     });
     buttonWrapper.appendChild(resetButton);
 
+    // Append button wrapper to list item
+    li.appendChild(buttonWrapper);
+
+    const br = document.createElement('br');
+    li.appendChild(br); // Append the line break to the 'li' element
+
     // Last Modified Span
     const lastModifiedSpan = document.createElement('span');
     lastModifiedSpan.className = 'last-modified';
     lastModifiedSpan.textContent = `Last Modified: ${lastModified || new Date().toLocaleString()}`;
-    buttonWrapper.appendChild(lastModifiedSpan);
+    li.appendChild(lastModifiedSpan); // Append the lastModifiedSpan directly to the 'li' element
 
-        // Append button wrapper to list item
-        li.appendChild(buttonWrapper);
-        todoListElement.appendChild(li);
-    
+    todoListElement.appendChild(li);
+
     };
 
     
