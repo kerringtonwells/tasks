@@ -348,6 +348,17 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
     const li = document.createElement('li');
     li.lastModified = lastModified || getCurrentDateTime();
 
+    const contentWrapper = document.createElement('div');
+    const span = document.createElement('span');
+    span.textContent = itemText;
+    contentWrapper.appendChild(span);
+
+    // Create a span to display the last modified date
+    const lastModifiedSpan = document.createElement('span');
+    lastModifiedSpan.textContent = `Last Modified: ${li.lastModified}`;
+    lastModifiedSpan.className = 'last-modified';
+    contentWrapper.appendChild(lastModifiedSpan);
+
     // Add drag and drop event listeners
     li.addEventListener('dragstart', (e) => {
         e.dataTransfer.effectAllowed = 'move';
@@ -454,6 +465,7 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
         }
         span.textContent = savedMessage;
         li.lastModified = getCurrentDateTime();
+        lastModifiedSpan.textContent = `Last Modified: ${li.lastModified}`;
         saveTodoList(todoListElement);
 
         // Re-enable the edit button after saving
@@ -475,6 +487,7 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
         moveDown();
         counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
         li.lastModified = getCurrentDateTime();
+        lastModifiedSpan.textContent = `Last Modified: ${li.lastModified}`;
         saveTodoList(todoListElement);
     });
 
@@ -493,6 +506,7 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
     incrementCounterButton.addEventListener('click', () => {
         counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
         li.lastModified = getCurrentDateTime();
+        lastModifiedSpan.textContent = `Last Modified: ${li.lastModified}`;
         saveTodoList(todoListElement);
     });
 
