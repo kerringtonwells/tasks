@@ -415,7 +415,7 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
         }
     });
 
-    const contentWrapper = document.createElement('div');
+    //const contentWrapper = document.createElement('div');
     const span = document.createElement('span');
     span.textContent = itemText;
     contentWrapper.appendChild(span);
