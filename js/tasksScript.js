@@ -348,8 +348,8 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
     const li = document.createElement('li');
     li.lastModified = lastModified || getCurrentDateTime();
 
-    const contentWrapper = document.createElement('div');
-    const span = document.createElement('span');
+    const contentWrapper = document.createElement('div'); // Declare once
+    const span = document.createElement('span'); // Declare once
     span.textContent = itemText;
     contentWrapper.appendChild(span);
 
@@ -358,6 +358,8 @@ const addTodoItem = (itemText, itemCount, lastModified, todoListElement) => {
     lastModifiedSpan.textContent = `Last Modified: ${li.lastModified}`;
     lastModifiedSpan.className = 'last-modified';
     contentWrapper.appendChild(lastModifiedSpan);
+
+    li.appendChild(contentWrapper);
 
     // Add drag and drop event listeners
     li.addEventListener('dragstart', (e) => {
