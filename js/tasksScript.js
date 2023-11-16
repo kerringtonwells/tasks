@@ -275,6 +275,19 @@ const combine = () => {
 
 //Start To-Do Section  ===================================================================================================
 
+function updateLastModifiedDate(li, buttonWrapper) {
+    let lastModifiedDate = new Date().toLocaleString();
+    let lastModifiedSpan = li.querySelector('.last-modified');
+    if (!lastModifiedSpan) {
+        let br = document.createElement('br'); // Create a line break element
+        lastModifiedSpan = document.createElement('span');
+        lastModifiedSpan.className = 'last-modified';
+        buttonWrapper.appendChild(br); // Append the line break before the span
+        buttonWrapper.appendChild(lastModifiedSpan);
+    }
+    lastModifiedSpan.textContent = `Last Modified: ${lastModifiedDate}`;
+}
+
 // Define the "loadTodoList" function
 const loadTodoList = () => {
     // Load the saved todo list from localStorage, or create an empty array if it doesn't exist
@@ -456,6 +469,7 @@ const addTodoItem = (itemText, itemCount, todoListElement) => {
             }
         }
         span.textContent = savedMessage;
+        updateLastModifiedDate(li, buttonWrapper);
         saveTodoList(todoListElement);
 
         // Re-enable the edit button after saving
@@ -476,6 +490,7 @@ const addTodoItem = (itemText, itemCount, todoListElement) => {
     moveDownButton.addEventListener('click', () => {
         moveDown();
         counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
+        updateLastModifiedDate(li, buttonWrapper);
         saveTodoList(todoListElement);
     });
 
@@ -493,6 +508,7 @@ const addTodoItem = (itemText, itemCount, todoListElement) => {
     incrementCounterButton.textContent = 'Add Todo';
     incrementCounterButton.addEventListener('click', () => {
         counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
+        updateLastModifiedDate(li, buttonWrapper);
         saveTodoList(todoListElement);
     });
 
@@ -512,6 +528,7 @@ const addTodoItem = (itemText, itemCount, todoListElement) => {
     resetButton.textContent = 'Reset';
     resetButton.addEventListener('click', () => {
         counterSpan.textContent = 0;
+        updateLastModifiedDate(li, buttonWrapper);
         saveTodoList(todoListElement);
     });
     buttonWrapper.appendChild(resetButton);
