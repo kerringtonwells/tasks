@@ -275,31 +275,30 @@ const combine = () => {
 
 //Start To-Do Section  ===================================================================================================
 
-// Define the "loadTodoList" function
 const loadTodoList = () => {
-    // Load the saved todo list from localStorage, or create an empty array if it doesn't exist
     const savedTodoList = JSON.parse(localStorage.getItem('todoList')) || [];
-    // Get the DOM element for the todo list
     const todoListElement = document.getElementById('todoList');
-    // Iterate through the saved todo list items
     savedTodoList.forEach(item => {
-        addTodoItem(item.text, item.count, todoListElement);
+        addTodoItem(item.text, item.count, todoListElement, item.lastModified);
     });
 };
 
 const saveTodoList = (todoListElement) => {
-const todoItems = Array.from(todoListElement.querySelectorAll('li')).map(li => {
+    const todoItems = Array.from(todoListElement.querySelectorAll('li')).map(li => {
         const span = li.querySelector('span');
         const countSpan = li.querySelector('.count');
-        // Check if the span contains a textarea (which indicates an edit in progress)
+        const lastModifiedSpan = li.querySelector('.last-modified');
+        const lastModifiedDate = lastModifiedSpan ? lastModifiedSpan.textContent.replace('Last Modified: ', '') : new Date().toLocaleString();
         const textarea = span.querySelector('textarea');
         return {
             text: textarea ? textarea.value.trim() : span.textContent.trim(),
-            count: parseInt(countSpan.textContent)
+            count: parseInt(countSpan.textContent),
+            lastModified: lastModifiedDate
         };
     });
     localStorage.setItem('todoList', JSON.stringify(todoItems));
 };
+
 
 
 const exportTodoList = () => {
@@ -345,8 +344,8 @@ const copyToClipboard = (text) => {
     document.body.removeChild(textarea);
 };
 
-const addTodoItem = (itemText, itemCount, todoListElement) => {
-  const lastModifiedDate = new Date().toLocaleString();
+const addTodoItem = (itemText, itemCount, todoListElement, lastModifiedParam) => {
+  let lastModifiedDate = lastModifiedParam || new Date().toLocaleString();
 
     const li = document.createElement('li');
     li.setAttribute('draggable', 'true'); // Make the list item draggable
