@@ -283,8 +283,6 @@ const loadTodoList = () => {
     const todoListElement = document.getElementById('todoList');
     // Iterate through the saved todo list items
     savedTodoList.forEach(item => {
-        // Add each todo item to the todoListElement
-        // itemCount is defined here as item.count
         addTodoItem(item.text, item.count, todoListElement);
     });
 };
@@ -348,6 +346,8 @@ const copyToClipboard = (text) => {
 };
 
 const addTodoItem = (itemText, itemCount, todoListElement) => {
+  const lastModifiedDate = new Date().toLocaleString();
+
     const li = document.createElement('li');
     li.setAttribute('draggable', 'true'); // Make the list item draggable
 
@@ -456,6 +456,7 @@ const addTodoItem = (itemText, itemCount, todoListElement) => {
             }
         }
         span.textContent = savedMessage;
+        updateLastModifiedDate(li);
         saveTodoList(todoListElement);
 
         // Re-enable the edit button after saving
@@ -476,6 +477,7 @@ const addTodoItem = (itemText, itemCount, todoListElement) => {
     moveDownButton.addEventListener('click', () => {
         moveDown();
         counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
+        updateLastModifiedDate(li);
         saveTodoList(todoListElement);
     });
 
@@ -493,6 +495,7 @@ const addTodoItem = (itemText, itemCount, todoListElement) => {
     incrementCounterButton.textContent = 'Add Todo';
     incrementCounterButton.addEventListener('click', () => {
         counterSpan.textContent = parseInt(counterSpan.textContent) + 1;
+        updateLastModifiedDate(li);
         saveTodoList(todoListElement);
     });
 
@@ -512,12 +515,36 @@ const addTodoItem = (itemText, itemCount, todoListElement) => {
     resetButton.textContent = 'Reset';
     resetButton.addEventListener('click', () => {
         counterSpan.textContent = 0;
+        updateLastModifiedDate(li);
         saveTodoList(todoListElement);
     });
     buttonWrapper.appendChild(resetButton);
 
+
+    const lastModifiedSpan = document.createElement('span');
+    lastModifiedSpan.className = 'last-modified';
+    lastModifiedSpan.textContent = `Last Modified: ${lastModifiedDate}`;
+    li.appendChild(lastModifiedSpan);
+
+    todoListElement.appendChild(li);
+
     
     };
+
+    function updateLastModifiedDate(li) {
+    let lastModifiedDate = new Date().toLocaleString();
+    let lastModifiedSpan = li.querySelector('.last-modified');
+
+    if (!lastModifiedSpan) {
+        let br = document.createElement('br');
+        lastModifiedSpan = document.createElement('span');
+        lastModifiedSpan.className = 'last-modified';
+        li.appendChild(br);
+        li.appendChild(lastModifiedSpan);
+    }
+    lastModifiedSpan.textContent = `Last Modified: ${lastModifiedDate}`;
+}
+
 
     const showTemporaryMessage = (message, element) => {
     const tempMessage = document.createElement('span');
