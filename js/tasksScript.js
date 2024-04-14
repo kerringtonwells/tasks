@@ -523,7 +523,7 @@ const addTodoItem = (itemText, itemCount, todoListElement, lastModifiedParam) =>
     li.appendChild(lastModifiedSpan);
 
     todoListElement.appendChild(li);
-
+};
 
 function updateLastModifiedDate(li) {
     let lastModifiedDate = new Date().toLocaleString();
@@ -1187,7 +1187,7 @@ function loadData() {
     document.getElementById('hideNotes').addEventListener('click', () => {
         hideNotesContent();
     });
-    }
+
 
     // Function to show all content
     function hideNotesContent() {
