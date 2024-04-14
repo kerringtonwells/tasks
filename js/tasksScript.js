@@ -307,11 +307,11 @@ const exportTodoList = () => {
         // Check if the span contains a textarea (which indicates an edit in progress)
         const textarea = span.querySelector('textarea');
         if (textarea) {
-        // If a textarea is found, use its value
-        return textarea.value.trim();
+            // If a textarea is found, use its value
+            return textarea.value.trim();
         } else {
-        // Otherwise, use the original span text content
-        return span.textContent.trim();
+            // Otherwise, use the original span text content
+            return span.textContent.trim();
         }
     });
 
@@ -345,7 +345,7 @@ const copyToClipboard = (text) => {
 };
 
 const addTodoItem = (itemText, itemCount, todoListElement, lastModifiedParam) => {
-  let lastModifiedDate = lastModifiedParam || new Date().toLocaleString();
+    let lastModifiedDate = lastModifiedParam || new Date().toLocaleString();
 
     const li = document.createElement('li');
     li.setAttribute('draggable', 'true'); // Make the list item draggable
@@ -379,7 +379,7 @@ const addTodoItem = (itemText, itemCount, todoListElement, lastModifiedParam) =>
         // Find the closest <li> element as the drop target
         let dropTarget = e.target;
         while (dropTarget.tagName !== 'LI' && dropTarget.parentElement) {
-        dropTarget = dropTarget.parentElement;
+            dropTarget = dropTarget.parentElement;
         }
         if (dropTarget.tagName !== 'LI') return;
 
@@ -388,21 +388,22 @@ const addTodoItem = (itemText, itemCount, todoListElement, lastModifiedParam) =>
         const droppedText = e.dataTransfer.getData('text/plain');
 
         if (droppedText !== itemText) {
-        const droppedItemIndex = Array.from(todoListElement.children).findIndex(child => child.querySelector('span').textContent.includes(droppedText));
-        const currentItemIndex = Array.from(todoListElement.children).findIndex(child => child.querySelector('span').textContent.includes(itemText));
-        if (droppedItemIndex > -1 && currentItemIndex > -1) {
-            const temp = todoListElement.children[droppedItemIndex];
-            if (currentItemIndex < droppedItemIndex) {
-            todoListElement.insertBefore(temp, todoListElement.children[currentItemIndex]);
-            todoListElement.insertBefore(todoListElement.children[currentItemIndex], temp.nextSibling);
-            } else {
-            todoListElement.insertBefore(todoListElement.children[currentItemIndex], temp);
-            todoListElement.insertBefore(temp, todoListElement.children[currentItemIndex]);
+            const droppedItemIndex = Array.from(todoListElement.children).findIndex(child => child.querySelector('span').textContent.includes(droppedText));
+            const currentItemIndex = Array.from(todoListElement.children).findIndex(child => child.querySelector('span').textContent.includes(itemText));
+            if (droppedItemIndex > -1 && currentItemIndex > -1) {
+                const temp = todoListElement.children[droppedItemIndex];
+                if (currentItemIndex < droppedItemIndex) {
+                    todoListElement.insertBefore(temp, todoListElement.children[currentItemIndex]);
+                    todoListElement.insertBefore(todoListElement.children[currentItemIndex], temp.nextSibling);
+                } else {
+                    todoListElement.insertBefore(todoListElement.children[currentItemIndex], temp);
+                    todoListElement.insertBefore(temp, todoListElement.children[currentItemIndex]);
+                }
+                saveTodoList(todoListElement);
             }
-            saveTodoList(todoListElement);
-        }
         }
     });
+};
 
     const contentWrapper = document.createElement('div');
     const span = document.createElement('span');
@@ -482,9 +483,6 @@ const addTodoItem = (itemText, itemCount, todoListElement, lastModifiedParam) =>
 
     buttonWrapper.appendChild(moveDownButton);
 
-
-
-
     // Append button wrapper to list item
     li.appendChild(buttonWrapper);
     todoListElement.appendChild(li);
@@ -519,7 +517,6 @@ const addTodoItem = (itemText, itemCount, todoListElement, lastModifiedParam) =>
     });
     buttonWrapper.appendChild(resetButton);
 
-
     const lastModifiedSpan = document.createElement('span');
     lastModifiedSpan.className = 'last-modified';
     lastModifiedSpan.textContent = `Last Modified: ${lastModifiedDate}`;
@@ -527,10 +524,8 @@ const addTodoItem = (itemText, itemCount, todoListElement, lastModifiedParam) =>
 
     todoListElement.appendChild(li);
 
-    
-    };
 
-    function updateLastModifiedDate(li) {
+function updateLastModifiedDate(li) {
     let lastModifiedDate = new Date().toLocaleString();
     let lastModifiedSpan = li.querySelector('.last-modified');
 
@@ -544,8 +539,7 @@ const addTodoItem = (itemText, itemCount, todoListElement, lastModifiedParam) =>
     lastModifiedSpan.textContent = `Last Modified: ${lastModifiedDate}`;
 }
 
-
-    const showTemporaryMessage = (message, element) => {
+const showTemporaryMessage = (message, element) => {
     const tempMessage = document.createElement('span');
     tempMessage.textContent = message;
     tempMessage.style.display = 'inline-block';
@@ -559,16 +553,14 @@ const addTodoItem = (itemText, itemCount, todoListElement, lastModifiedParam) =>
     setTimeout(() => {
         tempMessage.style.opacity = '1';
         setTimeout(() => {
-        tempMessage.style.opacity = '0';
-        setTimeout(() => {
-            element.removeChild(tempMessage);
-        }, 1000);
+            tempMessage.style.opacity = '0';
+            setTimeout(() => {
+                element.removeChild(tempMessage);
+            }, 1000);
         }, 2000);
     }, 50);
-
-
-    };
-//End To-Do Section  ===================================================================================================
+};
+// End To-Do Section  ===================================================================================================
 document.getElementById('moveUp').addEventListener('click', moveUp);
 document.getElementById('moveDown').addEventListener('click', moveDown);
 document.getElementById('combine').addEventListener('click', combine);
@@ -686,77 +678,79 @@ document.addEventListener("DOMContentLoaded", () => {
     const minutesSpan = timeDisplay.querySelector(".minutes");
     const secondsSpan = timeDisplay.querySelector(".seconds");
     const millisecondsSpan = timeDisplay.querySelector(".milliseconds");
+
     // Hide the notes section by default
     document.querySelector('.new-container .notes-section').style.display = 'none';
+
     // Show the "Show Notes" button and hide the "Show All" button by default
     document.getElementById('showNotes').style.display = 'inline-block';
     document.getElementById('hideNotes').style.display = 'none';
 
     // Add the event listener for the 'hideNotes' button
     document.getElementById('hideNotes').addEventListener('click', () => {
-    hideNotesContent();
+        hideNotesContent();
     });
 
     startBtn.addEventListener("click", () => {
-    if (!running) {
-        startTime = Date.now() - elapsedTime;
-        timer = setInterval(updateTime, 10);
-        running = true;
-        toggleButtons('start');
-    }
+        if (!running) {
+            startTime = Date.now() - elapsedTime;
+            timer = setInterval(updateTime, 10);
+            running = true;
+            toggleButtons('start');
+        }
     });
 
     pauseBtn.addEventListener("click", () => {
-    if (running) {
-        clearInterval(timer);
-        running = false;
-        toggleButtons('pause');
-    }
+        if (running) {
+            clearInterval(timer);
+            running = false;
+            toggleButtons('pause');
+        }
     });
 
     resetBtn.addEventListener("click", () => {
-    if (running) {
-        clearInterval(timer);
-        running = false;
-        toggleButtons('pause');
-    }
-    elapsedTime = 0;
-    displayTime(0);
-    toggleButtons('reset');
+        if (running) {
+            clearInterval(timer);
+            running = false;
+            toggleButtons('pause');
+        }
+        elapsedTime = 0;
+        displayTime(0);
+        toggleButtons('reset');
     });
 
     const updateTime = () => {
-    elapsedTime = Date.now() - startTime;
-    displayTime(elapsedTime);
+        elapsedTime = Date.now() - startTime;
+        displayTime(elapsedTime);
     };
 
     const displayTime = (ms) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const totalMinutes = Math.floor(totalSeconds / 60);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    const seconds = totalSeconds % 60;
-    const milliseconds = ms % 1000;
+        const totalSeconds = Math.floor(ms / 1000);
+        const totalMinutes = Math.floor(totalSeconds / 60);
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const seconds = totalSeconds % 60;
+        const milliseconds = ms % 1000;
 
-    hoursSpan.textContent = hours.toString().padStart(2, "0");
-    minutesSpan.textContent = minutes.toString().padStart(2, "0");
-    secondsSpan.textContent = seconds.toString().padStart(2, "0");
-    millisecondsSpan.textContent = milliseconds.toString().padStart(3, "0");
+        hoursSpan.textContent = hours.toString().padStart(2, "0");
+        minutesSpan.textContent = minutes.toString().padStart(2, "0");
+        secondsSpan.textContent = seconds.toString().padStart(2, "0");
+        millisecondsSpan.textContent = milliseconds.toString().padStart(3, "0");
     };
 
     const toggleButtons = (action) => {
-    if (action === 'start') {
-        startBtn.classList.add("hidden");
-        pauseBtn.classList.remove("hidden");
-        resetBtn.classList.remove("hidden");
-    } else if (action === 'pause') {
-        startBtn.classList.remove("hidden");
-        pauseBtn.classList.add("hidden");
-    } else if (action === 'reset') {
-        startBtn.classList.remove("hidden");
-        pauseBtn.classList.add("hidden");
-        resetBtn.classList.add("hidden");
-    }
+        if (action === 'start') {
+            startBtn.classList.add("hidden");
+            pauseBtn.classList.remove("hidden");
+            resetBtn.classList.remove("hidden");
+        } else if (action === 'pause') {
+            startBtn.classList.remove("hidden");
+            pauseBtn.classList.add("hidden");
+        } else if (action === 'reset') {
+            startBtn.classList.remove("hidden");
+            pauseBtn.classList.add("hidden");
+            resetBtn.classList.add("hidden");
+        }
     };
 
     // Display the initial time
@@ -769,9 +763,9 @@ const exportButtonNotes = document.getElementById('exportbutton');
 document.getElementById('addSubjectBtn').addEventListener('click', () => {
     const subject = prompt('Enter the subject name:');
     if (subject) {
-    const subjectElement = createSubjectElement(subject);
-    document.getElementById('subjectList').appendChild(subjectElement);
-    saveSubjects();
+        const subjectElement = createSubjectElement(subject);
+        document.getElementById('subjectList').appendChild(subjectElement);
+        saveSubjects();
     }
 });
 
@@ -780,32 +774,32 @@ searchBar.addEventListener('input', () => {
     const subjectContainers = document.querySelectorAll('.subject-container');
 
     subjectContainers.forEach(subjectContainer => {
-    const subjectTitle = subjectContainer.querySelector('.subject-title');
-    const notesList = subjectContainer.querySelector('.notes-list');
-    const notes = subjectContainer.querySelectorAll('.note');
+        const subjectTitle = subjectContainer.querySelector('.subject-title');
+        const notesList = subjectContainer.querySelector('.notes-list');
+        const notes = subjectContainer.querySelectorAll('.note');
 
-    let subjectMatch = subjectTitle.textContent.toLowerCase().includes(searchTerm);
-    let notesMatch = false;
+        let subjectMatch = subjectTitle.textContent.toLowerCase().includes(searchTerm);
+        let notesMatch = false;
 
-    notes.forEach(note => {
-        if (note.textContent.toLowerCase().includes(searchTerm)) {
-        notesMatch = true;
-        note.style.display = 'block';
+        notes.forEach(note => {
+            if (note.textContent.toLowerCase().includes(searchTerm)) {
+                notesMatch = true;
+                note.style.display = 'block';
+            } else {
+                note.style.display = 'none';
+            }
+        });
+
+        if (subjectMatch || notesMatch) {
+            subjectContainer.style.display = 'flex';
+            if (searchTerm !== '') {
+                notesList.style.display = 'block';
+            } else {
+                notesList.style.display = 'none';
+            }
         } else {
-        note.style.display = 'none';
+            subjectContainer.style.display = 'none';
         }
-    });
-
-    if (subjectMatch || notesMatch) {
-        subjectContainer.style.display = 'flex';
-        if (searchTerm !== '') {
-        notesList.style.display = 'block';
-        } else {
-        notesList.style.display = 'none';
-        }
-    } else {
-        subjectContainer.style.display = 'none';
-    }
     });
 });
 
@@ -830,33 +824,33 @@ function createSubjectElement(subjectName) {
     subjectContainer.appendChild(optionsMenu);
 
     optionsButton.addEventListener('click', (event) => {
-    event.stopPropagation();
-    if (openOptionsMenu && openOptionsMenu !== optionsMenu) {
-        openOptionsMenu.style.display = 'none';
-    }
-    optionsMenu.style.display = optionsMenu.style.display === 'none' ? 'block' : 'none';
-    openOptionsMenu = optionsMenu.style.display === 'block' ? optionsMenu : null;
+        event.stopPropagation();
+        if (openOptionsMenu && openOptionsMenu !== optionsMenu) {
+            openOptionsMenu.style.display = 'none';
+        }
+        optionsMenu.style.display = optionsMenu.style.display === 'none' ? 'block' : 'none';
+        openOptionsMenu = optionsMenu.style.display === 'block' ? optionsMenu : null;
     });
 
     const editSubjectBtn = document.createElement('button');
     editSubjectBtn.innerText = 'Edit';
     editSubjectBtn.addEventListener('click', () => {
-    const newSubject = prompt('Enter the new subject name:', subjectName);
-    if (newSubject) {
-        subjectTitle.innerText = newSubject;
-    }
-    optionsMenu.style.display = 'none';
-    saveSubjects();
+        const newSubject = prompt('Enter the new subject name:', subjectName);
+        if (newSubject) {
+            subjectTitle.innerText = newSubject;
+        }
+        optionsMenu.style.display = 'none';
+        saveSubjects();
     });
     optionsMenu.appendChild(editSubjectBtn);
 
     const deleteSubjectBtn = document.createElement('button');
     deleteSubjectBtn.innerText = 'Delete';
     deleteSubjectBtn.addEventListener('click', () => {
-    if (confirm('Are you sure you want to delete this subject?')) {
-        subjectContainer.remove();
-    }
-    saveSubjects();
+        if (confirm('Are you sure you want to delete this subject?')) {
+            subjectContainer.remove();
+        }
+        saveSubjects();
     });
     optionsMenu.appendChild(deleteSubjectBtn);
 
@@ -886,21 +880,21 @@ function createSubjectElement(subjectName) {
 
         // When the textarea is clicked
         textarea.addEventListener('click', (event) => {
-        event.stopPropagation();
+            event.stopPropagation();
         });
 
         // When the confirm button is clicked
         confirmBtn.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const note = textarea.value;
-        if (note) {
-            const noteElement = createNoteElement(note);
-            notesList.appendChild(noteElement);
-        }
-        // Remove the textarea and the confirm button from the document
-        subjectContainer.removeChild(textarea);
-        subjectContainer.removeChild(confirmBtn);
-        saveSubjects();
+            event.stopPropagation();
+            const note = textarea.value;
+            if (note) {
+                const noteElement = createNoteElement(note);
+                notesList.appendChild(noteElement);
+            }
+            // Remove the textarea and the confirm button from the document
+            subjectContainer.removeChild(textarea);
+            subjectContainer.removeChild(confirmBtn);
+            saveSubjects();
         });
 
         // Add the textarea and the confirm button to the document
@@ -918,19 +912,19 @@ function createSubjectElement(subjectName) {
     // Add the event listener so that double-clicking anywhere on the subject container toggles the notes list
     subjectContainer.addEventListener('dblclick', (event) => {
         if (event.target !== optionsButton && !optionsButton.contains(event.target)) {
-        notesList.style.display = notesList.style.display === 'none' ? 'block' : 'none';
+            notesList.style.display = notesList.style.display === 'none' ? 'block' : 'none';
         }
     });
 
     document.addEventListener('click', () => {
         if (openOptionsMenu) {
-        openOptionsMenu.style.display = 'none';
-        openOptionsMenu = null;
+            openOptionsMenu.style.display = 'none';
+            openOptionsMenu = null;
         }
     });
 
     return subjectContainer;
-    }
+}
 // END SUBJECT ELEMENT -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // what is the code below doing?
 
@@ -938,7 +932,7 @@ function createSubjectElement(subjectName) {
 function createNoteElement(note) {
     const noteElement = document.createElement('li');
     noteElement.classList.add('note');
-    
+
     const noteTitleWrapper = document.createElement('div');
     noteTitleWrapper.classList.add('note-title-wrapper');
     noteElement.appendChild(noteTitleWrapper);
@@ -956,63 +950,63 @@ function createNoteElement(note) {
     const addNoteAboveBtn = document.createElement('button');
     addNoteAboveBtn.innerText = 'Add Above';
     addNoteAboveBtn.addEventListener('click', () => {
-    const newNote = prompt('Enter the note content:');
-    if (newNote) {
-        const newNoteElement = createNoteElement(newNote);
-        noteElement.parentNode.insertBefore(newNoteElement, noteElement);
-    }
-    saveSubjects();
+        const newNote = prompt('Enter the note content:');
+        if (newNote) {
+            const newNoteElement = createNoteElement(newNote);
+            noteElement.parentNode.insertBefore(newNoteElement, noteElement);
+        }
+        saveSubjects();
     });
     buttonWrapper.appendChild(addNoteAboveBtn);
 
     const addNoteBelowBtn = document.createElement('button');
     addNoteBelowBtn.innerText = 'Add Below';
     addNoteBelowBtn.addEventListener('click', () => {
-    const newNote = prompt('Enter the note content:');
-    if (newNote) {
-        const newNoteElement = createNoteElement(newNote);
-        noteElement.parentNode.insertBefore(newNoteElement, noteElement.nextSibling);
-    }
-    saveSubjects();
+        const newNote = prompt('Enter the note content:');
+        if (newNote) {
+            const newNoteElement = createNoteElement(newNote);
+            noteElement.parentNode.insertBefore(newNoteElement, noteElement.nextSibling);
+        }
+        saveSubjects();
     });
     buttonWrapper.appendChild(addNoteBelowBtn);
     const editBtn = document.createElement('button');
     editBtn.innerText = 'Edit';
 
     editBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-
-    // Create a textarea and a confirm button
-    const textarea = document.createElement('textarea');
-    // Convert <br> tags back into newline characters
-    textarea.value = noteElement.originalNote;
-    const confirmBtn = document.createElement('button');
-    confirmBtn.innerText = 'OK';
-
-    // When the textarea is clicked
-    textarea.addEventListener('click', (event) => {
         event.stopPropagation();
-    });
 
-    // When the confirm button is clicked
-    confirmBtn.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const newNote = textarea.value;
-        if (newNote) {
-        // Save the new note to noteElement.originalNote
-        noteElement.originalNote = newNote;
-        // Format the new note for display
-        noteTitle.innerHTML = newNote.replace(/^ +/gm, match => '&nbsp;'.repeat(match.length)).replace(/\n/g, '<br>');
-        }
-        // Remove the textarea and the confirm button from the document
-        noteElement.removeChild(textarea);
-        noteElement.removeChild(confirmBtn);
-        saveSubjects();
-    });
+        // Create a textarea and a confirm button
+        const textarea = document.createElement('textarea');
+        // Convert <br> tags back into newline characters
+        textarea.value = noteElement.originalNote;
+        const confirmBtn = document.createElement('button');
+        confirmBtn.innerText = 'OK';
 
-    // Add the textarea and the confirm button to the document
-    noteElement.appendChild(textarea);
-    noteElement.appendChild(confirmBtn);
+        // When the textarea is clicked
+        textarea.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+
+        // When the confirm button is clicked
+        confirmBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const newNote = textarea.value;
+            if (newNote) {
+                // Save the new note to noteElement.originalNote
+                noteElement.originalNote = newNote;
+                // Format the new note for display
+                noteTitle.innerHTML = newNote.replace(/^ +/gm, match => '&nbsp;'.repeat(match.length)).replace(/\n/g, '<br>');
+            }
+            // Remove the textarea and the confirm button from the document
+            noteElement.removeChild(textarea);
+            noteElement.removeChild(confirmBtn);
+            saveSubjects();
+        });
+
+        // Add the textarea and the confirm button to the document
+        noteElement.appendChild(textarea);
+        noteElement.appendChild(confirmBtn);
     });
 
 
@@ -1021,11 +1015,11 @@ function createNoteElement(note) {
     const deleteBtn = document.createElement('button');
     deleteBtn.innerText = 'Delete';
     deleteBtn.addEventListener('click', () => {
-    event.stopPropagation();
-    if (confirm('Are you sure you want to delete this note?')) {
-        noteElement.remove();
-    }
-    saveSubjects();
+        event.stopPropagation();
+        if (confirm('Are you sure you want to delete this note?')) {
+            noteElement.remove();
+        }
+        saveSubjects();
     });
     buttonWrapper.appendChild(deleteBtn);
 
@@ -1046,6 +1040,7 @@ function createNoteElement(note) {
     return noteElement;
 }
 // END CREATE NOTE ELEMENT -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 function saveData(subjects) {
     localStorage.setItem('subjects', JSON.stringify(subjects));
 }
@@ -1071,136 +1066,162 @@ function saveSubjects() {
 
     // Show or hide the export button based on the number of subjects
     exportButtonNotes.style.display = subjects.length > 0 ? 'block' : 'none';
-    }
+}
 
-    function loadData() {
+function loadData() {
     const storedData = localStorage.getItem('subjects');
     const subjects = storedData ? JSON.parse(storedData) : [];
 
     subjects.forEach(subject => {
-    subject.notes = subject.notes.map(note => decodeURIComponent(note));
+        subject.notes = subject.notes.map(note => decodeURIComponent(note));
     });
 
     return subjects;
-    }
+}
 
 
 
     // This is for exorting notes to a text file
 
     function exportDataToTxt() {
-    const subjects = loadData();
-    let textData = '';
+        const subjects = loadData();
+        let textData = '';
 
-    subjects.forEach((subject, subjectIndex) => {
-    textData += `Subject ${subjectIndex + 1}: ${subject.name}\n`;
+        subjects.forEach((subject, subjectIndex) => {
+            textData += `Subject ${subjectIndex + 1}: ${subject.name}\n`;
 
-    subject.notes.forEach((note, noteIndex) => {
-    textData += `  Note ${noteIndex + 1}: ${note}\n`;
-    });
+            subject.notes.forEach((note, noteIndex) => {
+                textData += `  Note ${noteIndex + 1}: ${note}\n`;
+            });
 
-    textData += '\n';
-    });
+            textData += '\n';
+        });
 
-    download('subjects_and_notes.txt', textData);
+        download('subjects_and_notes.txt', textData);
     }
 
     function download(filename, text) {
-    const element = document.createElement('a');
-    element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-    element.setAttribute('download', filename);
-    element.style.display = 'none';
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+        const element = document.createElement('a');
+        element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+        element.setAttribute('download', filename);
+        element.style.display = 'none';
+        document.body.appendChild(element);
+        element.click();
+        document.body.removeChild(element);
     }
 
     // Add this code snippet to your existing code
     // This creates an "Export" button that will call the exportDataToTxt function when clicked
 
     exportButtonNotes.addEventListener('click', () => {
-    exportDataToTxt();
+        exportDataToTxt();
     });
 
     document.addEventListener('DOMContentLoaded', () => {
-    const storedSubjects = loadData();
-    const subjectList = document.getElementById('subjectList');
+        const storedSubjects = loadData();
+        const subjectList = document.getElementById('subjectList');
 
-    storedSubjects.forEach(subject => {
-    const subjectElement = createSubjectElement(subject.name);
-    subjectList.appendChild(subjectElement);
+        storedSubjects.forEach(subject => {
+            const subjectElement = createSubjectElement(subject.name);
+            subjectList.appendChild(subjectElement);
 
-    const notesList = subjectElement.querySelector('.notes-list');
-    subject.notes.forEach(note => {
-    const noteElement = createNoteElement(note);
-    notesList.appendChild(noteElement);
-    });
-    });
-    saveSubjects(); // Add this line
+            const notesList = subjectElement.querySelector('.notes-list');
+            subject.notes.forEach(note => {
+                const noteElement = createNoteElement(note);
+                notesList.appendChild(noteElement);
+            });
+        });
+        saveSubjects(); // Add this line
     });
 
 
     // Add event listeners for the showNotes and hideNotes buttons
     document.getElementById('showNotes').addEventListener('click', () => {
-    showNotesOnly();
+        showNotesOnly();
     });
 
     document.getElementById('hideNotes').addEventListener('click', () => {
-    hideNotesContent();
+        hideNotesContent();
     });
 
 
     // Function to show only the notes section
     function showNotesOnly() {
-    document.querySelectorAll('.container').forEach(el => {
-    el.style.display = 'none';
-    });
+        document.querySelectorAll('.container').forEach(el => {
+            el.style.display = 'none';
+        });
 
-    document.querySelector('.new-container h2:nth-child(1)').style.display = 'none';
-    document.querySelector('.new-container .stopwatch').style.display = 'none';
+        document.querySelector('.new-container h2:nth-child(1)').style.display = 'none';
+        document.querySelector('.new-container .stopwatch').style.display = 'none';
 
-    document.getElementById('showNotes').style.display = 'none';
-    document.getElementById('hideNotes').style.display = 'inline-block';
+        document.getElementById('showNotes').style.display = 'none';
+        document.getElementById('hideNotes').style.display = 'inline-block';
 
-    // Show notes search, notes section, and export button
-    document.querySelector('.new-container .notes-section').style.display = 'flex';
+        // Show notes search, notes section, and export button
+        document.querySelector('.new-container .notes-section').style.display = 'flex';
     }
 
     // Function to show all content
     function hideNotesContent() {
-    // Show all tasks
-    document.querySelectorAll('.container').forEach(el => {
-    el.style.display = 'block';
-    });
+        // Show all tasks
+        document.querySelectorAll('.container').forEach(el => {
+            el.style.display = 'block';
+        });
 
-    // Show task title and stopwatch
-    document.querySelector('.new-container h2:nth-child(1)').style.display = 'block';
-    document.querySelector('.new-container .stopwatch').style.display = 'block';
+        // Show task title and stopwatch
+        document.querySelector('.new-container h2:nth-child(1)').style.display = 'block';
+        document.querySelector('.new-container .stopwatch').style.display = 'block';
 
-    // Hide notes search and notes section
-    const notesSearch = document.querySelector('.new-container .notes-search');
-    if (notesSearch) {
-    notesSearch.style.display = 'none';
+        // Hide notes search and notes section
+        const notesSearch = document.querySelector('.new-container .notes-search');
+        if (notesSearch) {
+            notesSearch.style.display = 'none';
+        }
+        document.querySelector('.new-container .notes-section').style.display = 'none';
     }
-    document.querySelector('.new-container .notes-section').style.display = 'none';
-
-    // Show "Show Notes" button and hide "Hide Notes" button
-    document.getElementById('showNotes').style.display = 'inline-block';
-    document.getElementById('hideNotes').style.display = 'none';
-    }
-
-
 
     document.getElementById('showNotes').addEventListener('click', () => {
-    document.querySelector('.new-container .notes-section').style.display = 'block';
-    document.getElementById('showNotes').style.display = 'none';
-    document.getElementById('hideNotes').style.display = 'inline-block';
+        showNotesOnly();
     });
 
     document.getElementById('hideNotes').addEventListener('click', () => {
-    document.querySelector('.new-container .notes-section').style.display = 'none';
-    document.getElementById('showNotes').style.display = 'inline-block';
-    document.getElementById('hideNotes').style.display = 'none';
+        hideNotesContent();
+    });
+    }
+
+    // Function to show all content
+    function hideNotesContent() {
+        // Show all tasks
+        document.querySelectorAll('.container').forEach(el => {
+            el.style.display = 'block';
+        });
+
+        // Show task title and stopwatch
+        document.querySelector('.new-container h2:nth-child(1)').style.display = 'block';
+        document.querySelector('.new-container .stopwatch').style.display = 'block';
+
+        // Hide notes search and notes section
+        const notesSearch = document.querySelector('.new-container .notes-search');
+        if (notesSearch) {
+            notesSearch.style.display = 'none';
+        }
+        document.querySelector('.new-container .notes-section').style.display = 'none';
+
+        // Show "Show Notes" button and hide "Hide Notes" button
+        document.getElementById('showNotes').style.display = 'inline-block';
+        document.getElementById('hideNotes').style.display = 'none';
+    }
+
+    document.getElementById('showNotes').addEventListener('click', () => {
+        document.querySelector('.new-container .notes-section').style.display = 'block';
+        document.getElementById('showNotes').style.display = 'none';
+        document.getElementById('hideNotes').style.display = 'inline-block';
+    });
+
+    document.getElementById('hideNotes').addEventListener('click', () => {
+        document.querySelector('.new-container .notes-section').style.display = 'none';
+        document.getElementById('showNotes').style.display = 'inline-block';
+        document.getElementById('hideNotes').style.display = 'none';
     });
 
     //End Notes Section  ===================================================================================================
