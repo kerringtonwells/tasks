@@ -938,7 +938,7 @@ function createSubjectElement(subjectName) {
 function createNoteElement(note) {
     const noteElement = document.createElement('li');
     noteElement.classList.add('note');
-    
+
     const noteTitleWrapper = document.createElement('div');
     noteTitleWrapper.classList.add('note-title-wrapper');
     noteElement.appendChild(noteTitleWrapper);
@@ -956,63 +956,63 @@ function createNoteElement(note) {
     const addNoteAboveBtn = document.createElement('button');
     addNoteAboveBtn.innerText = 'Add Above';
     addNoteAboveBtn.addEventListener('click', () => {
-    const newNote = prompt('Enter the note content:');
-    if (newNote) {
-        const newNoteElement = createNoteElement(newNote);
-        noteElement.parentNode.insertBefore(newNoteElement, noteElement);
-    }
-    saveSubjects();
+        const newNote = prompt('Enter the note content:');
+        if (newNote) {
+            const newNoteElement = createNoteElement(newNote);
+            noteElement.parentNode.insertBefore(newNoteElement, noteElement);
+        }
+        saveSubjects();
     });
     buttonWrapper.appendChild(addNoteAboveBtn);
 
     const addNoteBelowBtn = document.createElement('button');
     addNoteBelowBtn.innerText = 'Add Below';
     addNoteBelowBtn.addEventListener('click', () => {
-    const newNote = prompt('Enter the note content:');
-    if (newNote) {
-        const newNoteElement = createNoteElement(newNote);
-        noteElement.parentNode.insertBefore(newNoteElement, noteElement.nextSibling);
-    }
-    saveSubjects();
+        const newNote = prompt('Enter the note content:');
+        if (newNote) {
+            const newNoteElement = createNoteElement(newNote);
+            noteElement.parentNode.insertBefore(newNoteElement, noteElement.nextSibling);
+        }
+        saveSubjects();
     });
     buttonWrapper.appendChild(addNoteBelowBtn);
     const editBtn = document.createElement('button');
     editBtn.innerText = 'Edit';
 
     editBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-
-    // Create a textarea and a confirm button
-    const textarea = document.createElement('textarea');
-    // Convert <br> tags back into newline characters
-    textarea.value = noteElement.originalNote;
-    const confirmBtn = document.createElement('button');
-    confirmBtn.innerText = 'OK';
-
-    // When the textarea is clicked
-    textarea.addEventListener('click', (event) => {
         event.stopPropagation();
-    });
 
-    // When the confirm button is clicked
-    confirmBtn.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const newNote = textarea.value;
-        if (newNote) {
-        // Save the new note to noteElement.originalNote
-        noteElement.originalNote = newNote;
-        // Format the new note for display
-        noteTitle.innerHTML = newNote.replace(/^ +/gm, match => '&nbsp;'.repeat(match.length)).replace(/\n/g, '<br>');
-        }
-        // Remove the textarea and the confirm button from the document
-        noteElement.removeChild(textarea);
-        noteElement.removeChild(confirmBtn);
-        saveSubjects();
-    });
+        // Create a textarea and a confirm button
+        const textarea = document.createElement('textarea');
+        // Convert <br> tags back into newline characters
+        textarea.value = noteElement.originalNote;
+        const confirmBtn = document.createElement('button');
+        confirmBtn.innerText = 'OK';
 
-    // Add the textarea and the confirm button to the document
-    noteElement.appendChild(textarea);
-    noteElement.appendChild(confirmBtn);
+        // When the textarea is clicked
+        textarea.addEventListener('click', (event) => {
+            event.stopPropagation();
+        });
+
+        // When the confirm button is clicked
+        confirmBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const newNote = textarea.value;
+            if (newNote) {
+                // Save the new note to noteElement.originalNote
+                noteElement.originalNote = newNote;
+                // Format the new note for display
+                noteTitle.innerHTML = newNote.replace(/^ +/gm, match => '&nbsp;'.repeat(match.length)).replace(/\n/g, '<br>');
+            }
+            // Remove the textarea and the confirm button from the document
+            noteElement.removeChild(textarea);
+            noteElement.removeChild(confirmBtn);
+            saveSubjects();
+        });
+
+        // Add the textarea and the confirm button to the document
+        noteElement.appendChild(textarea);
+        noteElement.appendChild(confirmBtn);
     });
 
 
@@ -1021,11 +1021,11 @@ function createNoteElement(note) {
     const deleteBtn = document.createElement('button');
     deleteBtn.innerText = 'Delete';
     deleteBtn.addEventListener('click', () => {
-    event.stopPropagation();
-    if (confirm('Are you sure you want to delete this note?')) {
-        noteElement.remove();
-    }
-    saveSubjects();
+        event.stopPropagation();
+        if (confirm('Are you sure you want to delete this note?')) {
+            noteElement.remove();
+        }
+        saveSubjects();
     });
     buttonWrapper.appendChild(deleteBtn);
 
@@ -1071,41 +1071,40 @@ function saveSubjects() {
 
     // Show or hide the export button based on the number of subjects
     exportButtonNotes.style.display = subjects.length > 0 ? 'block' : 'none';
-    }
+}
 
-    function loadData() {
+function loadData() {
     const storedData = localStorage.getItem('subjects');
     const subjects = storedData ? JSON.parse(storedData) : [];
 
     subjects.forEach(subject => {
-    subject.notes = subject.notes.map(note => decodeURIComponent(note));
+        subject.notes = subject.notes.map(note => decodeURIComponent(note));
     });
 
     return subjects;
-    }
+}
 
 
 
-    // This is for exorting notes to a text file
-
-    function exportDataToTxt() {
+// This is for exorting notes to a text file
+function exportDataToTxt() {
     const subjects = loadData();
     let textData = '';
 
     subjects.forEach((subject, subjectIndex) => {
-    textData += `Subject ${subjectIndex + 1}: ${subject.name}\n`;
+        textData += `Subject ${subjectIndex + 1}: ${subject.name}\n`;
 
-    subject.notes.forEach((note, noteIndex) => {
-    textData += `  Note ${noteIndex + 1}: ${note}\n`;
-    });
+        subject.notes.forEach((note, noteIndex) => {
+            textData += `  Note ${noteIndex + 1}: ${note}\n`;
+        });
 
-    textData += '\n';
+        textData += '\n';
     });
 
     download('subjects_and_notes.txt', textData);
-    }
+}
 
-    function download(filename, text) {
+function download(filename, text) {
     const element = document.createElement('a');
     element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
     element.setAttribute('download', filename);
@@ -1113,47 +1112,47 @@ function saveSubjects() {
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
-    }
+}
 
-    // Add this code snippet to your existing code
-    // This creates an "Export" button that will call the exportDataToTxt function when clicked
+// Add this code snippet to your existing code
+// This creates an "Export" button that will call the exportDataToTxt function when clicked
 
-    exportButtonNotes.addEventListener('click', () => {
+exportButtonNotes.addEventListener('click', () => {
     exportDataToTxt();
-    });
+});
 
-    document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
     const storedSubjects = loadData();
     const subjectList = document.getElementById('subjectList');
 
     storedSubjects.forEach(subject => {
-    const subjectElement = createSubjectElement(subject.name);
-    subjectList.appendChild(subjectElement);
+        const subjectElement = createSubjectElement(subject.name);
+        subjectList.appendChild(subjectElement);
 
-    const notesList = subjectElement.querySelector('.notes-list');
-    subject.notes.forEach(note => {
-    const noteElement = createNoteElement(note);
-    notesList.appendChild(noteElement);
-    });
+        const notesList = subjectElement.querySelector('.notes-list');
+        subject.notes.forEach(note => {
+            const noteElement = createNoteElement(note);
+            notesList.appendChild(noteElement);
+        });
     });
     saveSubjects(); // Add this line
-    });
+});
 
 
-    // Add event listeners for the showNotes and hideNotes buttons
-    document.getElementById('showNotes').addEventListener('click', () => {
-    showNotesOnly();
-    });
+// Add event listeners for the showNotes and hideNotes buttons
+document.getElementById('showNotes').addEventListener('click', () => {
+showNotesOnly();
+});
 
-    document.getElementById('hideNotes').addEventListener('click', () => {
-    hideNotesContent();
-    });
+document.getElementById('hideNotes').addEventListener('click', () => {
+hideNotesContent();
+});
 
 
-    // Function to show only the notes section
-    function showNotesOnly() {
+// Function to show only the notes section
+function showNotesOnly() {
     document.querySelectorAll('.container').forEach(el => {
-    el.style.display = 'none';
+        el.style.display = 'none';
     });
 
     document.querySelector('.new-container h2:nth-child(1)').style.display = 'none';
@@ -1164,52 +1163,47 @@ function saveSubjects() {
 
     // Show notes search, notes section, and export button
     document.querySelector('.new-container .notes-section').style.display = 'flex';
-    }
+}
 
-    // Function to show all content
-    function hideNotesContent() {
-        // Show all tasks
-        document.querySelectorAll('.container').forEach(el => {
-            el.style.display = 'block';
-        });
-
-        // Show task title and stopwatch
-        document.querySelector('.new-container h2:nth-child(1)').style.display = 'block';
-        document.querySelector('.new-container .stopwatch').style.display = 'block';
-
-        // Hide notes search and notes section
-        const notesSearch = document.querySelector('.new-container .notes-search');
-        if (notesSearch) {
-            notesSearch.style.display = 'none';
-        }
-        document.querySelector('.new-container .notes-section').style.display = 'none';
-
-        // Show "Show Notes" button and hide "Hide Notes" button
-        document.getElementById('showNotes').style.display = 'inline-block';
-        document.getElementById('hideNotes').style.display = 'none';
-    }
-
-
-
-    document.getElementById('showNotes').addEventListener('click', () => {
-        document.querySelector('.new-container .notes-section').style.display = 'block';
-        document.getElementById('showNotes').style.display = 'none';
-        document.getElementById('hideNotes').style.display = 'inline-block';
+// Function to show all content
+function hideNotesContent() {
+    // Show all tasks
+    document.querySelectorAll('.container').forEach(el => {
+        el.style.display = 'block';
     });
 
-    document.getElementById('hideNotes').addEventListener('click', () => {
-        document.querySelector('.new-container .notes-section').style.display = 'none';
-        document.getElementById('showNotes').style.display = 'inline-block';
-        document.getElementById('hideNotes').style.display = 'none';
-    });
+    // Show task title and stopwatch
+    document.querySelector('.new-container h2:nth-child(1)').style.display = 'block';
+    document.querySelector('.new-container .stopwatch').style.display = 'block';
 
-    //End Notes Section  ===================================================================================================
+    // Hide notes search and notes section
+    const notesSearch = document.querySelector('.new-container .notes-search');
+    if (notesSearch) {
+        notesSearch.style.display = 'none';
+    }
+    document.querySelector('.new-container .notes-section').style.display = 'none';
 
+    // Show "Show Notes" button and hide "Hide Notes" button
+    document.getElementById('showNotes').style.display = 'inline-block';
+    document.getElementById('hideNotes').style.display = 'none';
+}
 
+document.getElementById('showNotes').addEventListener('click', () => {
+    document.querySelector('.new-container .notes-section').style.display = 'block';
+    document.getElementById('showNotes').style.display = 'none';
+    document.getElementById('hideNotes').style.display = 'inline-block';
+});
 
-    // Initialization
-    loadLinksList();
-    renderTable();
-    updateCurrentTime();
-    updateCombineCounter();
-    loadTodoList();
+document.getElementById('hideNotes').addEventListener('click', () => {
+    document.querySelector('.new-container .notes-section').style.display = 'none';
+    document.getElementById('showNotes').style.display = 'inline-block';
+    document.getElementById('hideNotes').style.display = 'none';
+});
+
+//End Notes Section  ===================================================================================================
+// Initialization
+loadLinksList();
+renderTable();
+updateCurrentTime();
+updateCombineCounter();
+loadTodoList();
