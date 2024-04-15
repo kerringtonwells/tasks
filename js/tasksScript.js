@@ -1168,39 +1168,39 @@ function saveSubjects() {
 
     // Function to show all content
     function hideNotesContent() {
-    // Show all tasks
-    document.querySelectorAll('.container').forEach(el => {
-    el.style.display = 'block';
-    });
+        // Show all tasks
+        document.querySelectorAll('.container').forEach(el => {
+            el.style.display = 'block';
+        });
 
-    // Show task title and stopwatch
-    document.querySelector('.new-container h2:nth-child(1)').style.display = 'block';
-    document.querySelector('.new-container .stopwatch').style.display = 'block';
+        // Show task title and stopwatch
+        document.querySelector('.new-container h2:nth-child(1)').style.display = 'block';
+        document.querySelector('.new-container .stopwatch').style.display = 'block';
 
-    // Hide notes search and notes section
-    const notesSearch = document.querySelector('.new-container .notes-search');
-    if (notesSearch) {
-    notesSearch.style.display = 'none';
-    }
-    document.querySelector('.new-container .notes-section').style.display = 'none';
+        // Hide notes search and notes section
+        const notesSearch = document.querySelector('.new-container .notes-search');
+        if (notesSearch) {
+            notesSearch.style.display = 'none';
+        }
+        document.querySelector('.new-container .notes-section').style.display = 'none';
 
-    // Show "Show Notes" button and hide "Hide Notes" button
-    document.getElementById('showNotes').style.display = 'inline-block';
-    document.getElementById('hideNotes').style.display = 'none';
+        // Show "Show Notes" button and hide "Hide Notes" button
+        document.getElementById('showNotes').style.display = 'inline-block';
+        document.getElementById('hideNotes').style.display = 'none';
     }
 
 
 
     document.getElementById('showNotes').addEventListener('click', () => {
-    document.querySelector('.new-container .notes-section').style.display = 'block';
-    document.getElementById('showNotes').style.display = 'none';
-    document.getElementById('hideNotes').style.display = 'inline-block';
+        document.querySelector('.new-container .notes-section').style.display = 'block';
+        document.getElementById('showNotes').style.display = 'none';
+        document.getElementById('hideNotes').style.display = 'inline-block';
     });
 
     document.getElementById('hideNotes').addEventListener('click', () => {
-    document.querySelector('.new-container .notes-section').style.display = 'none';
-    document.getElementById('showNotes').style.display = 'inline-block';
-    document.getElementById('hideNotes').style.display = 'none';
+        document.querySelector('.new-container .notes-section').style.display = 'none';
+        document.getElementById('showNotes').style.display = 'inline-block';
+        document.getElementById('hideNotes').style.display = 'none';
     });
 
     //End Notes Section  ===================================================================================================
