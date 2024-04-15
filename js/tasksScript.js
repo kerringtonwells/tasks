@@ -830,33 +830,33 @@ function createSubjectElement(subjectName) {
     subjectContainer.appendChild(optionsMenu);
 
     optionsButton.addEventListener('click', (event) => {
-    event.stopPropagation();
-    if (openOptionsMenu && openOptionsMenu !== optionsMenu) {
-        openOptionsMenu.style.display = 'none';
-    }
-    optionsMenu.style.display = optionsMenu.style.display === 'none' ? 'block' : 'none';
-    openOptionsMenu = optionsMenu.style.display === 'block' ? optionsMenu : null;
+        event.stopPropagation();
+        if (openOptionsMenu && openOptionsMenu !== optionsMenu) {
+            openOptionsMenu.style.display = 'none';
+        }
+        optionsMenu.style.display = optionsMenu.style.display === 'none' ? 'block' : 'none';
+        openOptionsMenu = optionsMenu.style.display === 'block' ? optionsMenu : null;
     });
 
     const editSubjectBtn = document.createElement('button');
     editSubjectBtn.innerText = 'Edit';
     editSubjectBtn.addEventListener('click', () => {
-    const newSubject = prompt('Enter the new subject name:', subjectName);
-    if (newSubject) {
-        subjectTitle.innerText = newSubject;
-    }
-    optionsMenu.style.display = 'none';
-    saveSubjects();
+        const newSubject = prompt('Enter the new subject name:', subjectName);
+        if (newSubject) {
+            subjectTitle.innerText = newSubject;
+        }
+        optionsMenu.style.display = 'none';
+        saveSubjects();
     });
     optionsMenu.appendChild(editSubjectBtn);
 
     const deleteSubjectBtn = document.createElement('button');
     deleteSubjectBtn.innerText = 'Delete';
     deleteSubjectBtn.addEventListener('click', () => {
-    if (confirm('Are you sure you want to delete this subject?')) {
-        subjectContainer.remove();
-    }
-    saveSubjects();
+        if (confirm('Are you sure you want to delete this subject?')) {
+            subjectContainer.remove();
+        }
+        saveSubjects();
     });
     optionsMenu.appendChild(deleteSubjectBtn);
 
@@ -886,21 +886,21 @@ function createSubjectElement(subjectName) {
 
         // When the textarea is clicked
         textarea.addEventListener('click', (event) => {
-        event.stopPropagation();
+            event.stopPropagation();
         });
 
         // When the confirm button is clicked
         confirmBtn.addEventListener('click', (event) => {
-        event.stopPropagation();
-        const note = textarea.value;
-        if (note) {
-            const noteElement = createNoteElement(note);
-            notesList.appendChild(noteElement);
-        }
-        // Remove the textarea and the confirm button from the document
-        subjectContainer.removeChild(textarea);
-        subjectContainer.removeChild(confirmBtn);
-        saveSubjects();
+            event.stopPropagation();
+            const note = textarea.value;
+            if (note) {
+                const noteElement = createNoteElement(note);
+                notesList.appendChild(noteElement);
+            }
+            // Remove the textarea and the confirm button from the document
+            subjectContainer.removeChild(textarea);
+            subjectContainer.removeChild(confirmBtn);
+            saveSubjects();
         });
 
         // Add the textarea and the confirm button to the document
@@ -918,19 +918,19 @@ function createSubjectElement(subjectName) {
     // Add the event listener so that double-clicking anywhere on the subject container toggles the notes list
     subjectContainer.addEventListener('dblclick', (event) => {
         if (event.target !== optionsButton && !optionsButton.contains(event.target)) {
-        notesList.style.display = notesList.style.display === 'none' ? 'block' : 'none';
+            notesList.style.display = notesList.style.display === 'none' ? 'block' : 'none';
         }
     });
 
     document.addEventListener('click', () => {
         if (openOptionsMenu) {
-        openOptionsMenu.style.display = 'none';
-        openOptionsMenu = null;
+            openOptionsMenu.style.display = 'none';
+            openOptionsMenu = null;
         }
     });
 
     return subjectContainer;
-    }
+}
 // END SUBJECT ELEMENT -----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // what is the code below doing?
 
@@ -1083,8 +1083,6 @@ function loadData() {
 
     return subjects;
 }
-
-
 
 // This is for exorting notes to a text file
 function exportDataToTxt() {
