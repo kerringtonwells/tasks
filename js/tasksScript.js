@@ -677,6 +677,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let running = false;
     let startTime;
     let elapsedTime = 0;
+    let wakeLock = null;
 
     const startBtn = document.getElementById("startBtn");
     const pauseBtn = document.getElementById("pauseBtn");
@@ -686,6 +687,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const minutesSpan = timeDisplay.querySelector(".minutes");
     const secondsSpan = timeDisplay.querySelector(".seconds");
     const millisecondsSpan = timeDisplay.querySelector(".milliseconds");
+
     // Hide the notes section by default
     document.querySelector('.new-container .notes-section').style.display = 'none';
     // Show the "Show Notes" button and hide the "Show All" button by default
@@ -694,74 +696,108 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Add the event listener for the 'hideNotes' button
     document.getElementById('hideNotes').addEventListener('click', () => {
-    hideNotesContent();
+        hideNotesContent();
     });
 
-    startBtn.addEventListener("click", () => {
-    if (!running) {
-        startTime = Date.now() - elapsedTime;
-        timer = setInterval(updateTime, 10);
-        running = true;
-        toggleButtons('start');
-    }
+    startBtn.addEventListener("click", async () => {
+        if (!running) {
+            startTime = Date.now() - elapsedTime;
+            timer = setInterval(updateTime, 10);
+            running = true;
+            toggleButtons('start');
+            // Request a wake lock
+            try {
+                if ('wakeLock' in navigator && !wakeLock) {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log('Wake Lock is active');
+                }
+            } catch (e) {
+                console.error(`Failed to enable wake lock: ${e}`);
+            }
+        }
     });
 
     pauseBtn.addEventListener("click", () => {
-    if (running) {
-        clearInterval(timer);
-        running = false;
-        toggleButtons('pause');
-    }
+        if (running) {
+            clearInterval(timer);
+            running = false;
+            toggleButtons('pause');
+            // Release the wake lock
+            if (wakeLock) {
+                wakeLock.release().then(() => {
+                    wakeLock = null;
+                    console.log('Wake Lock was released');
+                });
+            }
+        }
     });
 
     resetBtn.addEventListener("click", () => {
-    if (running) {
         clearInterval(timer);
+        elapsedTime = 0;
+        displayTime(0);
         running = false;
-        toggleButtons('pause');
-    }
-    elapsedTime = 0;
-    displayTime(0);
-    toggleButtons('reset');
+        toggleButtons('reset');
+        // Release the wake lock
+        if (wakeLock) {
+            wakeLock.release().then(() => {
+                wakeLock = null;
+                console.log('Wake Lock was released');
+            });
+        }
     });
 
     const updateTime = () => {
-    elapsedTime = Date.now() - startTime;
-    displayTime(elapsedTime);
+        elapsedTime = Date.now() - startTime;
+        displayTime(elapsedTime);
     };
 
-    const displayTime = (ms) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const totalMinutes = Math.floor(totalSeconds / 60);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    const seconds = totalSeconds % 60;
-    const milliseconds = ms % 1000;
+    const displayTime = (elapsed) => {
+        const totalSeconds = Math.floor(elapsed / 1000);
+        const totalMinutes = Math.floor(totalSeconds / 60);
+        const totalHours = Math.floor(totalMinutes / 60);
 
-    hoursSpan.textContent = hours.toString().padStart(2, "0");
-    minutesSpan.textContent = minutes.toString().padStart(2, "0");
-    secondsSpan.textContent = seconds.toString().padStart(2, "0");
-    millisecondsSpan.textContent = milliseconds.toString().padStart(3, "0");
+        const displayMilliseconds = elapsed % 1000;
+        const displaySeconds = totalSeconds % 60;
+        const displayMinutes = totalMinutes % 60;
+        const displayHours = totalHours;
+
+        hoursSpan.textContent = `${pad(displayHours)}:`;
+        minutesSpan.textContent = `${pad(displayMinutes)}:`;
+        secondsSpan.textContent = `${pad(displaySeconds)}.`;
+        millisecondsSpan.textContent = `${padMilliseconds(displayMilliseconds)}`;
     };
 
-    const toggleButtons = (action) => {
-    if (action === 'start') {
-        startBtn.classList.add("hidden");
-        pauseBtn.classList.remove("hidden");
-        resetBtn.classList.remove("hidden");
-    } else if (action === 'pause') {
-        startBtn.classList.remove("hidden");
-        pauseBtn.classList.add("hidden");
-    } else if (action === 'reset') {
-        startBtn.classList.remove("hidden");
-        pauseBtn.classList.add("hidden");
-        resetBtn.classList.add("hidden");
-    }
+    const pad = (num) => {
+        return num.toString().padStart(2, '0');
     };
 
-    // Display the initial time
-    displayTime(elapsedTime);
+    const padMilliseconds = (num) => {
+        return num.toString().padStart(3, '0');
+    };
+
+    const toggleButtons = (state) => {
+        if (state === 'start') {
+            startBtn.disabled = true;
+            pauseBtn.disabled = false;
+            resetBtn.disabled = false;
+        } else if (state === 'pause') {
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            resetBtn.disabled = false;
+        } else if (state === 'reset') {
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            resetBtn.disabled = true;
+        }
+    };
+
+    const hideNotesContent = () => {
+        // Implement hiding notes logic here
+        console.log('Notes are hidden');
+    };
 });
+
 
 // Begin Notes Section  ===================================================================================================
 let openOptionsMenu = null;
