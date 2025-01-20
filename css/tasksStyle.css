@@ -1,39 +1,39 @@
 <style>
     * {
-      box-sizing: border-box;
+        box-sizing: border-box;
     }
     body {
-      font-family: Arial, sans-serif;
-      background-color: #f4f4f4;
-      margin: 0;
-      padding: 0;
-      color: #333;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
+        font-family: Arial, sans-serif;
+        background-color: #121212; /* Dark background */
+        margin: 0;
+        padding: 0;
+        color: #f4f4f4; /* Light text for contrast */
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
     }
     h1, h2, textarea:focus {
-      text-align: center;
+        text-align: center;
     }
     table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-bottom: 2rem;
+        border-collapse: collapse;
+        width: 100%;
+        margin-bottom: 2rem;
     }
     th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: left;
+        border: 1px solid #444; /* Darker border for contrast */
+        padding: 8px;
+        text-align: left;
     }
     th {
-      background-color: #333;
-      color: white;
+        background-color: #333; /* Dark header */
+        color: #f4f4f4; /* Light text */
     }
     tr.started {
-      background-color: #f25c5c;
+        background-color: #d9534f; /* Red for emphasis */
     }
     tr.current {
-      background-color: #ffdd6b;
+        background-color: #f0ad4e; /* Yellow for emphasis */
     }
     button,
     .menu button:hover,
