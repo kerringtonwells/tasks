@@ -430,38 +430,35 @@ const addTodoItem = (itemText, itemCount, todoListElement, lastModifiedParam) =>
     editButton.addEventListener('click', () => {
         // Check if already editing
         if (editButton.disabled) return;
-
+    
         // Disable the edit button while editing
         editButton.disabled = true;
-
+    
         const message = span.textContent;
         const messageParts = message.split('\n');
         let newMessage = messageParts[0] + '\n';
         for (let i = 1; i < messageParts.length; i++) {
-        newMessage += '- ' + messageParts[i].replace(/^- /, '') + '\n';
+            newMessage += messageParts[i].replace(/^- /, '') + '\n'; // Remove any existing '- ' prefix
         }
-        newMessage += '- ';
+        newMessage += '\n'; // Add a newline at the end
         span.innerHTML = `<textarea>${newMessage}</textarea><button>Save</button>`;
         const saveButton = span.querySelector('button');
         saveButton.addEventListener('click', () => {
-        const textarea = span.querySelector('textarea');
-        const newMessageParts = textarea.value.split('\n');
-        let savedMessage = newMessageParts[0];
-        for (let i = 1; i < newMessageParts.length; i++) {
-            if (newMessageParts[i].startsWith('- ')) {
-            savedMessage += '\n' + newMessageParts[i];
-            } else {
-            savedMessage += '\n' + newMessageParts[i].substr(2);
+            const textarea = span.querySelector('textarea');
+            const newMessageParts = textarea.value.split('\n');
+            let savedMessage = newMessageParts[0];
+            for (let i = 1; i < newMessageParts.length; i++) {
+                savedMessage += '\n' + newMessageParts[i]; // Add the line without any additional formatting
             }
-        }
-        span.textContent = savedMessage;
-        updateLastModifiedDate(li);
-        saveTodoList(todoListElement);
-
-        // Re-enable the edit button after saving
-        editButton.disabled = false;
+            span.textContent = savedMessage.trim(); // Trim to remove any trailing newlines
+            updateLastModifiedDate(li);
+            saveTodoList(todoListElement);
+    
+            // Re-enable the edit button after saving
+            editButton.disabled = false;
         });
     });
+
     buttonWrapper.appendChild(editButton);
 
     const counterSpan = document.createElement('span');
