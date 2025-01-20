@@ -124,72 +124,94 @@
      top: 8px;
    }
 
-    #todoList button {
-      margin-left: 10px;
-      background-color: #f25c5c;
-    }
-    #todoList button:hover {
-      background-color: #f44646;
-    }
-    .status-input {
-      border: 1px solid #ccc;
-      width: 100%;
-      text-align: center;
-      padding: 4px;
-    }
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 2rem;
-      flex: 1;
-      min-width: 320px;
-    }
-    textarea {
-      border: 2px solid #ccc;
-      border-radius: 15px;
-      padding: 10px;
-      font-size: 16px;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.1);
-      outline: none;
-      resize: none;
-      width: 80%;
-      height: 200px;
-      transition: border-color 0.3s, box-shadow 0.3s;
-    }
-    textarea:focus {
-      border-color: #0077ff;
-      box-shadow: 0 0 5px rgba(0, 119, 255, 0.5);
-    }
-    .new-container {
-      flex: 1;
-      min-width: 320px;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 2rem;
-      background-color: #f4f4f4;
-      text-align: center;
-    }
-    .time-display span {
-      font-family: 'Courier New', Courier, monospace;
-    }
-    .links-box {
-      position: fixed;
-      left: 0;
-      top: 0;
-      width: 280px;
-      height: 100%;
-      background-color: #f8f9fa;
-      border-right: 1px solid #dee2e6;
-    }
-    .container {
-      padding: 20px;
-      box-sizing: border-box;
-      font-family: Arial, sans-serif;
-      overflow-y: auto;
-      flex: 1;
-      min-width: 280px;
-    }
+   #todoList button {
+     margin-left: 10px;
+     background-color: #d9534f; /* Darker red for buttons */
+     color: white; /* White text for contrast */
+   }
+   
+   #todoList button:hover {
+     background-color: #c9302c; /* Slightly darker shade for hover */
+   }
+   
+   .status-input {
+     border: 1px solid #555; /* Darker border for the input field */
+     background-color: #333; /* Dark background */
+     color: #ccc; /* Light text for readability */
+     width: 100%;
+     text-align: center;
+     padding: 4px;
+   }
+   
+   .container {
+     max-width: 900px;
+     margin: 0 auto;
+     padding: 2rem;
+     flex: 1;
+     min-width: 320px;
+     background-color: #121212; /* Dark background for container */
+     color: #ccc; /* Light text */
+   }
+   
+   textarea {
+     border: 2px solid #555; /* Darker border for textarea */
+     background-color: #333; /* Dark background */
+     color: #ccc; /* Light text for readability */
+     border-radius: 15px;
+     padding: 10px;
+     font-size: 16px;
+     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+     box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.3); /* Adjusted shadow for dark theme */
+     outline: none;
+     resize: none;
+     width: 80%;
+     height: 200px;
+     transition: border-color 0.3s, box-shadow 0.3s;
+   }
+   
+   textarea:focus {
+     border-color: #0077ff; /* Blue border for focus */
+     box-shadow: 0 0 5px rgba(0, 119, 255, 0.5);
+   }
+   
+   .new-container {
+     flex: 1;
+     min-width: 320px;
+     max-width: 900px;
+     margin: 0 auto;
+     padding: 2rem;
+     background-color: #1e1e1e; /* Slightly lighter dark background */
+     text-align: center;
+     color: #ccc; /* Light text */
+   }
+   
+   .time-display span {
+     font-family: 'Courier New', Courier, monospace;
+     color: #ccc; /* Lighter text */
+   }
+   
+   .links-box {
+     position: fixed;
+     left: 0;
+     top: 0;
+     width: 280px;
+     height: 100%;
+     background-color: #252525; /* Dark background for sidebar */
+     border-right: 1px solid #555; /* Darker border for separation */
+     color: #ccc; /* Light text */
+   }
+   
+   .container {
+     padding: 20px;
+     box-sizing: border-box;
+     font-family: Arial, sans-serif;
+     overflow-y: auto;
+     flex: 1;
+     min-width: 280px;
+     background-color: #121212; /* Dark container background */
+     color: #ccc; /* Light text */
+   }
+
         .links-box h2 {
           margin-bottom: 20px;
         }
