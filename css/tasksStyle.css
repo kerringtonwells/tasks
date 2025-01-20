@@ -7,7 +7,7 @@
         background-color: #333; /* Dark background */
         margin: 0;
         padding: 0;
-        color: #f4f4f4; /* Light text for contrast */
+        color: #fff; /* Light text for contrast */
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
@@ -27,7 +27,7 @@
     }
     th {
         background-color: #d9534f; /* Dark header */
-        color: #f4f4f4; /* Light text */
+        color: #fff; /* Light text */
     }
     tr.started {
         background-color: #d9534f; /* Red for emphasis */
@@ -64,7 +64,7 @@
    .time-display {
      font-size: 2rem;
      margin-bottom: 1rem;
-     color: #ccc; /* Lighter text for readability */
+     color: #fff; /* Lighter text for readability */
    }
    
    .buttons button {
@@ -90,7 +90,7 @@
      background-color: #333; /* Dark background for list items and textarea */
      border: 1px solid #ccc;
      border-radius: 3px;
-     color: #ccc; /* Lighter text for readability */
+     color: #fff; /* Lighter text for readability */
    }
    
    .content-wrapper, .content-wrapper span, .button-wrapper, .buttons-wrapper {
@@ -108,7 +108,7 @@
      word-wrap: break-word;
      word-break: break-word;
      hyphens: auto;
-     color: #ccc; /* Light text for content */
+     color: #fff; /* Light text for content */
    }
    
    .button-wrapper, .buttons-wrapper {
@@ -137,7 +137,7 @@
    .status-input {
      border: 1px solid #555; /* Darker border for the input field */
      background-color: #333; /* Dark background */
-     color: #ccc; /* Light text for readability */
+     color: #fff; /* Light text for readability */
      width: 100%;
      text-align: center;
      padding: 4px;
@@ -150,13 +150,13 @@
      flex: 1;
      min-width: 320px;
      background-color: #333; /* Dark background for container */
-     color: #ccc; /* Light text */
+     color: #fff; /* Light text */
    }
    
    textarea {
      border: 2px solid #333; /* Darker border for textarea */
      background-color: #555; /* Dark background */
-     color: #ccc; /* Light text for readability */
+     color: #fff; /* Light text for readability */
      border-radius: 15px;
      padding: 10px;
      font-size: 16px;
@@ -182,12 +182,12 @@
      padding: 2rem;
      background-color: #333; /* Slightly lighter dark background */
      text-align: center;
-     color: #ccc; /* Light text */
+     color: #fff; /* Light text */
    }
    
    .time-display span {
      font-family: 'Courier New', Courier, monospace;
-     color: #ccc; /* Lighter text */
+     color: #fff; /* Lighter text */
    }
    
    .links-box {
@@ -198,7 +198,7 @@
      height: 100%;
      background-color: #2a2a2a; /* Dark background for sidebar */
      border-right: 1px solid #555; /* Darker border for separation */
-     color: #ccc; /* Light text */
+     color: #fff; /* Light text */
    }
    
    .container {
@@ -209,12 +209,12 @@
      flex: 1;
      min-width: 280px;
      background-color: #333; /* Dark container background */
-     color: #ccc; /* Light text */
+     color: #fff; /* Light text */
    }
 
    .links-box h2 {
      margin-bottom: 20px;
-     color: #ccc; /* Light text for headings */
+     color: #fff; /* Light text for headings */
    }
    
    .link-wrapper,
@@ -228,7 +228,7 @@
      width: auto;
      overflow: hidden;
      text-overflow: ellipsis;
-     color: #ccc; /* Light text for links */
+     color: #fff; /* Light text for links */
    }
    
    #linksList li .buttons-wrapper {
@@ -238,7 +238,7 @@
    #linksList li .buttons-wrapper button {
      margin-left: 2px;
      background-color: #333; /* Dark background for buttons */
-     color: #ccc; /* Light text */
+     color: #fff; /* Light text */
      border: 1px solid #555; /* Subtle border for separation */
      border-radius: 5px;
    }
@@ -264,7 +264,7 @@
    
    .menu button {
      background-color: transparent;
-     color: #ccc; /* Light text for menu buttons */
+     color: #fff; /* Light text for menu buttons */
      border: none;
      cursor: pointer;
      display: block;
@@ -284,7 +284,7 @@
    
    .link-text {
      text-align: left;
-     color: #ccc; /* Light text for link text */
+     color: #fff; /* Light text for link text */
    }
    
    .menu-icon {
@@ -293,12 +293,12 @@
      display: inline-block;
      vertical-align: middle;
      margin-right: 8px;
-     color: #ccc; /* Light text for menu icons */
+     color: #fff; /* Light text for menu icons */
    }
 
    .options-button {
      background-color: #333; /* Dark background for options button */
-     color: #ccc; /* Light text for contrast */
+     color: #fff; /* Light text for contrast */
      border: none;
      border-radius: 50%; /* Circular button */
      width: 20px;
@@ -320,12 +320,12 @@
      border: 1px solid #555; /* Subtle dark border */
      padding: 10px;
      z-index: 1000;
-     color: #ccc; /* Light text for menu */
+     color: #fff; /* Light text for menu */
    }
    
    .options-menu button {
      background-color: #333; /* Dark background for menu buttons */
-     color: #ccc; /* Light text */
+     color: #fff; /* Light text */
      border: none;
      border-radius: 3px;
      font-size: 12px;
@@ -342,7 +342,7 @@
      cursor: pointer;
      margin-right: 10px;
      font-size: 14px;
-     color: #ccc; /* Light text for dropdown icons */
+     color: #fff; /* Light text for dropdown icons */
    }
    
    .subject-container {
@@ -355,13 +355,13 @@
      border-radius: 5px;
      margin-bottom: 10px;
      flex-wrap: wrap;
-     color: #ccc; /* Light text */
+     color: #fff; /* Light text */
    }
    
    .subject-title {
      flex: 0 1 100%;
      align-self: flex-start;
-     color: #ccc; /* Light text for subject titles */
+     color: #fff; /* Light text for subject titles */
    }
    
    .note {
@@ -372,7 +372,7 @@
      padding: 10px;
      border-radius: 5px;
      border: 1px solid #555; /* Subtle border for notes */
-     color: #ccc; /* Light text */
+     color: #fff; /* Light text */
    }
    
    .note-title-wrapper {
@@ -383,7 +383,7 @@
    
    .note-title {
      font-family: Courier, monospace;
-     color: #ccc; /* Light text for note titles */
+     color: #fff; /* Light text for note titles */
    }
    
    .note-button-wrapper {
@@ -408,7 +408,7 @@
      padding: 10px;
      border: 1px solid #555; /* Subtle dark border */
      background-color: #2a2a2a; /* Dark background for notes */
-     color: #ccc; /* Light text for readability */
+     color: #fff; /* Light text for readability */
      border-radius: 5px; /* Rounded corners for notes */
    }
 
