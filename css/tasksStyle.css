@@ -296,91 +296,120 @@
      color: #ccc; /* Light text for menu icons */
    }
 
-        .options-button {
-          background-color: #333;
-          color: white;
-          border: none;
-          border-radius: 50%;
-          width: 20px;
-          height: 20px;
-          font-size: 12px;
-          font-weight: bold;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          margin-left: 8px;
-          margin-right: 10px;
-          cursor: pointer;
-          flex-shrink: 0;
-        }
-        .options-menu {
-          position: absolute;
-          background-color: white;
-          border: 1px solid #ccc;
-          padding: 10px;
-          z-index: 1000;
-        }
-        .options-menu button {
-          background-color: #333;
-          color: white;
-          border: none;
-          border-radius: 3px;
-          font-size: 12px;
-          padding: 4px 8px;
-          margin: 2px;
-          cursor: pointer;
-        }
-        .dropdown-icon {
-          cursor: pointer;
-          margin-right: 10px;
-          font-size: 14px;
-        }
-        .subject-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 8px 12px;
-          background-color: white;
-          border: 1px solid #ccc;
-          border-radius: 5px;
-          margin-bottom: 10px;
-          flex-wrap: wrap;
-        }
-        .subject-title {
-          flex: 0 1 100%;
-          align-self: flex-start;
-        }
-        .note {
-          display: flex;
-          flex-direction: column;
-          margin-bottom: 10px;
-        }
-        .note-title-wrapper {
-          margin-bottom: 5px;
-          word-break: break-word;
-          overflow-wrap: break-word;
-        }
-        .note-title {
-          font-family: Courier, monospace;
-        }
-        .note-button-wrapper {
-          display: flex;
-        }
-        #exportButtonContainer {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          width: 100%;
-        }
-        .new-container .notes-section {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-        }
-        .note {
-          padding: 10px;
-          border: 1px solid #ccc;
-          background-color: #f9f9f9;
-        }
-      </style>
+   .options-button {
+     background-color: #333; /* Dark background for options button */
+     color: #ccc; /* Light text for contrast */
+     border: none;
+     border-radius: 50%; /* Circular button */
+     width: 20px;
+     height: 20px;
+     font-size: 12px;
+     font-weight: bold;
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     margin-left: 8px;
+     margin-right: 10px;
+     cursor: pointer;
+     flex-shrink: 0;
+   }
+   
+   .options-menu {
+     position: absolute;
+     background-color: #252525; /* Dark background for options menu */
+     border: 1px solid #555; /* Subtle dark border */
+     padding: 10px;
+     z-index: 1000;
+     color: #ccc; /* Light text for menu */
+   }
+   
+   .options-menu button {
+     background-color: #333; /* Dark background for menu buttons */
+     color: #ccc; /* Light text */
+     border: none;
+     border-radius: 3px;
+     font-size: 12px;
+     padding: 4px 8px;
+     margin: 2px;
+     cursor: pointer;
+   }
+   
+   .options-menu button:hover {
+     background-color: #444; /* Slightly lighter shade for hover effect */
+   }
+   
+   .dropdown-icon {
+     cursor: pointer;
+     margin-right: 10px;
+     font-size: 14px;
+     color: #ccc; /* Light text for dropdown icons */
+   }
+   
+   .subject-container {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     padding: 8px 12px;
+     background-color: #1e1e1e; /* Dark background for subject container */
+     border: 1px solid #555; /* Dark border */
+     border-radius: 5px;
+     margin-bottom: 10px;
+     flex-wrap: wrap;
+     color: #ccc; /* Light text */
+   }
+   
+   .subject-title {
+     flex: 0 1 100%;
+     align-self: flex-start;
+     color: #ccc; /* Light text for subject titles */
+   }
+   
+   .note {
+     display: flex;
+     flex-direction: column;
+     margin-bottom: 10px;
+     background-color: #2a2a2a; /* Dark background for notes */
+     padding: 10px;
+     border-radius: 5px;
+     border: 1px solid #555; /* Subtle border for notes */
+     color: #ccc; /* Light text */
+   }
+   
+   .note-title-wrapper {
+     margin-bottom: 5px;
+     word-break: break-word;
+     overflow-wrap: break-word;
+   }
+   
+   .note-title {
+     font-family: Courier, monospace;
+     color: #ccc; /* Light text for note titles */
+   }
+   
+   .note-button-wrapper {
+     display: flex;
+   }
+
+   #exportButtonContainer {
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     width: 100%;
+   }
+   
+   .new-container .notes-section {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     text-align: center;
+   }
+   
+   .note {
+     padding: 10px;
+     border: 1px solid #555; /* Subtle dark border */
+     background-color: #2a2a2a; /* Dark background for notes */
+     color: #ccc; /* Light text for readability */
+     border-radius: 5px; /* Rounded corners for notes */
+   }
+
+</style>
