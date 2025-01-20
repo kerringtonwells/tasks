@@ -208,7 +208,7 @@
      overflow-y: auto;
      flex: 1;
      min-width: 280px;
-     background-color: #555; /* Dark container background */
+     background-color: #333; /* Dark container background */
      color: #ccc; /* Light text */
    }
 
