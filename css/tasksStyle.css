@@ -149,7 +149,7 @@
      padding: 2rem;
      flex: 1;
      min-width: 320px;
-     background-color: #555; /* Dark background for container */
+     background-color: #333; /* Dark background for container */
      color: #ccc; /* Light text */
    }
    
