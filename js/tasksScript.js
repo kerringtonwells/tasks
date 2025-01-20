@@ -33,18 +33,58 @@ return start12Hour; // Return the formatted time
 };
 
 
-const createRow = (timeSlot, index) => { 
+const createRow = (timeSlot, index) => { // Define a function that creates a row for the time table
     const row = document.createElement('tr'); // Create a new table row
-    if (index === startedIndex) row.classList.add('started'); // Add 'started' class if applicable
-    if (index === selectedIndex) row.classList.add('current'); // Add 'current' class if applicable
+    if (index === startedIndex) row.classList.add('started'); // If this is the started row, add the 'started' class
+    if (index === selectedIndex) row.classList.add('current'); // If this is the selected row, add the 'current' class
 
     const timeCell = document.createElement('td'); // Create a new table cell for the time
-    const [startHour, startMinute] = timeSlot.time.split('-')[0].trim().split(':'); // Get the start time
-    const [endHour, endMinute] = timeSlot.time.split('-')[1].trim().split(':'); // Get the end time
-    timeCell.textContent = `${formatTimeSlot12Hour(startHour, startMinute)} - ${formatTimeSlot12Hour(endHour, endMinute)}`; // Set formatted times
-    row.appendChild(timeCell); // Add the time cell to the row
+    const [startHour, startMinute] = timeSlot.time.split('-')[0].trim().split(':'); // Get the start time from the time slot
+    const [endHour, endMinute] = timeSlot.time.split('-')[1].trim().split(':'); // Get the end time from the time slot
+    // Set the content of the time cell to the formatted start and end times
+    timeCell.textContent = `${formatTimeSlot12Hour(startHour, startMinute)} - ${formatTimeSlot12Hour(endHour, endMinute)}`;
+    // Add the time cell to the row
+    row.appendChild(timeCell);
 
-    return row; // Return the row with only the time cell
+    // Create a new table cell for the status
+    const statusCell = document.createElement('td');
+
+    // If this is the started row and there is a started index
+    if (index === startedIndex && startedIndex !== -1) {
+    // Create a new span element for the status
+    const statusText = document.createElement('span');
+    // Set the text of the span to 'Start Time'
+    statusText.textContent = 'Start Time';
+    // Add the span to the status cell
+    statusCell.appendChild(statusText);
+    } else {
+    // Create a new input element for the status
+    const statusInput = document.createElement('input');
+    // Set the input type to 'number'
+    statusInput.type = 'number';
+    // Set the initial value of the input to the status of the time slot
+    statusInput.value = timeSlot.status;
+    // Set the minimum value of the input to 0
+    statusInput.min = 0;
+    // Set the class name of the input to 'status-input'
+    statusInput.className = 'status-input';
+    // Add an event listener to the input that updates the status of the time slot when the input changes
+    statusInput.addEventListener('input', (e) => {
+        timeSlot.status = parseInt(e.target.value) || 0;
+    });
+    // Add an event listener to the input that clears the input value when clicked
+    statusInput.addEventListener('click', (e) => {
+        e.target.value = '';
+    });
+    // Add the input to the status cell
+    statusCell.appendChild(statusInput);
+    }
+
+    // Add the status cell to the row
+    row.appendChild(statusCell);
+
+    // Return the row
+    return row;
 };
 
 
