@@ -212,67 +212,90 @@
      color: #ccc; /* Light text */
    }
 
-        .links-box h2 {
-          margin-bottom: 20px;
-        }
-        .link-wrapper,
-        #linksList li .buttons-wrapper {
-          display: flex;
-          align-items: center;
-        }
-        .link-wrapper {
-          justify-content: flex-start;
-          width: auto;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        #linksList li .buttons-wrapper {
-          align-items: center;
-        }
-        #linksList li .buttons-wrapper button {
-          margin-left: 2px;
-        }
-        .menu {
-          position: absolute;
-          top: 40%;
-          left: 0;
-          margin: 0;
-          padding: 0;
-          list-style-type: none;
-          background-color: white;
-          border: 1px solid black;
-          z-index: 1;
-          width: 100%;
-          display: none;
-          margin-top: 10px;
-        }
-        #addLink {
-          margin-bottom: 10px;
-        }
-        .menu button {
-          background-color: transparent;
-          color: #333;
-          border: none;
-          cursor: pointer;
-          display: block;
-          padding: 8px 16px;
-          text-align: left;
-          width: 100%;
-          border-radius: 10px;
-        }
-        .no-bullet {
-          list-style-type: none;
-        }
-        .link-text {
-          text-align: left;
-        }
-        .menu-icon {
-          font-size: 24px;
-          cursor: pointer;
-          display: inline-block;
-          vertical-align: middle;
-          margin-right: 8px;
-        }
+   .links-box h2 {
+     margin-bottom: 20px;
+     color: #ccc; /* Light text for headings */
+   }
+   
+   .link-wrapper,
+   #linksList li .buttons-wrapper {
+     display: flex;
+     align-items: center;
+   }
+   
+   .link-wrapper {
+     justify-content: flex-start;
+     width: auto;
+     overflow: hidden;
+     text-overflow: ellipsis;
+     color: #ccc; /* Light text for links */
+   }
+   
+   #linksList li .buttons-wrapper {
+     align-items: center;
+   }
+   
+   #linksList li .buttons-wrapper button {
+     margin-left: 2px;
+     background-color: #333; /* Dark background for buttons */
+     color: #ccc; /* Light text */
+     border: 1px solid #555; /* Subtle border for separation */
+     border-radius: 5px;
+   }
+   
+   .menu {
+     position: absolute;
+     top: 40%;
+     left: 0;
+     margin: 0;
+     padding: 0;
+     list-style-type: none;
+     background-color: #333; /* Dark background for menu */
+     border: 1px solid #555; /* Dark border for contrast */
+     z-index: 1;
+     width: 100%;
+     display: none;
+     margin-top: 10px;
+   }
+   
+   #addLink {
+     margin-bottom: 10px;
+   }
+   
+   .menu button {
+     background-color: transparent;
+     color: #ccc; /* Light text for menu buttons */
+     border: none;
+     cursor: pointer;
+     display: block;
+     padding: 8px 16px;
+     text-align: left;
+     width: 100%;
+     border-radius: 10px;
+   }
+   
+   .menu button:hover {
+     background-color: #444; /* Slightly lighter background on hover */
+   }
+   
+   .no-bullet {
+     list-style-type: none;
+   }
+   
+   .link-text {
+     text-align: left;
+     color: #ccc; /* Light text for link text */
+   }
+   
+   .menu-icon {
+     font-size: 24px;
+     cursor: pointer;
+     display: inline-block;
+     vertical-align: middle;
+     margin-right: 8px;
+     color: #ccc; /* Light text for menu icons */
+   }
+
         .options-button {
           background-color: #333;
           color: white;
