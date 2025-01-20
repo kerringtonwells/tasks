@@ -15,11 +15,13 @@
     h1, h2, textarea:focus {
         text-align: center;
     }
-    table {
-        border-collapse: collapse;
-        width: 100%;
-        margin-bottom: 2rem;
-    }
+   table {
+       border-collapse: collapse;
+       width: 100%;
+       margin-bottom: 2rem;
+       border-radius: 10px; /* Adjust the value to match the button's roundedness */
+       overflow: hidden; /* Ensures the rounded edges are applied to content inside the table */
+   }
     th, td {
         border: 1px solid #444; /* Darker border for contrast */
         padding: 8px;
