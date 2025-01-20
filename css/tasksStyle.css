@@ -22,21 +22,22 @@
        border-radius: 10px; /* Adjust the value to match the button's roundedness */
        overflow: hidden; /* Ensures the rounded edges are applied to content inside the table */
    }
-    th, td {
-        border: 1px solid #444; /* Darker border for contrast */
-        padding: 8px;
-        text-align: left;
-    }
-    th {
-        background-color: #d9534f; /* Dark header */
-        color: #f4f4f4; /* Light text */
-    }
-    tr.started {
-        background-color: #d9534f; /* Red for emphasis */
-    }
-    tr.current {
-        background-color: #555; /* Yellow for emphasis */
-    }
+   th, td {
+       border: 1px solid #444; /* Darker border for contrast */
+       padding: 8px;
+       text-align: center; /* Center-align the text */
+   }
+   th {
+       background-color: #d9534f; /* Dark header */
+       color: #f4f4f4; /* Light text */
+   }
+   tr.started {
+       background-color: #d9534f; /* Red for emphasis */
+   }
+   
+   tr.current {
+       background-color: #555; /* Yellow for emphasis */
+   }
    button,
    .menu button:hover,
    .buttons button {
@@ -49,7 +50,6 @@
      font-weight: bold;
      cursor: pointer;
    }
-   
    button:hover,
    .menu button,
    .buttons button:hover {
