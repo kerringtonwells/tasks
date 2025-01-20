@@ -33,7 +33,7 @@
         background-color: #d9534f; /* Red for emphasis */
     }
     tr.current {
-        background-color: #f0ad4e; /* Yellow for emphasis */
+        background-color: #555; /* Yellow for emphasis */
     }
    button,
    .menu button:hover,
