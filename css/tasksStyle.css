@@ -35,83 +35,95 @@
     tr.current {
         background-color: #f0ad4e; /* Yellow for emphasis */
     }
-    button,
-    .menu button:hover,
-    .buttons button {
-      background-color: #333;
-      color: white;
-      margin: 5px;
-      padding: 8px 12px;
-      border: none;
-      border-radius: 3px;
-      font-weight: bold;
-      cursor: pointer;
-      border-radius: 10px;
-    }
-    button:hover,
-    .menu button,
-    .buttons button:hover {
-      background-color: #555;
-    }
-    .stopwatch {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      font-family: 'Roboto', sans-serif;
-    }
+   button,
+   .menu button:hover,
+   .buttons button {
+     background-color: #333; /* Dark background for buttons */
+     color: white; /* High contrast text */
+     margin: 5px;
+     padding: 8px 12px;
+     border: none;
+     border-radius: 10px; /* Keep rounded corners */
+     font-weight: bold;
+     cursor: pointer;
+   }
+   
+   button:hover,
+   .menu button,
+   .buttons button:hover {
+     background-color: #555; /* Slightly lighter shade for hover */
+   }
+   
+   .stopwatch {
+     display: flex;
+     flex-direction: column;
+     align-items: center;
+     font-family: 'Roboto', sans-serif;
+   }
+   
+   .time-display {
+     font-size: 2rem;
+     margin-bottom: 1rem;
+     color: #ccc; /* Lighter text for readability */
+   }
+   
+   .buttons button {
+     margin: 4px 2px;
+   }
+   
+   .buttons button.hidden {
+     display: none;
+   }
+   
+   .buttons button:not(.hidden):hover {
+     background-color: #45a049; /* Distinct color for hover */
+   }
+   
+   #todoList, .subtasks {
+     list-style-type: none;
+     padding: 0;
+   }
+   
+   #todoList li, textarea {
+     margin: 5px 0;
+     padding: 8px 12px;
+     background-color: #333; /* Dark background for list items and textarea */
+     border: 1px solid #ccc;
+     border-radius: 3px;
+     color: #ccc; /* Lighter text for readability */
+   }
+   
+   .content-wrapper, .content-wrapper span, .button-wrapper, .buttons-wrapper {
+     display: flex;
+   }
+   
+   .content-wrapper {
+     flex: 1;
+     flex-direction: column;
+     margin-right: 200px;
+   }
+   
+   .content-wrapper span {
+     overflow-wrap: break-word;
+     word-wrap: break-word;
+     word-break: break-word;
+     hyphens: auto;
+     color: #ccc; /* Light text for content */
+   }
+   
+   .button-wrapper, .buttons-wrapper {
+     align-items: flex-start;
+   }
+   
+   .button-wrapper {
+     gap: 4px;
+     flex-direction: row;
+     flex-wrap: nowrap;
+     position: absolute;
+     right: 12px;
+     top: 8px;
+   }
 
-    .time-display {
-      font-size: 2rem;
-      margin-bottom: 1rem;
-    }
-
-    .buttons button {
-      margin: 4px 2px;
-    }
-
-    .buttons button.hidden {
-      display: none;
-    }
-
-    .buttons button:not(.hidden):hover {
-      background-color: #45a049;
-    }
-    #todoList, .subtasks {
-      list-style-type: none;
-      padding: 0;
-    }
-    #todoList li, textarea {
-      margin: 5px 0;
-      padding: 8px 12px;
-      background-color: white;
-      border: 1px solid #ccc;
-      border-radius: 3px;
-    }
-    .content-wrapper, .content-wrapper span, .button-wrapper, .buttons-wrapper {
-      display: flex;
-    }
-    .content-wrapper {
-      flex: 1;
-      flex-direction: column;
-      margin-right: 200px;
-    }
-    .content-wrapper span {
-      overflow-wrap: break-word;
-      word-wrap: break-word;
-      word-break: break-word;
-      hyphens: auto;
-    }
-    .button-wrapper, .buttons-wrapper {
-      align-items: flex-start;
-    }
-    .button-wrapper {
-      gap: 4px;
-      flex-direction: row;
-      flex-wrap: nowrap;
-      position: absolute;
-      right: 12px;
-      top: 8px;
-    }
     #todoList button {
       margin-left: 10px;
       background-color: #f25c5c;
