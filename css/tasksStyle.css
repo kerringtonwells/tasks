@@ -91,9 +91,8 @@
      padding: 8px 12px;
      background-color: #333; /* Dark background for list items and textarea */
      border: 1px solid #FFF;
+     border-radius: 10px; /* Adjust the value to match the button's roundedness */
      color: #FFF; /* Lighter text for readability */
-     overflow: hidden;
-     border-radius: 10px;
    }
    
    .content-wrapper, .content-wrapper span, .button-wrapper, .buttons-wrapper {
