@@ -64,9 +64,9 @@
         color: #FFF;
     }
 
-    #tr.started {
-    #    background-color: #d9534f;
-    #}
+    tr.started {
+        background-color: #d9534f;
+    }
 
     tr.current {
         background-color: #555;
