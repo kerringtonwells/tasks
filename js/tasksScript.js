@@ -417,7 +417,7 @@ document.getElementById('moveUp').addEventListener('click', moveUp);
 document.getElementById('moveDown').addEventListener('click', moveDown);
 document.getElementById('combine').addEventListener('click', combine);
 document.getElementById('clearState').addEventListener('click', clearState);
-document.getElementById('started').addEventListener('click', setStarted);
+//document.getElementById('started').addEventListener('click', setStarted);
 document.getElementById('addTodoItem').addEventListener('click', () => {
     const newItemText = prompt('Enter a task:', '');
     if (newItemText) {
