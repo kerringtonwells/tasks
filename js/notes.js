@@ -101,20 +101,26 @@ function createSubjectElement(subjectName) {
     addNoteBtn.addEventListener('click', (event) => {
         event.stopPropagation();
         optionsMenu.style.display = 'none';
+
         const textarea = document.createElement('textarea');
         textarea.style.position = 'absolute';
-        textarea.style.bottom = '50%';
-        textarea.style.left = '50%';
-        textarea.style.transform = 'translateX(-50%)';
         textarea.style.width = '400px';
         textarea.style.height = '100px';
+        textarea.style.zIndex = '1000'; // Ensure it appears above other elements
+
         const confirmBtn = document.createElement('button');
         confirmBtn.innerText = 'OK';
         confirmBtn.style.backgroundColor = 'green';
         confirmBtn.style.position = 'absolute';
-        confirmBtn.style.bottom = '45%';
-        confirmBtn.style.left = '50%';
-        confirmBtn.style.transform = 'translateX(-50%)';
+        confirmBtn.style.zIndex = '1000';
+
+        // Position relative to the subject container
+        const rect = subjectContainer.getBoundingClientRect();
+        const scrollY = window.scrollY || window.pageYOffset;
+        textarea.style.top = `${rect.top + scrollY + rect.height + 10}px`; // Below subject container
+        textarea.style.left = `${rect.left + (rect.width - 400) / 2}px`; // Centered horizontally
+        confirmBtn.style.top = `${rect.top + scrollY + rect.height + 120}px`; // Below textarea
+        confirmBtn.style.left = `${rect.left + (rect.width - confirmBtn.offsetWidth) / 2}px`; // Centered
 
         textarea.addEventListener('click', (event) => {
             event.stopPropagation();
@@ -134,6 +140,9 @@ function createSubjectElement(subjectName) {
 
         subjectContainer.appendChild(textarea);
         subjectContainer.appendChild(confirmBtn);
+
+        // Ensure textarea is in view
+        textarea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
     optionsMenu.appendChild(addNoteBtn);
 
