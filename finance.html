@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Financial Lifestyle Strategy (FLS) Form</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+    }
+
+    h1, h2, h3 {
+      margin-top: 0;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    form {
+      max-width: 1100px;
+      margin: 0 auto 40px auto;
+      background: #fff;
+      padding: 20px 25px 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    fieldset {
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      padding: 15px 15px 10px;
+    }
+
+    legend {
+      padding: 0 8px;
+      font-weight: bold;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px 20px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px 12px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px 12px;
+    }
+
+    .form-row {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 10px;
+    }
+
+    label {
+      font-size: 0.9rem;
+      margin-bottom: 3px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="date"],
+    input[type="tel"],
+    select,
+    textarea {
+      padding: 6px 8px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px 4px;
+      text-align: left;
+    }
+
+    th {
+      background: #f0f0f0;
+      font-weight: bold;
+    }
+
+    .checkbox-inline {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 15px;
+      font-size: 0.9rem;
+    }
+
+    .checkbox-inline input[type="checkbox"] {
+      margin-right: 5px;
+    }
+
+    .section-note {
+      font-size: 0.85rem;
+      color: #555;
+      margin-bottom: 8px;
+    }
+
+    .goals-grid {
+      display: grid;
+      grid-template-columns: 2.5fr 0.7fr;
+      gap: 6px 15px;
+      align-items: center;
+    }
+
+    .goals-grid label {
+      margin-bottom: 0;
+    }
+
+    .buttons {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    button {
+      padding: 8px 18px;
+      border-radius: 4px;
+      border: none;
+      background: #0066cc;
+      color: #fff;
+      font-size: 0.95rem;
+      cursor: pointer;
+      margin: 0 8px;
+    }
+
+    button[type="reset"] {
+      background: #777;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2, .grid-3, .grid-4 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Financial Lifestyle Strategy</h1>
+  <form>
+    <!-- Client Info -->
+    <fieldset>
+      <legend>Client Information</legend>
+      <div class="grid-2">
+        <div class="form-row">
+          <label for="client_name">Client Name</label>
+          <input type="text" id="client_name" name="client_name" />
+        </div>
+        <div class="form-row">
+          <label for="spouse_name">Spouse Name</label>
+          <input type="text" id="spouse_name" name="spouse_name" />
+        </div>
+
+        <div class="form-row">
+          <label for="client_dob">Client DOB</label>
+          <input type="date" id="client_dob" name="client_dob" />
+        </div>
+        <div class="form-row">
+          <label for="spouse_dob">Spouse DOB</label>
+          <input type="date" id="spouse_dob" name="spouse_dob" />
+        </div>
+
+        <div class="form-row">
+          <label for="address">Home Address</label>
+          <input type="text" id="address" name="address" />
+        </div>
+        <div class="form-row">
+          <label for="anniversary">Anniversary</label>
+          <input type="date" id="anniversary" name="anniversary" />
+        </div>
+
+        <div class="form-row">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" />
+        </div>
+        <div class="form-row">
+          <label for="phone">Home / Cell Phone</label>
+          <input type="tel" id="phone" name="phone" />
+        </div>
+
+        <div class="form-row">
+          <label for="dna_associate">DNA Associate</label>
+          <input type="text" id="dna_associate" name="dna_associate" />
+        </div>
+        <div class="form-row">
+          <label for="date">Date</label>
+          <input type="date" id="date" name="date" />
+        </div>
+      </div>
+
+      <h3>Dependent Children</h3>
+      <div class="section-note">List names and dates of birth for dependent children.</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Date of Birth</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="text" name="child1_name" /></td>
+            <td><input type="date" name="child1_dob" /></td>
+          </tr>
+          <tr>
+            <td><input type="text" name="child2_name" /></td>
+            <td><input type="date" name="child2_dob" /></td>
+          </tr>
+          <tr>
+            <td><input type="text" name="child3_name" /></td>
+            <td><input type="date" name="child3_dob" /></td>
+          </tr>
+          <tr>
+            <td><input type="text" name="child4_name" /></td>
+            <td><input type="date" name="child4_dob" /></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="grid-2">
+        <div class="form-row">
+          <label for="federal_refund">Federal Tax Refund Last Year ($)</label>
+          <input type="number" id="federal_refund" name="federal_refund" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="state_refund">State Tax Refund ($)</label>
+          <input type="number" id="state_refund" name="state_refund" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exemptions">Number of Exemptions</label>
+          <input type="number" id="exemptions" name="exemptions" />
+        </div>
+        <div class="form-row">
+          <label for="ssn">SSN (optional / last 4)</label>
+          <input type="text" id="ssn" name="ssn" />
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Goals -->
+    <fieldset>
+      <legend>Step 1: Financial Goals (1 = least, 10 = most important)</legend>
+      <div class="section-note">
+        Rate each goal on a scale from 1 (least important) to 10 (most important).
+      </div>
+      <div class="goals-grid">
+        <label for="goal_major_purchase">Make a major purchase (car, boat, vacation)</label>
+        <input type="number" id="goal_major_purchase" name="goal_major_purchase" min="1" max="10" />
+
+        <label for="goal_emergency_savings">Build savings for unexpected expenses</label>
+        <input type="number" id="goal_emergency_savings" name="goal_emergency_savings" min="1" max="10" />
+
+        <label for="goal_alt_income">Alternate income in case of death or disability</label>
+        <input type="number" id="goal_alt_income" name="goal_alt_income" min="1" max="10" />
+
+        <label for="goal_support_parents">Help support aging parents</label>
+        <input type="number" id="goal_support_parents" name="goal_support_parents" min="1" max="10" />
+
+        <label for="goal_finance_college">Finance college for children</label>
+        <input type="number" id="goal_finance_college" name="goal_finance_college" min="1" max="10" />
+
+        <label for="goal_pay_off_cards">Pay off credit cards</label>
+        <input type="number" id="goal_pay_off_cards" name="goal_pay_off_cards" min="1" max="10" />
+
+        <label for="goal_buy_home">Buy a new home</label>
+        <input type="number" id="goal_buy_home" name="goal_buy_home" min="1" max="10" />
+
+        <label for="goal_build_retirement">Build retirement wealth</label>
+        <input type="number" id="goal_build_retirement" name="goal_build_retirement" min="1" max="10" />
+
+        <label for="goal_other_desc">Other (describe & rate)</label>
+        <input type="text" id="goal_other_desc" name="goal_other_desc" />
+        <input type="number" id="goal_other_score" name="goal_other_score" min="1" max="10" />
+      </div>
+
+      <div class="form-row" style="margin-top: 12px;">
+        <label for="top_3_goals">Out of the goals we discussed earlier, which 3 are most important to you?</label>
+        <textarea id="top_3_goals" name="top_3_goals"></textarea>
+      </div>
+    </fieldset>
+
+    <!-- Retirement Focus -->
+    <fieldset>
+      <legend>Retirement Goals</legend>
+      <div class="grid-2">
+        <div class="form-row">
+          <label for="saving_enough_retirement">Do you feel you are saving enough for retirement?</label>
+          <select id="saving_enough_retirement" name="saving_enough_retirement">
+            <option value="">Select...</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+            <option value="unsure">Not sure</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label for="retirement_age">What age do you want to retire?</label>
+          <input type="number" id="retirement_age" name="retirement_age" />
+        </div>
+        <div class="form-row">
+          <label for="retirement_income_monthly">In today's dollars, how much would you want per month in retirement? ($)</label>
+          <input type="number" id="retirement_income_monthly" name="retirement_income_monthly" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label>What amount do you feel comfortable saving toward your financial future (monthly)?</label>
+          <div>
+            <label class="checkbox-inline">
+              <input type="radio" name="comfortable_saving" value="300" /> $300
+            </label>
+            <label class="checkbox-inline">
+              <input type="radio" name="comfortable_saving" value="500" /> $500
+            </label>
+            <label class="checkbox-inline">
+              <input type="radio" name="comfortable_saving" value="1000" /> $1,000
+            </label>
+            <label class="checkbox-inline">
+              <input type="radio" name="comfortable_saving" value="other" /> Other:
+            </label>
+            <input type="number" name="comfortable_saving_other" step="0.01" style="max-width: 120px;" />
+          </div>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Income -->
+    <fieldset>
+      <legend>Income</legend>
+      <div class="section-note">List gross monthly income.</div>
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Client</th>
+            <th>Spouse</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Monthly Income</td>
+            <td><input type="number" name="income_client" step="0.01" /></td>
+            <td><input type="number" name="income_spouse" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td>Bonus / Commission</td>
+            <td><input type="number" name="bonus_client" step="0.01" /></td>
+            <td><input type="number" name="bonus_spouse" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td>Rental Income</td>
+            <td><input type="number" name="rental_client" step="0.01" /></td>
+            <td><input type="number" name="rental_spouse" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td>Other Income</td>
+            <td><input type="number" name="other_income_client" step="0.01" /></td>
+            <td><input type="number" name="other_income_spouse" step="0.01" /></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="grid-2">
+        <div class="form-row">
+          <label for="annual_income_client">Current Annual Income - Client ($)</label>
+          <input type="number" id="annual_income_client" name="annual_income_client" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="annual_income_spouse">Current Annual Income - Spouse ($)</label>
+          <input type="number" id="annual_income_spouse" name="annual_income_spouse" step="0.01" />
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Expenses -->
+    <fieldset>
+      <legend>Monthly Expenses</legend>
+      <div class="grid-2">
+        <div class="form-row">
+          <label for="exp_mortgage_rent">Mortgage / Rent</label>
+          <input type="number" id="exp_mortgage_rent" name="exp_mortgage_rent" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exp_food">Food</label>
+          <input type="number" id="exp_food" name="exp_food" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exp_utilities">Utilities (Gas, Electric, Water)</label>
+          <input type="number" id="exp_utilities" name="exp_utilities" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exp_cable_internet">Cable / Internet</label>
+          <input type="number" id="exp_cable_internet" name="exp_cable_internet" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exp_phone">Phone / Cell Phone</label>
+          <input type="number" id="exp_phone" name="exp_phone" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exp_auto_gas_maint">Auto Gas &amp; Maintenance</label>
+          <input type="number" id="exp_auto_gas_maint" name="exp_auto_gas_maint" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exp_auto_insurance">Auto Insurance</label>
+          <input type="number" id="exp_auto_insurance" name="exp_auto_insurance" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exp_property_insurance_taxes">Property Insurance / Taxes</label>
+          <input type="number" id="exp_property_insurance_taxes" name="exp_property_insurance_taxes" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exp_gym">Gym Membership</label>
+          <input type="number" id="exp_gym" name="exp_gym" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exp_entertainment">Entertainment</label>
+          <input type="number" id="exp_entertainment" name="exp_entertainment" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exp_tithe_charity">Tithe / Charity</label>
+          <input type="number" id="exp_tithe_charity" name="exp_tithe_charity" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exp_gifts_holidays">Gifts / Holidays</label>
+          <input type="number" id="exp_gifts_holidays" name="exp_gifts_holidays" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exp_other">Other Expenses</label>
+          <input type="number" id="exp_other" name="exp_other" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="exp_total">Total Monthly Expenses (optional if calculated separately)</label>
+          <input type="number" id="exp_total" name="exp_total" step="0.01" />
+        </div>
+      </div>
+      <div class="form-row">
+        <label for="discretionary_income">Discretionary Income (approx.)</label>
+        <input type="number" id="discretionary_income" name="discretionary_income" step="0.01" />
+      </div>
+    </fieldset>
+
+    <!-- Manage Debt -->
+    <fieldset>
+      <legend>Manage Debt</legend>
+      <div class="section-note">
+        List outstanding loans and credit cards.
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Lender / Type</th>
+            <th>Balance ($)</th>
+            <th>Interest Rate (%)</th>
+            <th>Monthly Payment ($)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Mortgage / Rent <input type="text" name="debt_mortgage_lender" placeholder="Lender" /></td>
+            <td><input type="number" name="debt_mortgage_balance" step="0.01" /></td>
+            <td><input type="number" name="debt_mortgage_rate" step="0.01" /></td>
+            <td><input type="number" name="debt_mortgage_payment" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td>Auto Loan 1 <input type="text" name="debt_auto1_lender" placeholder="Lender" /></td>
+            <td><input type="number" name="debt_auto1_balance" step="0.01" /></td>
+            <td><input type="number" name="debt_auto1_rate" step="0.01" /></td>
+            <td><input type="number" name="debt_auto1_payment" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td>Auto Loan 2 <input type="text" name="debt_auto2_lender" placeholder="Lender" /></td>
+            <td><input type="number" name="debt_auto2_balance" step="0.01" /></td>
+            <td><input type="number" name="debt_auto2_rate" step="0.01" /></td>
+            <td><input type="number" name="debt_auto2_payment" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td>Student Loan <input type="text" name="debt_student_lender" placeholder="Lender" /></td>
+            <td><input type="number" name="debt_student_balance" step="0.01" /></td>
+            <td><input type="number" name="debt_student_rate" step="0.01" /></td>
+            <td><input type="number" name="debt_student_payment" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td>Credit Card 1 <input type="text" name="debt_cc1_lender" placeholder="Issuer" /></td>
+            <td><input type="number" name="debt_cc1_balance" step="0.01" /></td>
+            <td><input type="number" name="debt_cc1_rate" step="0.01" /></td>
+            <td><input type="number" name="debt_cc1_payment" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td>Credit Card 2 <input type="text" name="debt_cc2_lender" placeholder="Issuer" /></td>
+            <td><input type="number" name="debt_cc2_balance" step="0.01" /></td>
+            <td><input type="number" name="debt_cc2_rate" step="0.01" /></td>
+            <td><input type="number" name="debt_cc2_payment" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td>Credit Card 3 <input type="text" name="debt_cc3_lender" placeholder="Issuer" /></td>
+            <td><input type="number" name="debt_cc3_balance" step="0.01" /></td>
+            <td><input type="number" name="debt_cc3_rate" step="0.01" /></td>
+            <td><input type="number" name="debt_cc3_payment" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td>Credit Card 4 <input type="text" name="debt_cc4_lender" placeholder="Issuer" /></td>
+            <td><input type="number" name="debt_cc4_balance" step="0.01" /></td>
+            <td><input type="number" name="debt_cc4_rate" step="0.01" /></td>
+            <td><input type="number" name="debt_cc4_payment" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td>Personal / Other <input type="text" name="debt_other_lender" placeholder="Lender" /></td>
+            <td><input type="number" name="debt_other_balance" step="0.01" /></td>
+            <td><input type="number" name="debt_other_rate" step="0.01" /></td>
+            <td><input type="number" name="debt_other_payment" step="0.01" /></td>
+          </tr>
+        </tbody>
+      </table>
+    </fieldset>
+
+    <!-- Savings / Emergency Fund -->
+    <fieldset>
+      <legend>Savings &amp; Emergency Fund</legend>
+      <div class="grid-2">
+        <div class="form-row">
+          <label for="bal_savings">Savings Account Balance ($)</label>
+          <input type="number" id="bal_savings" name="bal_savings" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="bal_checking">Checking Account Balance ($)</label>
+          <input type="number" id="bal_checking" name="bal_checking" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="bal_cd">Bank CD Balance ($)</label>
+          <input type="number" id="bal_cd" name="bal_cd" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="bal_money_market">Money Market Balance ($)</label>
+          <input type="number" id="bal_money_market" name="bal_money_market" step="0.01" />
+        </div>
+      </div>
+
+      <h3>Emergency Fund</h3>
+      <div class="grid-2">
+        <div class="form-row">
+          <label for="emergency_balance">Current Emergency Fund Balance ($)</label>
+          <input type="number" id="emergency_balance" name="emergency_balance" step="0.01" />
+        </div>
+        <div class="form-row">
+          <label for="emergency_monthly_contribution">Monthly Contribution to Emergency Fund ($)</label>
+          <input type="number" id="emergency_monthly_contribution" name="emergency_monthly_contribution" step="0.01" />
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Retirement Accounts -->
+    <fieldset>
+      <legend>Retirement Accounts (401k / 403b / IRA)</legend>
+      <div class="section-note">
+        List retirement accounts including employer match, rate of return, and monthly contribution.
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Owner</th>
+            <th>Investment Name / Type</th>
+            <th>Employer Match (%)</th>
+            <th>Balance ($)</th>
+            <th>Rate of Return (%)</th>
+            <th>Monthly Contribution ($)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="text" name="ret_row1_owner" /></td>
+            <td><input type="text" name="ret_row1_inv_name_type" /></td>
+            <td><input type="number" name="ret_row1_match" step="0.01" /></td>
+            <td><input type="number" name="ret_row1_balance" step="0.01" /></td>
+            <td><input type="number" name="ret_row1_ror" step="0.01" /></td>
+            <td><input type="number" name="ret_row1_monthly" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td><input type="text" name="ret_row2_owner" /></td>
+            <td><input type="text" name="ret_row2_inv_name_type" /></td>
+            <td><input type="number" name="ret_row2_match" step="0.01" /></td>
+            <td><input type="number" name="ret_row2_balance" step="0.01" /></td>
+            <td><input type="number" name="ret_row2_ror" step="0.01" /></td>
+            <td><input type="number" name="ret_row2_monthly" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td><input type="text" name="ret_row3_owner" /></td>
+            <td><input type="text" name="ret_row3_inv_name_type" /></td>
+            <td><input type="number" name="ret_row3_match" step="0.01" /></td>
+            <td><input type="number" name="ret_row3_balance" step="0.01" /></td>
+            <td><input type="number" name="ret_row3_ror" step="0.01" /></td>
+            <td><input type="number" name="ret_row3_monthly" step="0.01" /></td>
+          </tr>
+        </tbody>
+      </table>
+    </fieldset>
+
+    <!-- Education Funds -->
+    <fieldset>
+      <legend>Education Funds</legend>
+      <table>
+        <thead>
+          <tr>
+            <th>Owner</th>
+            <th>Investment Name / Type</th>
+            <th># Shares</th>
+            <th>Balance ($)</th>
+            <th>Rate of Return (%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="text" name="edu_row1_owner" /></td>
+            <td><input type="text" name="edu_row1_inv_name_type" /></td>
+            <td><input type="number" name="edu_row1_shares" step="0.01" /></td>
+            <td><input type="number" name="edu_row1_balance" step="0.01" /></td>
+            <td><input type="number" name="edu_row1_ror" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td><input type="text" name="edu_row2_owner" /></td>
+            <td><input type="text" name="edu_row2_inv_name_type" /></td>
+            <td><input type="number" name="edu_row2_shares" step="0.01" /></td>
+            <td><input type="number" name="edu_row2_balance" step="0.01" /></td>
+            <td><input type="number" name="edu_row2_ror" step="0.01" /></td>
+          </tr>
+        </tbody>
+      </table>
+    </fieldset>
+
+    <!-- Protection Planning -->
+    <fieldset>
+      <legend>Protection Planning & Life Insurance</legend>
+      <h3>Riders (check all that apply or might be needed)</h3>
+      <div>
+        <label class="checkbox-inline">
+          <input type="checkbox" name="rider_child" /> Child Rider
+        </label>
+        <label class="checkbox-inline">
+          <input type="checkbox" name="rider_disability_income" /> Disability Income
+        </label>
+        <label class="checkbox-inline">
+          <input type="checkbox" name="rider_chronic_illness" /> Chronic Illness
+        </label>
+        <label class="checkbox-inline">
+          <input type="checkbox" name="rider_terminal_illness" /> Terminal Illness
+        </label>
+        <label class="checkbox-inline">
+          <input type="checkbox" name="rider_critical_illness" /> Critical Illness
+        </label>
+      </div>
+
+      <h3>Existing Life Insurance Policies</h3>
+      <div class="section-note">
+        Complete for each insured (Client, Spouse, or Other).
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Insured</th>
+            <th>Carrier</th>
+            <th>Type</th>
+            <th>Policy Year</th>
+            <th>Death Benefit ($)</th>
+            <th>Premium ($)</th>
+            <th>Cash Value ($)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <select name="li_row1_insured">
+                <option value="">Select...</option>
+                <option value="client">Client</option>
+                <option value="spouse">Spouse</option>
+                <option value="child_other">Child / Other</option>
+              </select>
+            </td>
+            <td><input type="text" name="li_row1_carrier" /></td>
+            <td><input type="text" name="li_row1_type" /></td>
+            <td><input type="text" name="li_row1_policy_year" /></td>
+            <td><input type="number" name="li_row1_death_benefit" step="0.01" /></td>
+            <td><input type="number" name="li_row1_premium" step="0.01" /></td>
+            <td><input type="number" name="li_row1_cash_value" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td>
+              <select name="li_row2_insured">
+                <option value="">Select...</option>
+                <option value="client">Client</option>
+                <option value="spouse">Spouse</option>
+                <option value="child_other">Child / Other</option>
+              </select>
+            </td>
+            <td><input type="text" name="li_row2_carrier" /></td>
+            <td><input type="text" name="li_row2_type" /></td>
+            <td><input type="text" name="li_row2_policy_year" /></td>
+            <td><input type="number" name="li_row2_death_benefit" step="0.01" /></td>
+            <td><input type="number" name="li_row2_premium" step="0.01" /></td>
+            <td><input type="number" name="li_row2_cash_value" step="0.01" /></td>
+          </tr>
+          <tr>
+            <td>
+              <select name="li_row3_insured">
+                <option value="">Select...</option>
+                <option value="client">Client</option>
+                <option value="spouse">Spouse</option>
+                <option value="child_other">Child / Other</option>
+              </select>
+            </td>
+            <td><input type="text" name="li_row3_carrier" /></td>
+            <td><input type="text" name="li_row3_type" /></td>
+            <td><input type="text" name="li_row3_policy_year" /></td>
+            <td><input type="number" name="li_row3_death_benefit" step="0.01" /></td>
+            <td><input type="number" name="li_row3_premium" step="0.01" /></td>
+            <td><input type="number" name="li_row3_cash_value" step="0.01" /></td>
+          </tr>
+        </tbody>
+      </table>
+    </fieldset>
+
+    <!-- Annuities -->
+    <fieldset>
+      <legend>Annuities</legend>
+      <div class="grid-2">
+        <div class="form-row">
+          <label for="annuity_type">Type (Fixed / Index / Variable)</label>
+          <input type="text" id="annuity_type" name="annuity_type" placeholder="Fixed, Indexed, Variable, etc." />
+        </div>
+        <div class="form-row">
+          <label for="annuity_participation">Participation / Cap / Other</label>
+          <input type="text" id="annuity_participation" name="annuity_participation" />
+        </div>
+        <div class="form-row">
+          <label for="annuity_year_purchased">Year Purchased</label>
+          <input type="text" id="annuity_year_purchased" name="annuity_year_purchased" />
+        </div>
+        <div class="form-row">
+          <label for="annuity_fees">Fees</label>
+          <input type="text" id="annuity_fees" name="annuity_fees" />
+        </div>
+        <div class="form-row">
+          <label for="annuity_surrender_schedule">Surrender Schedule</label>
+          <input type="text" id="annuity_surrender_schedule" name="annuity_surrender_schedule" />
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Scheduling -->
+    <fieldset>
+      <legend>Next Appointment</legend>
+      <div class="grid-2">
+        <div class="form-row">
+          <label for="next_appt_date">Date</label>
+          <input type="date" id="next_appt_date" name="next_appt_date" />
+        </div>
+        <div class="form-row">
+          <label for="next_appt_time">Time</label>
+          <input type="time" id="next_appt_time" name="next_appt_time" />
+        </div>
+        <div class="form-row">
+          <label for="notes">Additional Notes / Services</label>
+          <textarea id="notes" name="notes"></textarea>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="buttons">
+      <button type="submit">Submit</button>
+      <button type="reset">Reset</button>
+    </div>
+  </form>
+</body>
+</html>
