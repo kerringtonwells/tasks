@@ -117,3 +117,43 @@ button:hover {
 .incorrect {
     color: red;
 }
+
+.hidden { display: none; }
+
+.game-picker {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.picker-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.back-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: #6c757d;
+}
+
+.back-btn:hover {
+  background: #565e64;
+}
+
+.muted {
+  color: #666;
+}
+
+.small {
+  font-size: 12px;
+  margin-top: 10px;
+}
