@@ -1,71 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Memory Game</title>
-    <link rel="stylesheet" href="shortTermMemoryGame.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memory Games</title>
+  <link rel="stylesheet" href="shortTermMemoryGame.css" />
 </head>
 <body>
-    <div class="container">
-        <h2>Memory Game</h2>
-        <div class="scoreboard">
-            <span id="correctCount" class="score correct">Correct: 0</span>
-            <span id="incorrectCount" class="score incorrect">Incorrect: 0</span>
-        </div>
-               
-        <div class="selections">
-            <div class="select-group">
-                <label for="type">Choose Type:</label>
-                <select id="type">
-                    <option value="numbers">Numbers</option>
-                    <option value="words">Words</option>
-                    <option value="combination">Combination</option>
-                </select>
-            </div>
+  <div class="container">
+    <h2>Memory Games</h2>
 
-            <div class="select-group">
-                <label for="quantity">Quantity:</label>
-                <select id="quantity">
-                    <option value="3">3</option>
-                    <option value="4" selected>4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
-                    <option value="10">10</option>
-                    <option value="11">11</option>
-                    <option value="12">12</option>
-                </select>
-            </div>
-            
-            <div class="select-group">
-                <label for="duration">Duration (seconds):</label>
-                <select id="duration">
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4" selected>4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                    <option value="8">8</option>
-                    <option value="9">9</option>
-                    <option value="10">10</option>
-                    <option value="11">11</option>
-                    <option value="12">12</option>
-                </select>
-            </div>
-        </div> <!-- End of .selections -->
-
-        <button class="start-btn" onclick="startGame()">Start Game</button>
-
-        <div id="displayArea" class="display-area"></div>
-
-        <div id="inputArea" class="input-area"></div>
+    <!-- Landing / Game Picker -->
+    <div id="gamePicker" class="game-picker">
+      <p class="muted">Choose a game:</p>
+      <div class="picker-buttons">
+        <button class="start-btn" onclick="showGame('numbers')">Number Game</button>
+        <button class="start-btn" onclick="showGame('recall')">Word Recall</button>
+      </div>
     </div>
 
-    <script src="shortTermMemory.js"></script>
+    <!-- ========================= -->
+    <!-- GAME 1: Your Number Game -->
+    <!-- ========================= -->
+    <div id="numbersGame" class="game-screen hidden">
+      <div class="top-row">
+        <button class="back-btn" onclick="backToPicker()">← Back</button>
+        <div class="scoreboard">
+          <span id="correctCount" class="score correct">Correct: 0</span>
+          <span id="incorrectCount" class="score incorrect">Incorrect: 0</span>
+        </div>
+      </div>
+
+      <div class="selections">
+        <div class="select-group">
+          <label for="type">Choose Type:</label>
+          <select id="type">
+            <option value="numbers">Numbers</option>
+            <option value="words">Words</option>
+            <option value="combination">Combination</option>
+          </select>
+        </div>
+
+        <div class="select-group">
+          <label for="quantity">Quantity:</label>
+          <select id="quantity">
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+          </select>
+        </div>
+
+        <div class="select-group">
+          <label for="duration">Duration (seconds):</label>
+          <select id="duration">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="start-btn" onclick="startNumberGame()">Start Game</button>
+
+      <div id="displayArea" class="display-area"></div>
+      <div id="inputArea" class="input-area"></div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- GAME 2: Word Recall Game -->
+    <!-- ========================= -->
+    <div id="recallGame" class="game-screen hidden">
+      <div class="top-row">
+        <button class="back-btn" onclick="backToPicker()">← Back</button>
+        <div class="scoreboard">
+          <span id="recallCorrectCount" class="score correct">Correct: 0</span>
+          <span id="recallIncorrectCount" class="score incorrect">Incorrect: 0</span>
+        </div>
+      </div>
+
+      <div class="selections">
+        <div class="select-group">
+          <label for="recallQuantity">Nouns (3–10):</label>
+          <select id="recallQuantity">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+          </select>
+        </div>
+
+        <div class="select-group">
+          <label for="recallShow">Show (seconds):</label>
+          <select id="recallShow">
+            <option value="1">1</option>
+            <option value="2" selected>2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+
+        <div class="select-group">
+          <label for="recallHide">Hide (5–10 sec):</label>
+          <select id="recallHide">
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="start-btn" onclick="startWordRecall()">Start Word Recall</button>
+
+      <div id="recallDisplayArea" class="display-area"></div>
+      <div id="recallInputArea" class="input-area"></div>
+
+      <p class="muted small">
+        Answers are checked <b>in order</b>. Capitalization doesn’t matter.
+      </p>
+    </div>
+
+  </div>
+
+  <script src="shortTermMemory.js"></script>
 </body>
 </html>
