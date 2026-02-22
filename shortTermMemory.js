@@ -23,7 +23,7 @@ function backToPicker() {
 }
 
 // ============================
-// GAME 1: Number Game (Your existing game, minimally adjusted)
+// GAME 1: Number Game
 // ============================
 const numberGameState = {
   generatedItems: [],
@@ -57,7 +57,6 @@ function getRandomWord() {
 }
 
 function startNumberGame() {
-  // Clear any active timers from previous rounds
   if (numberGameState.activeTimeout) clearTimeout(numberGameState.activeTimeout);
   if (numberGameState.activeInterval) clearInterval(numberGameState.activeInterval);
 
@@ -82,7 +81,6 @@ function startNumberGame() {
     }
   }
 
-  // Countdown
   let countdownTime = 3;
   document.getElementById("displayArea").innerText = "Starting in: " + countdownTime;
 
@@ -159,7 +157,7 @@ function checkNumberAnswers() {
 }
 
 // ============================
-// GAME 2: Word Recall (NEW)
+// GAME 2: Word Recall (20 tile selection, ordered)
 // ============================
 
 const recallState = {
@@ -169,46 +167,96 @@ const recallState = {
   generatedWords: [],
   correctCounter: 0,
   incorrectCounter: 0,
+
+  // NEW: choice-mode state
+  selectedWords: [],
+  choices: [],
 };
+
+function normalizeWord(s) {
+  return (s || "").trim().toLowerCase();
+}
 
 async function loadNounsIfNeeded() {
   if (recallState.nouns.length > 0) return;
 
-  // Option A (recommended): nouns.txt (one noun per line)
+  // Try to load nouns.txt from the same folder as the HTML
   try {
     const resp = await fetch("nouns.txt", { cache: "no-store" });
-    if (resp.ok) {
-      const text = await resp.text();
-      const lines = text
-        .split(/\r?\n/)
-        .map(s => s.trim())
-        .filter(Boolean);
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
 
-      if (lines.length >= 100) {
-        recallState.nouns = lines;
-        return;
-      }
+    const text = await resp.text();
+    const lines = text
+      .split(/\r?\n/)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    // De-dup + normalize casing on load (keeps original word shape, but de-dups case-insensitively)
+    const seen = new Set();
+    const cleaned = [];
+    for (const w of lines) {
+      const n = normalizeWord(w);
+      if (!n) continue;
+      if (seen.has(n)) continue;
+      seen.add(n);
+      cleaned.push(w);
     }
+
+    if (cleaned.length < 500) {
+      throw new Error("nouns.txt too small (" + cleaned.length + ")");
+    }
+
+    recallState.nouns = cleaned;
+    return;
   } catch (e) {
-    // ignore; fallback below
+    // Fallback only if fetch fails (common on file://)
+    recallState.nouns = [
+      "apple","river","mirror","engine","castle","pencil","window","garden","market","planet",
+      "bridge","mountain","camera","wallet","stadium","forest","ocean","ladder","bottle","ticket"
+    ];
+  }
+}
+
+// Pick unique correct words for the round (no duplicates)
+function getUniqueRoundWords(list, count) {
+  const result = [];
+  const usedIdx = new Set();
+
+  // If the list is too small, just shuffle unique values
+  if (count > list.length) count = list.length;
+
+  while (result.length < count) {
+    const idx = Math.floor(Math.random() * list.length);
+    if (usedIdx.has(idx)) continue;
+    usedIdx.add(idx);
+    result.push(list[idx]);
+  }
+  return result;
+}
+
+// Build 20 choices (correct + distractors), no duplicates in the grid
+function buildChoices(correctWords, pool, totalChoices = 20) {
+  const correctNorm = correctWords.map(normalizeWord);
+  const correctSet = new Set(correctNorm);
+
+  const choices = [...correctWords]; // include all correct words
+  const choiceNormSet = new Set(correctNorm);
+
+  const target = Math.max(totalChoices, correctWords.length); // always at least include all correct
+
+  while (choices.length < target) {
+    const candidate = pool[Math.floor(Math.random() * pool.length)];
+    const norm = normalizeWord(candidate);
+    if (!norm) continue;
+    if (correctSet.has(norm)) continue;       // don't add correct word as distractor
+    if (choiceNormSet.has(norm)) continue;    // no duplicates
+    choiceNormSet.add(norm);
+    choices.push(candidate);
   }
 
-  // Option B: fallback list (replace this with your full list if you want)
-  recallState.nouns = [
-    "apple","river","mirror","engine","castle","pencil","window","garden","market","planet",
-    "bridge","mountain","camera","wallet","stadium","forest","ocean","ladder","bottle","ticket"
-  ];
-}
-
-function pickRandomNoun() {
-  const list = recallState.nouns;
-  return list[Math.floor(Math.random() * list.length)];
-}
-
-function normalizeWord(s) {
-  return (s || "")
-    .trim()
-    .toLowerCase();
+  // Shuffle
+  choices.sort(() => Math.random() - 0.5);
+  return choices;
 }
 
 async function startWordRecall() {
@@ -221,23 +269,14 @@ async function startWordRecall() {
   const showMs = parseInt(document.getElementById("recallShow").value, 10) * 1000;
   const hideMs = parseInt(document.getElementById("recallHide").value, 10) * 1000;
 
-  // Build word list (ensure uniqueness if you want; currently can repeat)
-  //recallState.generatedWords = [];
-  //for (let i = 0; i < quantity; i++) {
-    //recallState.generatedWords.push(pickRandomNoun());
-  //}
-  // Shuffle a copy of the noun list
-  const shuffled = [...recallState.nouns]
-    .sort(() => 0.5 - Math.random());
-
-  // Take the first "quantity" words
-  recallState.generatedWords = shuffled.slice(0, quantity);
+  // Pick unique correct words for this round
+  recallState.generatedWords = getUniqueRoundWords(recallState.nouns, quantity);
 
   const display = document.getElementById("recallDisplayArea");
-  const inputArea = document.getElementById("recallInputArea");
-  inputArea.innerHTML = "";
+  const area = document.getElementById("recallInputArea");
+  area.innerHTML = "";
 
-  // Optional small countdown
+  // Countdown
   let countdown = 2;
   display.innerText = "Starting in: " + countdown;
 
@@ -251,14 +290,15 @@ async function startWordRecall() {
       // Show words
       display.innerText = recallState.generatedWords.join("  •  ");
 
-      // After show duration, hide the words
+      // Hide
       recallState.activeTimeout = setTimeout(() => {
         display.innerText = "…";
 
-        // After hide duration, show inputs
+        // After hide duration, show the 20-tile selection UI
         recallState.activeTimeout = setTimeout(() => {
-          display.innerText = "Type the nouns in order:";
-          createRecallInputs(quantity);
+          recallState.selectedWords = [];
+          recallState.choices = buildChoices(recallState.generatedWords, recallState.nouns, 20);
+          renderChoiceUI(quantity);
         }, hideMs);
 
       }, showMs);
@@ -266,60 +306,100 @@ async function startWordRecall() {
   }, 1000);
 }
 
-function createRecallInputs(quantity) {
-  const inputArea = document.getElementById("recallInputArea");
-  inputArea.innerHTML = "";
+function renderChoiceUI(quantity) {
+  const display = document.getElementById("recallDisplayArea");
+  const area = document.getElementById("recallInputArea");
+  area.innerHTML = "";
+
+  // Slots
+  const slotsWrap = document.createElement("div");
+  slotsWrap.className = "recall-slots";
 
   for (let i = 0; i < quantity; i++) {
-    const input = document.createElement("input");
-    input.type = "text";
-    input.id = "recallBox" + i;
-    input.placeholder = `#${i + 1}`;
-    inputArea.appendChild(input);
-
-    // Enter key moves to next
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        if (i < quantity - 1) {
-          document.getElementById("recallBox" + (i + 1)).focus();
-        } else {
-          document.querySelector(".recall-check-btn").focus();
-        }
-      }
-    });
+    const slot = document.createElement("div");
+    slot.className = "recall-slot";
+    slot.id = "slot" + i;
+    slot.innerText = (i + 1).toString();
+    slotsWrap.appendChild(slot);
   }
 
-  const btn = document.createElement("button");
-  btn.innerText = "Check Answers";
-  btn.classList.add("recall-check-btn");
-  btn.onclick = checkRecallAnswers;
-  inputArea.appendChild(btn);
+  // Grid
+  const grid = document.createElement("div");
+  grid.className = "recall-grid";
 
-  document.getElementById("recallBox0").focus();
+  recallState.choices.forEach((word) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "choice-tile";
+    btn.innerText = word;
+    btn.dataset.word = word;
+    btn.onclick = () => onChoicePicked(btn, quantity);
+    grid.appendChild(btn);
+  });
+
+  // Reset button
+  const resetBtn = document.createElement("button");
+  resetBtn.type = "button";
+  resetBtn.className = "reset-btn";
+  resetBtn.innerText = "Reset Picks";
+  resetBtn.onclick = () => {
+    recallState.selectedWords = [];
+    renderChoiceUI(quantity);
+  };
+
+  area.appendChild(slotsWrap);
+  area.appendChild(grid);
+  area.appendChild(resetBtn);
+
+  display.innerText = "Tap the nouns in the SAME order they appeared.";
 }
 
-function checkRecallAnswers() {
-  const expected = recallState.generatedWords.map(normalizeWord);
+function onChoicePicked(buttonEl, quantity) {
+  const picked = buttonEl.dataset.word;
+  const position = recallState.selectedWords.length;
 
-  let correct = true;
-  for (let i = 0; i < expected.length; i++) {
-    const typed = normalizeWord(document.getElementById("recallBox" + i).value);
-    if (typed !== expected[i]) {
-      correct = false;
-      break;
-    }
-  }
+  if (position >= quantity) return;
 
-  if (correct) {
-    recallState.correctCounter++;
-    document.getElementById("recallCorrectCount").innerText = "Correct: " + recallState.correctCounter;
-    alert("Correct!");
-  } else {
+  // disable tile after picking
+  buttonEl.disabled = true;
+  buttonEl.classList.add("picked");
+
+  // fill slot
+  recallState.selectedWords.push(picked);
+  const slot = document.getElementById("slot" + position);
+  if (slot) slot.innerText = picked;
+
+  // immediate order check
+  const expected = normalizeWord(recallState.generatedWords[position]);
+  const got = normalizeWord(picked);
+
+  if (got !== expected) {
     recallState.incorrectCounter++;
-    document.getElementById("recallIncorrectCount").innerText = "Incorrect: " + recallState.incorrectCounter;
-    alert("Wrong! Correct sequence was: " + recallState.generatedWords.join(", "));
+    document.getElementById("recallIncorrectCount").innerText =
+      "Incorrect: " + recallState.incorrectCounter;
+
+    alert(
+      "Wrong order.\n\nExpected #" +
+        (position + 1) +
+        ": " +
+        recallState.generatedWords[position] +
+        "\nYou chose: " +
+        picked +
+        "\n\nCorrect sequence was:\n" +
+        recallState.generatedWords.join(", ")
+    );
+
+    setTimeout(startWordRecall, 1200);
+    return;
   }
 
-  setTimeout(startWordRecall, 2000);
+  // completed successfully
+  if (recallState.selectedWords.length === quantity) {
+    recallState.correctCounter++;
+    document.getElementById("recallCorrectCount").innerText =
+      "Correct: " + recallState.correctCounter;
+
+    alert("Correct!");
+    setTimeout(startWordRecall, 1200);
+  }
 }
