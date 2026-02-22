@@ -193,3 +193,70 @@ input[type="text"] {
         width: 100%;
     }
 }
+
+/* ===== Word Recall Choice Mode ===== */
+
+.recall-slots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.recall-slot {
+  min-width: 90px;
+  padding: 10px 12px;
+  border: 2px dashed #cfcfcf;
+  border-radius: 10px;
+  background: #fff;
+  text-align: center;
+  font-weight: 600;
+}
+
+.recall-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.choice-tile {
+  padding: 10px 10px;
+  border-radius: 10px;
+  background-color: #007BFF;
+  color: #fff;
+  font-size: 14px;
+  line-height: 1.2;
+  min-height: 44px; /* touch friendly */
+}
+
+.choice-tile:hover {
+  background-color: #0056b3;
+}
+
+.choice-tile.picked,
+.choice-tile:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.reset-btn {
+  background-color: #6c757d;
+}
+
+.reset-btn:hover {
+  background-color: #565e64;
+}
+
+/* Mobile grid */
+@media (max-width: 480px) {
+  .recall-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .recall-slot {
+    min-width: 44%;
+  }
+}
