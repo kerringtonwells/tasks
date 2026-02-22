@@ -297,7 +297,7 @@ async function startWordRecall() {
         // After hide duration, show the 20-tile selection UI
         recallState.activeTimeout = setTimeout(() => {
           recallState.selectedWords = [];
-          recallState.choices = buildChoices(recallState.generatedWords, recallState.nouns, 20);
+          recallState.choices = buildChoices(recallState.generatedWords, recallState.nouns, 12);
           renderChoiceUI(quantity);
         }, hideMs);
 
