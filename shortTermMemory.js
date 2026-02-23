@@ -202,7 +202,7 @@ async function loadNounsIfNeeded() {
       cleaned.push(w);
     }
 
-    if (cleaned.length < 500) {
+    if (cleaned.length < 300) {
       throw new Error("nouns.txt too small (" + cleaned.length + ")");
     }
 
