@@ -7,20 +7,120 @@ function showGame(which) {
   document.getElementById("recallGame").classList.add("hidden");
 
   if (which === "numbers") document.getElementById("numbersGame").classList.remove("hidden");
-  if (which === "recall") document.getElementById("recallGame").classList.remove("hidden");
+  if (which === "recall") { document.getElementById("recallGame").classList.remove("hidden"); applyRecallDifficulty();
+  const customWrap = $("recallCustomControls");
+  if (customWrap) customWrap.classList.add("hidden"); }
 }
 
 function backToPicker() {
   // Stop timers from either game
+  closeModal();
   if (numberGameState.activeTimeout) clearTimeout(numberGameState.activeTimeout);
+  if (numberGameState.progressStopper) numberGameState.progressStopper();
   if (numberGameState.activeInterval) clearInterval(numberGameState.activeInterval);
   if (recallState.activeTimeout) clearTimeout(recallState.activeTimeout);
+  if (recallState.progressStopper) recallState.progressStopper();
   if (recallState.activeInterval) clearInterval(recallState.activeInterval);
 
   document.getElementById("numbersGame").classList.add("hidden");
   document.getElementById("recallGame").classList.add("hidden");
   document.getElementById("gamePicker").classList.remove("hidden");
 }
+
+// ============================
+// UI Helpers (Toast, Modal, Progress)
+// ============================
+const ui = {
+  toastTimer: null,
+  modalTimer: null,
+};
+
+function $(id) { return document.getElementById(id); }
+
+function showToast(message, ms = 900) {
+  const el = $("toast");
+  if (!el) return;
+  el.textContent = message;
+  el.classList.add("show");
+  if (ui.toastTimer) clearTimeout(ui.toastTimer);
+  ui.toastTimer = setTimeout(() => el.classList.remove("show"), ms);
+}
+
+function openModal({ title = "Result", bodyHTML = "", primaryText = "Next Round", onPrimary = null, autoCloseMs = null } = {}) {
+  const modal = $("resultModal");
+  const titleEl = $("modalTitle");
+  const bodyEl = $("modalBody");
+  const primary = $("modalPrimary");
+  const closeBtn = $("modalClose");
+  if (!modal || !titleEl || !bodyEl || !primary || !closeBtn) return;
+
+  titleEl.textContent = title;
+  bodyEl.innerHTML = bodyHTML;
+  primary.textContent = primaryText;
+
+  const close = () => closeModal();
+
+  closeBtn.onclick = close;
+
+  // For success modals, require using the primary button
+  const isSuccess = String(title).includes("Correct");
+  closeBtn.style.display = isSuccess ? "none" : "";
+  modal.onclick = (e) => { /* click outside disabled */ };
+
+  primary.onclick = () => {
+    close();
+    if (typeof onPrimary === "function") onPrimary();
+  };
+
+  modal.classList.remove("hidden");
+
+  if (ui.modalTimer) clearTimeout(ui.modalTimer);
+  if (autoCloseMs) {
+    ui.modalTimer = setTimeout(() => {
+      close();
+      if (typeof onPrimary === "function") onPrimary();
+    }, autoCloseMs);
+  }
+}
+
+function closeModal() {
+  const modal = $("resultModal");
+  if (!modal) return;
+  modal.classList.add("hidden");
+  if (ui.modalTimer) clearTimeout(ui.modalTimer);
+  ui.modalTimer = null;
+}
+
+function setProgress(barEl, pct) {
+  if (!barEl) return;
+  const clamped = Math.max(0, Math.min(100, pct));
+  barEl.style.width = clamped + "%";
+}
+
+function runProgress(barEl, durationMs, { phase = "show" } = {}) {
+  if (!barEl) return () => {};
+  // style phase
+  barEl.classList.toggle("hide-phase", phase === "hide");
+  setProgress(barEl, 0);
+
+  const start = performance.now();
+  const interval = setInterval(() => {
+    const elapsed = performance.now() - start;
+    const pct = (elapsed / durationMs) * 100;
+    setProgress(barEl, pct);
+    if (elapsed >= durationMs) {
+      clearInterval(interval);
+      setProgress(barEl, 100);
+    }
+  }, 50);
+
+  return () => {
+    clearInterval(interval);
+    setProgress(barEl, 0);
+    barEl.classList.remove("hide-phase");
+  };
+}
+
 
 // ============================
 // GAME 1: Number Game
@@ -31,6 +131,9 @@ const numberGameState = {
   activeInterval: null,
   correctCounter: 0,
   incorrectCounter: 0,
+  streak: 0,
+  bestStreak: 0,
+  progressStopper: null,
 };
 
 function getRandomWord() {
@@ -57,7 +160,10 @@ function getRandomWord() {
 }
 
 function startNumberGame() {
+  closeModal();
+  if (numberGameState.progressStopper) numberGameState.progressStopper();
   if (numberGameState.activeTimeout) clearTimeout(numberGameState.activeTimeout);
+  if (numberGameState.progressStopper) numberGameState.progressStopper();
   if (numberGameState.activeInterval) clearInterval(numberGameState.activeInterval);
 
   const type = document.getElementById("type").value;
@@ -83,16 +189,23 @@ function startNumberGame() {
 
   let countdownTime = 3;
   document.getElementById("displayArea").innerText = "Starting in: " + countdownTime;
+  setProgress($("numberProgress"), 0);
 
   numberGameState.activeInterval = setInterval(() => {
     countdownTime--;
     if (countdownTime > 0) {
       document.getElementById("displayArea").innerText = "Starting in: " + countdownTime;
+  setProgress($("numberProgress"), 0);
     } else {
       clearInterval(numberGameState.activeInterval);
       document.getElementById("displayArea").innerText = numberGameState.generatedItems.join(", ");
 
+      // progress for the visible phase
+      if (numberGameState.progressStopper) numberGameState.progressStopper();
+      numberGameState.progressStopper = runProgress($("numberProgress"), duration, { phase: "show" });
+
       numberGameState.activeTimeout = setTimeout(() => {
+        if (numberGameState.progressStopper) numberGameState.progressStopper();
         document.getElementById("displayArea").innerText = "Now, try to remember!";
         createNumberInputs(quantity);
       }, duration);
@@ -145,15 +258,42 @@ function checkNumberAnswers() {
 
   if (correct) {
     numberGameState.correctCounter++;
-    document.getElementById("correctCount").innerText = "Correct: " + numberGameState.correctCounter;
-    alert("Correct!");
-  } else {
-    numberGameState.incorrectCounter++;
-    document.getElementById("incorrectCount").innerText = "Incorrect: " + numberGameState.incorrectCounter;
-    alert("Wrong! The correct answers were: " + numberGameState.generatedItems.join(", "));
-  }
+    numberGameState.streak++;
+    numberGameState.bestStreak = Math.max(numberGameState.bestStreak, numberGameState.streak);
 
-  setTimeout(startNumberGame, 2000);
+    document.getElementById("correctCount").innerText = "Correct: " + numberGameState.correctCounter;
+    document.getElementById("numberStreak").innerText = "Streak: " + numberGameState.streak;
+    document.getElementById("numberBestStreak").innerText = "Best: " + numberGameState.bestStreak;
+
+    openModal({
+      title: "✅ Correct",
+      bodyHTML: `<p><b>Nice!</b> Ready for the next round?</p>`,
+      primaryText: "Next Round",
+      onPrimary: () => startNumberGame()
+    });
+} else {
+    numberGameState.incorrectCounter++;
+    numberGameState.streak = 0;
+
+    document.getElementById("incorrectCount").innerText = "Incorrect: " + numberGameState.incorrectCounter;
+    document.getElementById("numberStreak").innerText = "Streak: 0";
+    document.getElementById("numberBestStreak").innerText = "Best: " + numberGameState.bestStreak;
+
+    const body = `
+      <p><b>Wrong.</b> Here's the correct sequence:</p>
+      <div class="chip-row">
+        ${numberGameState.generatedItems.map(w => `<span class="chip">${w}</span>`).join("")}
+      </div>
+    `;
+
+    openModal({
+      title: "❌ Incorrect",
+      bodyHTML: body,
+      primaryText: "Next Round",
+      onPrimary: () => startNumberGame(),
+      autoCloseMs: 4000
+    });
+  }
 }
 
 // ============================
@@ -167,11 +307,78 @@ const recallState = {
   generatedWords: [],
   correctCounter: 0,
   incorrectCounter: 0,
+  streak: 0,
+  bestStreak: 0,
+  progressStopper: null,
 
-  // NEW: choice-mode state
+  // choice-mode state
   selectedWords: [],
+  selectedButtons: [],
   choices: [],
 };
+
+// ============================
+// Word Recall Difficulty Levels
+// ============================
+const recallLevels = {
+  easy:       { quantity: 4, showSec: 5 },
+  normal:     { quantity: 5, showSec: 6 },
+  tough:      { quantity: 6, showSec: 7 },
+  hard:       { quantity: 7, showSec: 8 },
+  veryhard:   { quantity: 8, showSec: 9 },
+  extreme:    { quantity: 9, showSec: 10 },
+  impossible: { quantity: 10, showSec: 11 },
+};
+
+function applyRecallDifficulty() {
+  const levelEl = $("recallDifficulty");
+  const qtyEl = $("recallQuantity");
+  const showEl = $("recallShow");
+  const hideEl = $("recallHide");
+  const customWrap = $("recallCustomControls");
+  const startBtn = $("startRecallBtn");
+
+  if (!levelEl) return;
+
+  const level = levelEl.value;
+
+  // If user hasn't chosen yet
+  if (!level) {
+    if (customWrap) customWrap.classList.add("hidden");
+    if (startBtn) startBtn.disabled = true;
+    if (qtyEl) qtyEl.disabled = true;
+    if (showEl) showEl.disabled = true;
+    if (hideEl) hideEl.disabled = true;
+    return;
+  }
+
+  // Custom mode: show controls + allow editing
+  if (level === "custom") {
+    if (customWrap) customWrap.classList.remove("hidden");
+    if (startBtn) startBtn.disabled = false;
+    if (qtyEl) qtyEl.disabled = false;
+    if (showEl) showEl.disabled = false;
+    if (hideEl) hideEl.disabled = false;
+    return;
+  }
+
+  // Preset level: set quantity/show, hide custom controls
+  const preset = recallLevels[level];
+  if (preset) {
+    if (qtyEl) qtyEl.value = String(preset.quantity);
+    if (showEl) showEl.value = String(preset.showSec);
+  }
+
+  if (customWrap) customWrap.classList.add("hidden");
+  if (startBtn) startBtn.disabled = false;
+
+  // Keep selects disabled so they can't be changed via keyboard
+  if (qtyEl) qtyEl.disabled = true;
+  if (showEl) showEl.disabled = true;
+  if (hideEl) hideEl.disabled = true;
+}
+
+
 
 function normalizeWord(s) {
   return (s || "").trim().toLowerCase();
@@ -203,7 +410,7 @@ async function loadNounsIfNeeded() {
     }
 
     if (cleaned.length < 300) {
-      throw new Error("nouns.txt too small (" + cleaned.length + ")");
+      throw new Error("word list (nouns.txt) too small (" + cleaned.length + ")");
     }
 
     recallState.nouns = cleaned;
@@ -260,7 +467,9 @@ function buildChoices(correctWords, pool, totalChoices = 20) {
 }
 
 async function startWordRecall() {
+  closeModal();
   if (recallState.activeTimeout) clearTimeout(recallState.activeTimeout);
+  if (recallState.progressStopper) recallState.progressStopper();
   if (recallState.activeInterval) clearInterval(recallState.activeInterval);
 
   await loadNounsIfNeeded();
@@ -279,24 +488,33 @@ async function startWordRecall() {
   // Countdown
   let countdown = 2;
   display.innerText = "Starting in: " + countdown;
+  setProgress($("recallProgress"), 0);
 
   recallState.activeInterval = setInterval(() => {
     countdown--;
     if (countdown > 0) {
       display.innerText = "Starting in: " + countdown;
+  setProgress($("recallProgress"), 0);
     } else {
       clearInterval(recallState.activeInterval);
 
       // Show words
       display.innerText = recallState.generatedWords.join("  •  ");
+      if (recallState.progressStopper) recallState.progressStopper();
+      recallState.progressStopper = runProgress($("recallProgress"), showMs, { phase: "show" });
 
       // Hide
       recallState.activeTimeout = setTimeout(() => {
         display.innerText = "…";
+        if (recallState.progressStopper) recallState.progressStopper();
+        recallState.progressStopper = runProgress($("recallProgress"), hideMs, { phase: "hide" });
 
-        // After hide duration, show the 20-tile selection UI
+        // After hide duration, show the tile selection UI
         recallState.activeTimeout = setTimeout(() => {
+          if (recallState.progressStopper) recallState.progressStopper();
           recallState.selectedWords = [];
+          recallState.selectedButtons = [];
+          // Use 20 tiles (or at least enough to include correct words)
           recallState.choices = buildChoices(recallState.generatedWords, recallState.nouns, 12);
           renderChoiceUI(quantity);
         }, hideMs);
@@ -337,6 +555,13 @@ function renderChoiceUI(quantity) {
     grid.appendChild(btn);
   });
 
+  // Undo button
+  const undoBtn = document.createElement("button");
+  undoBtn.type = "button";
+  undoBtn.className = "undo-btn";
+  undoBtn.innerText = "Undo";
+  undoBtn.onclick = () => undoLastPick(quantity);
+
   // Reset button
   const resetBtn = document.createElement("button");
   resetBtn.type = "button";
@@ -344,14 +569,37 @@ function renderChoiceUI(quantity) {
   resetBtn.innerText = "Reset Picks";
   resetBtn.onclick = () => {
     recallState.selectedWords = [];
+    recallState.selectedButtons = [];
     renderChoiceUI(quantity);
   };
 
   area.appendChild(slotsWrap);
   area.appendChild(grid);
+  area.appendChild(undoBtn);
   area.appendChild(resetBtn);
 
-  display.innerText = "Tap the nouns in the SAME order they appeared.";
+  display.innerText = "Tap the words in the SAME order they appeared.";
+}
+
+
+function undoLastPick(quantity) {
+  if (!recallState.selectedWords.length) return;
+
+  const lastIndex = recallState.selectedWords.length - 1;
+  recallState.selectedWords.pop();
+
+  const btn = recallState.selectedButtons.pop();
+  if (btn) {
+    btn.disabled = false;
+    btn.classList.remove("picked");
+  }
+
+  const slot = document.getElementById("slot" + lastIndex);
+  if (slot) slot.innerText = (lastIndex + 1).toString();
+
+  // If user undoes, keep display instruction fresh
+  const display = document.getElementById("recallDisplayArea");
+  if (display) display.innerText = "Tap the words in the SAME order they appeared.";
 }
 
 function onChoicePicked(buttonEl, quantity) {
@@ -366,6 +614,7 @@ function onChoicePicked(buttonEl, quantity) {
 
   // fill slot
   recallState.selectedWords.push(picked);
+  recallState.selectedButtons.push(buttonEl);
   const slot = document.getElementById("slot" + position);
   if (slot) slot.innerText = picked;
 
@@ -375,31 +624,57 @@ function onChoicePicked(buttonEl, quantity) {
 
   if (got !== expected) {
     recallState.incorrectCounter++;
+    recallState.streak = 0;
     document.getElementById("recallIncorrectCount").innerText =
       "Incorrect: " + recallState.incorrectCounter;
+    document.getElementById("recallStreak").innerText = "Streak: 0";
+    document.getElementById("recallBestStreak").innerText = "Best: " + recallState.bestStreak;
 
-    alert(
-      "Wrong order.\n\nExpected #" +
-        (position + 1) +
-        ": " +
-        recallState.generatedWords[position] +
-        "\nYou chose: " +
-        picked +
-        "\n\nCorrect sequence was:\n" +
-        recallState.generatedWords.join(", ")
-    );
+    const expectedWord = recallState.generatedWords[position];
+    const body = `
+      <p><b>Wrong order.</b></p>
+      <p>Expected #${position + 1}: <span class="chip">${expectedWord}</span></p>
+      <p>You chose: <span class="chip bad">${picked}</span></p>
+      <hr />
+      <p><b>Correct sequence:</b></p>
+      <div class="chip-row">
+        ${recallState.generatedWords.map(w => `<span class="chip">${w}</span>`).join("")}
+      </div>
+    `;
 
-    setTimeout(startWordRecall, 1200);
+    openModal({
+      title: "❌ Try again",
+      bodyHTML: body,
+      primaryText: "Next Round",
+      onPrimary: () => startWordRecall(),
+      autoCloseMs: 4000
+    });
+
     return;
   }
 
   // completed successfully
   if (recallState.selectedWords.length === quantity) {
     recallState.correctCounter++;
+    recallState.streak++;
+    recallState.bestStreak = Math.max(recallState.bestStreak, recallState.streak);
     document.getElementById("recallCorrectCount").innerText =
       "Correct: " + recallState.correctCounter;
+    document.getElementById("recallStreak").innerText = "Streak: " + recallState.streak;
+    document.getElementById("recallBestStreak").innerText = "Best: " + recallState.bestStreak;
 
-    alert("Correct!");
-    setTimeout(startWordRecall, 1200);
-  }
+    openModal({
+      title: "✅ Correct",
+      bodyHTML: `<p><b>Correct!</b> Ready for the next round?</p>`,
+      primaryText: "Next Round",
+      onPrimary: () => startWordRecall()
+    });
 }
+}
+
+// Apply default difficulty on load
+window.addEventListener("DOMContentLoaded", () => {
+  applyRecallDifficulty();
+  const customWrap = $("recallCustomControls");
+  if (customWrap) customWrap.classList.add("hidden");
+});
