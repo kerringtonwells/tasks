@@ -28,6 +28,8 @@
         <div class="scoreboard">
           <span id="correctCount" class="score correct">Correct: 0</span>
           <span id="incorrectCount" class="score incorrect">Incorrect: 0</span>
+          <span id="numberStreak" class="score streak">Streak: 0</span>
+          <span id="numberBestStreak" class="score best">Best: 0</span>
         </div>
       </div>
 
@@ -78,6 +80,7 @@
 
       <button class="start-btn" onclick="startNumberGame()">Start Game</button>
 
+      <div class="progress-wrap" aria-hidden="true"><div id="numberProgress" class="progress-bar"></div></div>
       <div id="displayArea" class="display-area"></div>
       <div id="inputArea" class="input-area"></div>
     </div>
@@ -91,12 +94,31 @@
         <div class="scoreboard">
           <span id="recallCorrectCount" class="score correct">Correct: 0</span>
           <span id="recallIncorrectCount" class="score incorrect">Incorrect: 0</span>
+          <span id="recallStreak" class="score streak">Streak: 0</span>
+          <span id="recallBestStreak" class="score best">Best: 0</span>
         </div>
       </div>
 
       <div class="selections">
+
         <div class="select-group">
-          <label for="recallQuantity">Nouns (3–10):</label>
+          <label for="recallDifficulty">Difficulty:</label>
+          <select id="recallDifficulty" onchange="applyRecallDifficulty()">
+            <option value="" selected disabled>Choose difficulty…</option>
+            <option value="easy">Easy (4 words • 5s)</option>
+            <option value="normal">Normal (5 words • 6s)</option>
+            <option value="tough">Tough (6 words • 7s)</option>
+            <option value="hard">Hard (7 words • 8s)</option>
+            <option value="veryhard">Very hard (8 words • 9s)</option>
+            <option value="extreme">Extreme (9 words • 10s)</option>
+            <option value="impossible">Impossible (10 words • 11s)</option>
+            <option value="custom">Custom</option>
+</select>
+        </div>
+        <div id="recallCustomControls">
+
+        <div class="select-group">
+          <label for="recallQuantity">Words (3–10):</label>
           <select id="recallQuantity">
             <option value="3">3</option>
             <option value="4">4</option>
@@ -149,10 +171,13 @@
             <option value="10">10</option>
           </select>
         </div>
+        </div>
+
       </div>
 
-      <button class="start-btn" onclick="startWordRecall()">Start Word Recall</button>
+      <button id="startRecallBtn" class="start-btn" onclick="startWordRecall()" disabled>Start Word Recall</button>
 
+      <div class="progress-wrap" aria-hidden="true"><div id="recallProgress" class="progress-bar"></div></div>
       <div id="recallDisplayArea" class="display-area"></div>
       <div id="recallInputArea" class="input-area"></div>
 
@@ -164,5 +189,22 @@
   </div>
 
   <script src="shortTermMemory.js"></script>
+
+  <!-- Toast + Modal -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div id="resultModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle" class="modal-title">Result</h3>
+        <button id="modalClose" class="icon-btn" type="button" aria-label="Close">✕</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+      <div class="modal-footer">
+        <button id="modalPrimary" class="start-btn modal-primary" type="button">Next Round</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>
