@@ -1,482 +1,210 @@
-/* ===== Base Reset ===== */
-* {
-  box-sizing: border-box;
-}
-
-body {
-  font-family: 'Arial', sans-serif;
-  margin: 0;
-  padding: 0;
-
-  /* ===== V2 Polish: Background + Card Animation ===== */
-  background: radial-gradient(1200px 600px at 20% 0%, #e9f2ff 0%, rgba(233,242,255,0) 60%),
-              radial-gradient(900px 500px at 80% 10%, #ffeef1 0%, rgba(255,238,241,0) 55%),
-              #f4f4f4;
-}
-
-/* ===== Container ===== */
-.container {
-  width: min(900px, calc(100% - 24px));
-  margin: 20px auto;
-  padding: 20px;
-  background-color: #ffffff;
-  border-radius: 14px;
-  box-shadow: 0 10px 28px rgba(0,0,0,0.10);
-
-  transform: translateY(6px);
-  opacity: 0;
-  animation: cardIn 420ms ease-out forwards;
-}
-
-@keyframes cardIn {
-  to { transform: translateY(0); opacity: 1; }
-}
-
-/* ===== Headings ===== */
-h2 {
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-/* ===== Top Row (Back + Scoreboard) ===== */
-.top-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-/* ===== Modern Scoreboard ===== */
-.scoreboard {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.score {
-  padding: 8px 14px;
-  border-radius: 999px;
-  font-weight: 600;
-  font-size: 14px;
-  backdrop-filter: blur(6px);
-  background: rgba(255,255,255,0.6);
-  border: 1px solid rgba(0,0,0,0.06);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-  transition: transform 120ms ease, box-shadow 120ms ease;
-  white-space: nowrap;
-}
-
-.score:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 22px rgba(0,0,0,0.12);
-}
-
-/* Color accents */
-.score.correct {
-  color: #0a7f2e;
-  border-color: rgba(25,135,84,0.25);
-  background: rgba(25,135,84,0.08);
-}
-
-.score.incorrect {
-  color: #c1121f;
-  border-color: rgba(220,53,69,0.25);
-  background: rgba(220,53,69,0.08);
-}
-
-.score.streak {
-  color: #1f6feb;
-  border-color: rgba(31,111,235,0.25);
-  background: rgba(31,111,235,0.08);
-}
-
-.score.best {
-  color: #6f42c1;
-  border-color: rgba(111,66,193,0.25);
-  background: rgba(111,66,193,0.08);
-}
-
-/* ===== Back Button ===== */
-.back-btn {
-  padding: 8px 12px;
-  border: none;
-  border-radius: 6px;
-  background-color: #6c757d;
-  color: white;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  box-shadow: 0 6px 14px rgba(0,0,0,0.08);
-}
-
-.back-btn:hover {
-  background-color: #565e64;
-}
-
-/* ===== Selections (Dropdown Row) ===== */
-.selections {
-  display: flex;
-  flex-wrap: wrap; /* allows stacking on mobile */
-  gap: 15px;
-  justify-content: center;
-  margin-bottom: 20px;
-}
-
-.select-group {
-  flex: 1 1 180px;
-  min-width: 160px;
-}
-
-.select-group label {
-  display: block;
-  margin-bottom: 6px;
-  font-weight: 500;
-}
-
-.select-group select {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  background-color: #fff;
-  font-size: 14px;
-}
-
-/* ===== Buttons ===== */
-button {
-  padding: 10px 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  background-color: #007BFF;
-  color: #fff;
-  transition: background-color 0.3s ease;
-  font-size: 15px;
-
-  /* lift + press */
-  transform: translateY(0);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.08);
-}
-
-button:hover {
-  background-color: #0056b3;
-  transform: translateY(-1px);
-}
-
-button:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.10);
-}
-
-.start-btn {
-  display: block;
-  margin: 10px auto 20px auto;
-  width: min(360px, 100%);
-  font-size: 16px;
-  padding: 12px 18px;
-}
-
-/* ===== Display Area ===== */
-.display-area {
-  text-align: center;
-  padding: 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  background-color: #f9f9f9;
-  min-height: 60px;
-  margin-bottom: 20px;
-  word-break: break-word;
-  line-height: 1.4;
-  font-size: 16px;
-}
-
-/* ===== Input Area ===== */
-.input-area {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-input[type="text"] {
-  padding: 8px;
-  width: 120px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  text-align: center;
-  font-size: 14px;
-}
-
-/* ===== Helper Text ===== */
-.muted {
-  color: #666;
-  text-align: center;
-}
-
-.small {
-  font-size: 13px;
-  margin-top: 12px;
-}
-
-/* ===== Hidden Utility ===== */
-.hidden {
-  display: none;
-}
-
-/* ===== Mobile Adjustments ===== */
-@media (max-width: 480px) {
-  .container {
-    padding: 16px;
-    margin: 10px auto;
-  }
-
-  .scoreboard {
-    width: 100%;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .score {
-    flex: 1 1 auto;
-    justify-content: center;
-    text-align: center;
-    padding: 8px 10px;
-    font-size: 13px;
-  }
-
-  .back-btn {
-    width: 100%;
-  }
-
-  input[type="text"] {
-    width: min(140px, 45%);
-  }
-
-  .start-btn {
-    width: 100%;
-  }
-}
-
-/* ===== Word Recall Choice Mode ===== */
-.recall-slots {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.recall-slot {
-  min-width: 90px;
-  padding: 10px 12px;
-  border: 2px dashed #cfcfcf;
-  border-radius: 10px;
-  background: #fff;
-  text-align: center;
-  font-weight: 600;
-}
-
-.recall-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  width: 100%;
-  margin-bottom: 12px;
-}
-
-.choice-tile {
-  padding: 10px 10px;
-  border-radius: 10px;
-  background-color: #007BFF;
-  color: #fff;
-  font-size: 14px;
-  line-height: 1.2;
-  min-height: 44px; /* touch friendly */
-
-  /* Tiles: subtle pop */
-  box-shadow: 0 10px 22px rgba(0,0,0,0.10);
-}
-
-.choice-tile:hover {
-  background-color: #0056b3;
-  transform: translateY(-1px) scale(1.01);
-}
-
-.choice-tile:active {
-  transform: translateY(0) scale(1.0);
-}
-
-.choice-tile.picked,
-.choice-tile:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
-.reset-btn {
-  background-color: #6c757d;
-}
-
-.reset-btn:hover {
-  background-color: #565e64;
-}
-
-.undo-btn {
-  background-color: #111827;
-}
-
-.undo-btn:hover {
-  background-color: #0b1220;
-}
-
-/* Mobile grid */
-@media (max-width: 480px) {
-  .recall-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .recall-slot {
-    min-width: 44%;
-  }
-}
-
-/* ===== Progress Bar ===== */
-.progress-wrap {
-  width: 100%;
-  height: 10px;
-  border-radius: 999px;
-  background: rgba(0,0,0,0.06);
-  overflow: hidden;
-  margin: 4px 0 14px 0;
-}
-
-.progress-bar {
-  height: 100%;
-  width: 0%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(0,123,255,0.95), rgba(0,123,255,0.45));
-  transition: width 80ms linear;
-}
-
-.progress-bar.hide-phase {
-  background: linear-gradient(90deg, rgba(108,117,125,0.95), rgba(108,117,125,0.35));
-}
-
-/* ===== Toast ===== */
-.toast {
-  position: fixed;
-  left: 50%;
-  bottom: 18px;
-  transform: translateX(-50%) translateY(12px);
-  background: rgba(20,20,20,0.92);
-  color: white;
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 14px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 180ms ease, transform 180ms ease;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.20);
-  max-width: min(560px, calc(100% - 24px));
-  text-align: center;
-  z-index: 1000;
-}
-
-.toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
-/* ===== Modal ===== */
-.modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.45);
-  display: grid;
-  place-items: center;
-  padding: 18px;
-  z-index: 1100;
-}
-
-.modal.hidden { display: none; }
-
-.modal-card {
-  width: min(720px, 100%);
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 18px 45px rgba(0,0,0,0.22);
-  overflow: hidden;
-  transform: translateY(8px);
-  animation: modalIn 200ms ease-out forwards;
-}
-
-@keyframes modalIn {
-  to { transform: translateY(0); }
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 16px;
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-}
-
-.modal-title {
-  margin: 0;
-  font-size: 18px;
-}
-
-.icon-btn {
-  background: rgba(0,0,0,0.06);
-  color: #222;
-  border: none;
-  border-radius: 10px;
-  padding: 8px 10px;
-  cursor: pointer;
-  box-shadow: none;
-}
-
-.icon-btn:hover { background: rgba(0,0,0,0.10); }
-
-.modal-body {
-  padding: 14px 16px;
-  line-height: 1.45;
-}
-
-.modal-body .chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 10px 0 0 0;
-}
-
-.chip {
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: rgba(0,123,255,0.08);
-  border: 1px solid rgba(0,123,255,0.18);
-  font-weight: 600;
-  font-size: 13px;
-}
-
-.chip.bad {
-  background: rgba(220,53,69,0.08);
-  border-color: rgba(220,53,69,0.18);
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  padding: 14px 16px;
-  border-top: 1px solid rgba(0,0,0,0.06);
-}
-
-.modal-primary {
-  margin: 0;
-  width: auto;
-  padding: 10px 14px;
-}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memory Games</title>
+  <link rel="stylesheet" href="shortTermMemoryGame.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>Memory Games</h2>
+
+    <!-- Landing / Game Picker -->
+    <div id="gamePicker" class="game-picker">
+      <p class="muted">Choose a game:</p>
+      <div class="picker-buttons">
+        <button class="start-btn" onclick="showGame('numbers')">Number Game</button>
+        <button class="start-btn" onclick="showGame('recall')">Word Recall</button>
+      </div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- GAME 1: Your Number Game -->
+    <!-- ========================= -->
+    <div id="numbersGame" class="game-screen hidden">
+      <div class="top-row">
+        <button class="back-btn" onclick="backToPicker()">← Back</button>
+        <div class="scoreboard">
+          <span id="correctCount" class="score correct">Correct: 0</span>
+          <span id="incorrectCount" class="score incorrect">Incorrect: 0</span>
+          <span id="numberStreak" class="score streak">Streak: 0</span>
+          <span id="numberBestStreak" class="score best">Best: 0</span>
+        </div>
+      </div>
+
+      <div class="selections">
+        <div class="select-group">
+          <label for="type">Choose Type:</label>
+          <select id="type">
+            <option value="numbers">Numbers</option>
+            <option value="words">Words</option>
+            <option value="combination">Combination</option>
+          </select>
+        </div>
+
+        <div class="select-group">
+          <label for="quantity">Quantity:</label>
+          <select id="quantity">
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+          </select>
+        </div>
+
+        <div class="select-group">
+          <label for="duration">Duration (seconds):</label>
+          <select id="duration">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="start-btn" onclick="startNumberGame()">Start Game</button>
+
+      <div class="progress-wrap" aria-hidden="true"><div id="numberProgress" class="progress-bar"></div></div>
+      <div id="displayArea" class="display-area"></div>
+      <div id="inputArea" class="input-area"></div>
+    </div>
+
+    <!-- ========================= -->
+    <!-- GAME 2: Word Recall Game -->
+    <!-- ========================= -->
+    <div id="recallGame" class="game-screen hidden">
+      <div class="top-row">
+        <button class="back-btn" onclick="backToPicker()">← Back</button>
+        <div class="scoreboard">
+          <span id="recallCorrectCount" class="score correct">Correct: 0</span>
+          <span id="recallIncorrectCount" class="score incorrect">Incorrect: 0</span>
+          <span id="recallStreak" class="score streak">Streak: 0</span>
+          <span id="recallBestStreak" class="score best">Best: 0</span>
+        </div>
+      </div>
+
+      <div class="selections">
+
+        <div class="select-group">
+          <label for="recallDifficulty">Difficulty:</label>
+          <select id="recallDifficulty" onchange="applyRecallDifficulty()">
+            <option value="" selected disabled>Choose difficulty…</option>
+            <option value="easy">Easy (4 words • 5s)</option>
+            <option value="normal">Normal (5 words • 6s)</option>
+            <option value="tough">Tough (6 words • 7s)</option>
+            <option value="hard">Hard (7 words • 8s)</option>
+            <option value="veryhard">Very hard (8 words • 9s)</option>
+            <option value="extreme">Extreme (9 words • 10s)</option>
+            <option value="impossible">Impossible (10 words • 11s)</option>
+            <option value="custom">Custom</option>
+</select>
+        </div>
+        <div id="recallCustomControls">
+
+        <div class="select-group">
+          <label for="recallQuantity">Words (3–10):</label>
+          <select id="recallQuantity">
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5" selected>5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+          </select>
+        </div>
+
+        <div class="select-group">
+          <label for="recallShow">Show (seconds):</label>
+          <select id="recallShow">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6" selected>6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
+            <option value="16">16</option>
+            <option value="17">17</option>
+            <option value="18">18</option>
+            <option value="19">19</option>
+            <option value="20">20</option>
+          </select>
+        </div>
+
+        <div class="select-group">
+          <label for="recallHide">Hide (2–10 sec):</label>
+          <select id="recallHide">
+            <option value="2" selected>2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+          </select>
+        </div>
+        </div>
+
+      </div>
+
+      <button id="startRecallBtn" class="start-btn" onclick="startWordRecall()" disabled>Start Word Recall</button>
+
+      <div class="progress-wrap" aria-hidden="true"><div id="recallProgress" class="progress-bar"></div></div>
+      <div id="recallDisplayArea" class="display-area"></div>
+      <div id="recallInputArea" class="input-area"></div>
+
+      <p class="muted small">
+        Answers are checked <b>in order</b>. Choosing words in the wrong order will end the round automatically
+      </p>
+    </div>
+
+  </div>
+
+  <script src="shortTermMemory.js"></script>
+
+  <!-- Toast + Modal -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <div id="resultModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalTitle" class="modal-title">Result</h3>
+        <button id="modalClose" class="icon-btn" type="button" aria-label="Close">✕</button>
+      </div>
+      <div id="modalBody" class="modal-body"></div>
+      <div class="modal-footer">
+        <button id="modalPrimary" class="start-btn modal-primary" type="button">Next Round</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
