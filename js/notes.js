@@ -403,14 +403,17 @@
   }
 
   async function processImageFiles(files) {
+    // Returns array of { ref: 'idb:...', dataUrl: 'data:...' }
     var out = [];
     for (var i = 0; i < files.length; i++) {
-      if (files[i].type.startsWith('image/')) {
+      var f = files[i];
+      if (!f || !f.type) continue;
+      if (f.type.startsWith('image/')) {
         try {
-          var compressed = await compressImage(files[i]);
-          var ref = await saveImageToIDB(compressed); // store in IDB, get ref
-          out.push(ref);
-        } catch(e) { toast('Could not load image: ' + files[i].name); }
+          var compressed = await compressImage(f);
+          var ref = await saveImageToIDB(compressed);
+          out.push({ ref: ref, dataUrl: compressed });
+        } catch(e) { toast('Could not load image: ' + (f.name || 'unknown')); }
       }
     }
     return out;
@@ -422,7 +425,7 @@
     for (var item of items) {
       if (item.type.startsWith('image/')) { e.preventDefault(); files.push(item.getAsFile()); }
     }
-    return await processImageFiles(files);
+    return await processImageFiles(files); // returns [{ref, dataUrl}]
   }
 
   // ─── Toast ───────────────────────────────────────────────────────────────────
@@ -475,23 +478,26 @@
     ta.spellcheck = true;
 
     var strip = el('div','editor-img-strip');
+    // displayImgs holds real data URLs for preview thumbnails
+    // imgs holds idb: refs for saving — always kept in sync
+    var displayImgs = [];
 
-    // refreshStrip defined before any async call that uses it
     function refreshStrip() {
       strip.innerHTML = '';
-      imgs.forEach(function(src, i) {
+      displayImgs.forEach(function(src, i) {
         var wrap = el('div','editor-img-thumb-wrap');
         var img  = el('img','editor-img-thumb'); img.src = src;
         var rm   = el('button','img-rm-btn'); rm.textContent = '×';
-        rm.onclick = function(){ imgs.splice(i,1); refreshStrip(); };
+        rm.onclick = function(){ imgs.splice(i,1); displayImgs.splice(i,1); refreshStrip(); };
         wrap.appendChild(img); wrap.appendChild(rm); strip.appendChild(wrap);
       });
     }
 
-    // Resolve existing images from IDB after strip is ready
+    // Load existing note images: resolve idb: refs to real URLs for display
     if (existing && existing.images && existing.images.length) {
-      resolveImages(existing.images).then(function(resolved) {
-        imgs = resolved;
+      imgs = existing.images.slice(); // keep idb: refs for saving
+      resolveImages(imgs).then(function(resolved) {
+        displayImgs = resolved;
         refreshStrip();
       });
     }
@@ -508,8 +514,8 @@
       // Handle system clipboard images (screenshots, Ctrl+V from Finder etc.)
       pastedImages(e).then(function(found){
         if (found.length) {
-          imgs = imgs.concat(found);
-          refreshStrip(); // show preview immediately after Ctrl+V image paste
+          found.forEach(function(r){ imgs.push(r.ref); displayImgs.push(r.dataUrl); });
+          refreshStrip();
         }
       });
     });
@@ -521,7 +527,10 @@
       ta.classList.remove('img-drag-over');
       var files = Array.from(e.dataTransfer.files);
       processImageFiles(files).then(function(found) {
-        if (found.length) { imgs = imgs.concat(found); refreshStrip(); }
+        if (found.length) {
+          found.forEach(function(r){ imgs.push(r.ref); displayImgs.push(r.dataUrl); });
+          refreshStrip();
+        }
       });
     }
     ta.addEventListener('dragover',  function(e){ e.preventDefault(); ta.classList.add('img-drag-over'); });
@@ -536,65 +545,139 @@
       inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
       inp.onchange = function(e) {
         processImageFiles(Array.from(e.target.files)).then(function(found) {
-          if (found.length) { imgs = imgs.concat(found); refreshStrip(); }
+          if (found.length) {
+            found.forEach(function(r){ imgs.push(r.ref); displayImgs.push(r.dataUrl); });
+            refreshStrip();
+          }
         });
       };
       inp.click();
     }, 'notes-btn');
 
-    // ── Paste Image button — only shown when internal clipboard has images
-    //    NO pre-fill: preview only appears AFTER clicking this button
-    var pasteImgB = btn('📋 Paste Image', function(e) {
+    // ── Smart Paste button — reads system clipboard and acts accordingly
+    var smartPasteB = btn('📋 Paste', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      if (!internalClipboard.images.length) { toast('No copied images — click Copy on a note first'); return; }
-      var clipImgs = internalClipboard.images.slice();
-      internalClipboard.images = [];
-      pasteImgB.style.display = 'none';
-      // Resolve idb: refs then save as new IDB entries
-      resolveImages(clipImgs).then(function(resolved) {
-        var savePromises = resolved.map(function(dataUrl) {
-          return dataUrl ? saveImageToIDB(dataUrl) : Promise.resolve(null);
-        });
-        Promise.all(savePromises).then(function(newRefs) {
-          imgs = imgs.concat(newRefs.filter(Boolean));
-          refreshStrip(); // NOW show preview after paste
-          toast('✓ Image(s) added');
-        });
-      });
-      blockNextPaste = true;
-      setTimeout(function(){ ta.focus(); setTimeout(function(){ blockNextPaste = false; }, 300); }, 0);
-    }, 'notes-btn notes-btn-primary');
-    // Show button only — no pre-fill of strip
-    pasteImgB.style.display = internalClipboard.images.length ? 'inline-block' : 'none';
 
-    // ── Paste Text button — pastes system clipboard text into the textarea
-    var pasteTxtB = btn('📋 Paste Text', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      if (navigator.clipboard && navigator.clipboard.readText) {
+      // First check internal clipboard (copied from a note)
+      if (internalClipboard.images.length) {
+        var clipImgs = internalClipboard.images.slice();
+        internalClipboard.images = [];
+        smartPasteB.textContent = '📋 Paste';
+        resolveImages(clipImgs).then(function(resolved) {
+          var savePromises = resolved.map(function(dataUrl) {
+            return dataUrl ? saveImageToIDB(dataUrl) : Promise.resolve(null);
+          });
+          Promise.all(savePromises).then(function(newRefs) {
+            var validRefs = newRefs.filter(Boolean);
+            imgs = imgs.concat(validRefs); // idb: refs for saving
+            resolveImages(validRefs).then(function(urls) {
+              displayImgs = displayImgs.concat(urls); // real URLs for preview
+              refreshStrip();
+            });
+            toast('✓ Image(s) pasted');
+          });
+        });
+        blockNextPaste = true;
+        setTimeout(function(){ ta.focus(); setTimeout(function(){ blockNextPaste = false; }, 300); }, 0);
+        return;
+      }
+
+      // Otherwise check system clipboard
+      if (navigator.clipboard && navigator.clipboard.read) {
+        navigator.clipboard.read().then(function(items) {
+          var hasImage = items.some(function(item) {
+            return item.types.some(function(t) { return t.startsWith('image/'); });
+          });
+          if (hasImage) {
+            // Extract and process the image
+            items.forEach(function(item) {
+              item.types.forEach(function(type) {
+                if (type.startsWith('image/')) {
+                  item.getType(type).then(function(blob) {
+                    processImageFiles([blob]).then(function(found) {
+                      if (found.length) {
+                        found.forEach(function(r){ imgs.push(r.ref); displayImgs.push(r.dataUrl); });
+                        refreshStrip();
+                      }
+                    });
+                  });
+                }
+              });
+            });
+          } else {
+            // Paste text
+            navigator.clipboard.readText().then(function(text) {
+              if (text) {
+                var start = ta.selectionStart, end = ta.selectionEnd;
+                ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
+                ta.selectionStart = ta.selectionEnd = start + text.length;
+                ta.focus();
+              }
+            }).catch(function() { ta.focus(); });
+          }
+        }).catch(function() {
+          // Fallback: try text only
+          if (navigator.clipboard.readText) {
+            navigator.clipboard.readText().then(function(text) {
+              if (text) {
+                var start = ta.selectionStart, end = ta.selectionEnd;
+                ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
+                ta.selectionStart = ta.selectionEnd = start + text.length;
+                ta.focus();
+              }
+            }).catch(function() { ta.focus(); toast('Use Ctrl+V / Cmd+V to paste'); });
+          }
+        });
+      } else if (navigator.clipboard && navigator.clipboard.readText) {
         navigator.clipboard.readText().then(function(text) {
           if (text) {
-            var start = ta.selectionStart;
-            var end   = ta.selectionEnd;
-            ta.value  = ta.value.slice(0, start) + text + ta.value.slice(end);
+            var start = ta.selectionStart, end = ta.selectionEnd;
+            ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
             ta.selectionStart = ta.selectionEnd = start + text.length;
             ta.focus();
           }
-        }).catch(function() {
-          ta.focus();
-          toast('Paste text: click into the box and use Ctrl+V / Cmd+V');
-        });
+        }).catch(function() { ta.focus(); toast('Use Ctrl+V / Cmd+V to paste'); });
       } else {
         ta.focus();
-        toast('Paste text: click into the box and use Ctrl+V / Cmd+V');
+        toast('Use Ctrl+V / Cmd+V to paste');
       }
     }, 'notes-btn');
 
+    // Update button label based on clipboard contents
+    function updatePasteBtn() {
+      if (internalClipboard.images.length) {
+        smartPasteB.textContent = '🖼 Paste Image';
+        smartPasteB.classList.add('notes-btn-primary');
+        return;
+      }
+      // Check system clipboard for images
+      if (navigator.clipboard && navigator.clipboard.read) {
+        navigator.clipboard.read().then(function(items) {
+          var hasImage = items.some(function(item) {
+            return item.types.some(function(t){ return t.startsWith('image/'); });
+          });
+          if (hasImage) {
+            smartPasteB.textContent = '🖼 Paste Image';
+            smartPasteB.classList.add('notes-btn-primary');
+          } else {
+            smartPasteB.textContent = '📋 Paste Text';
+            smartPasteB.classList.remove('notes-btn-primary');
+          }
+        }).catch(function() {
+          smartPasteB.textContent = '📋 Paste';
+          smartPasteB.classList.remove('notes-btn-primary');
+        });
+      } else {
+        smartPasteB.textContent = '📋 Paste';
+        smartPasteB.classList.remove('notes-btn-primary');
+      }
+    }
+    updatePasteBtn();
+
     var row   = el('div','editor-btn-row');
     row.appendChild(pickImgB);
-    row.appendChild(pasteImgB);
-    row.appendChild(pasteTxtB);
+    row.appendChild(smartPasteB);
     var saveB = btn('Save', function() {
       var content = ta.value.trim();
       if (!content && !imgs.length) { toast('Note is empty'); return; }
