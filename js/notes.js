@@ -97,6 +97,39 @@
     });
   }
 
+  // Delete all images in IDB that are no longer referenced by any note
+  function cleanupOrphanedImages() {
+    return openIDB().then(function(db) {
+      return new Promise(function(res) {
+        var tx    = db.transaction(IDB_STORE, 'readonly');
+        var store = tx.objectStore(IDB_STORE);
+        var req   = store.getAllKeys();
+        req.onsuccess = function() {
+          var allKeys = req.result || [];
+          // Collect all idb: refs currently in use
+          var usedIds = {};
+          data.subjects.forEach(function(s) {
+            s.notes.forEach(function(n) {
+              (n.images || []).forEach(function(src) {
+                if (src.indexOf('idb:') === 0) usedIds[src.slice(4)] = true;
+              });
+            });
+          });
+          // Delete any key not in use
+          var toDelete = allKeys.filter(function(k) { return !usedIds[k]; });
+          if (!toDelete.length) { res(0); return; }
+          var delTx = db.transaction(IDB_STORE, 'readwrite');
+          var delStore = delTx.objectStore(IDB_STORE);
+          toDelete.forEach(function(k) { delStore.delete(k); });
+          delTx.oncomplete = function() {
+            res(toDelete.length);
+          };
+        };
+        req.onerror = function() { res(0); };
+      });
+    }).catch(function() { return 0; });
+  }
+
   // Save image to IDB, return a reference ID instead of the raw base64
   // Images in notes are stored as "idb:<id>" — resolved at render time
   function saveImageToIDB(dataUrl) {
@@ -234,6 +267,13 @@
     lastSavedTs = parseInt(localStorage.getItem(TS_KEY) || '0', 10);
     // Migrate any raw base64 images still in localStorage to IDB
     migrateImagesToIDB();
+    // Clean up any orphaned images from previous deletes
+    cleanupOrphanedImages().then(function(n) {
+      if (n > 0) {
+        toast('🧹 Cleaned up ' + n + ' unused image(s) — storage freed');
+        updateStorageMeter();
+      }
+    });
   }
 
   function migrateImagesToIDB() {
@@ -519,8 +559,17 @@
       blockNextPaste = true;
       setTimeout(function(){ ta.focus(); setTimeout(function(){ blockNextPaste = false; }, 300); }, 0);
     }, 'notes-btn notes-btn-primary');
-    // Only show if there are copied images waiting
-    pasteImgB.style.display = internalClipboard.images.length ? 'inline-block' : 'none';
+    // Only show if there are copied images waiting, and pre-fill strip with previews
+    if (internalClipboard.images.length) {
+      pasteImgB.style.display = 'inline-block';
+      // Resolve idb: refs to real data URLs before showing previews
+      resolveImages(internalClipboard.images.slice()).then(function(resolved) {
+        imgs = resolved;
+        refreshStrip();
+      });
+    } else {
+      pasteImgB.style.display = 'none';
+    }
 
     var row   = el('div','editor-btn-row');
     row.appendChild(pickImgB);
@@ -601,7 +650,11 @@
       e.stopPropagation();
       if (!confirm('Delete this note?')) return;
       subject.notes = subject.notes.filter(function(n){ return n.id !== note.id; });
-      save(); render();
+      save();
+      cleanupOrphanedImages().then(function(n) {
+        if (n > 0) updateStorageMeter();
+      });
+      render();
     });
     delB.classList.add('notes-btn-danger');
     actions.appendChild(delB);
@@ -713,7 +766,11 @@
       if (confirm('Delete "' + subject.name + '" and all its notes?')) {
         data.subjects = data.subjects.filter(function(s){ return s.id !== subject.id; });
         if (expandedSubject === subject.id) expandedSubject = null;
-        save(); render();
+        save();
+        cleanupOrphanedImages().then(function(n) {
+          if (n > 0) updateStorageMeter();
+        });
+        render();
       }
     });
     delB.classList.add('notes-btn-danger');
@@ -820,6 +877,11 @@
     var list = document.getElementById('subjectList');
     if (!list) return;
 
+    // Save scroll position of the expanded subject's notes list before re-render
+    var scrollEl  = document.querySelector('.subject-notes-list');
+    var scrollTop = scrollEl ? scrollEl.scrollTop : 0;
+    var scrollId  = expandedSubject; // which subject was expanded
+
     var term = ((document.getElementById('searchBar') || {}).value || '').toLowerCase().trim();
     list.innerHTML = '';
 
@@ -834,6 +896,12 @@
 
     var expBtn = document.getElementById('exportbutton');
     if (expBtn) expBtn.style.display = data.subjects.length ? '' : 'none';
+
+    // Restore scroll position after re-render
+    if (scrollId && scrollTop > 0) {
+      var newScrollEl = document.querySelector('.subject-notes-list');
+      if (newScrollEl) newScrollEl.scrollTop = scrollTop;
+    }
   }
 
   // ─── Show/Hide fullscreen ─────────────────────────────────────────────────────
