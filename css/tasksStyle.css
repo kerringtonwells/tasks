@@ -778,11 +778,15 @@ body[data-theme="dark"] .subject-count  { background: rgba(255,255,255,0.1);  co
 body[data-theme="light"] .subject-count { background: rgba(99,130,220,0.12); color: #6b7280; }
 
 /* Subject header buttons */
-.subject-header-right button.notes-btn {
-    padding: 2px 7px;
+body[data-theme="dark"]  .subject-header-right button,
+body[data-theme="light"] .subject-header-right button {
+    padding: 2px 8px;
     font-size: 11px;
-    border-radius: 12px;
-    margin: 0;
+    border-radius: 10px;
+    margin: 0 1px;
+    font-weight: 600;
+    line-height: 1.4;
+    min-width: unset;
 }
 
 /* Drag states */
@@ -1108,4 +1112,16 @@ body[data-theme="light"] .notes-toast { background: rgba(15,20,40,0.88);  color:
     .time-dropdown { left: 0; transform: none; min-width: 180px; }
     #searchBar { max-width: 100%; width: 100%; }
     .notes-top-bar { flex-direction: column; align-items: stretch; }
+}
+
+/* ── Image drag-over state on editor textarea ─────────────── */
+.note-editor-modal textarea.editor-textarea.img-drag-over {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+    background: rgba(59,130,246,0.06);
+}
+
+/* Hint text on textarea placeholder */
+.note-editor-modal textarea.editor-textarea::placeholder {
+    opacity: 0.5;
 }
