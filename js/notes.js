@@ -32,6 +32,8 @@
     ta.selectionStart = ta.selectionEnd = s + text.length;
     ta.focus();
   }
+  // Get the scrollable container for notes
+  function getScroller() { return document.querySelector('.new-container'); }
 
   // ─── IndexedDB ───────────────────────────────────────────────────────────────
   function openIDB() {
@@ -163,7 +165,6 @@
     var raw = localStorage.getItem(LS_KEY) || localStorage.getItem(LEGACY_KEY);
     if (raw) { try { data = parseSubjects(raw); } catch(e) { console.error('Load error',e); } }
     lastSavedTs = parseInt(localStorage.getItem(TS_KEY)||'0',10);
-    // Migrate any raw base64 still in localStorage to IDB
     var promises=[], needsSave=false;
     data.subjects.forEach(function(s){ s.notes.forEach(function(n){
       (n.images||[]).forEach(function(src,i){
@@ -173,7 +174,6 @@
       });
     }); });
     if (promises.length) Promise.all(promises).then(function(){ if(needsSave){ save(); toast('Migrated images to expanded storage'); } });
-    // Clean orphans from past deletes
     cleanupOrphanedImages().then(function(n){
       if (n>0) { toast('🧹 Freed '+n+' unused image(s)'); updateStorageMeter(); }
     });
@@ -185,13 +185,13 @@
     local.forEach(function(x){ map[x.id]=x; });
     incoming.forEach(function(x){
       if (!map[x.id]) { map[x.id]=x; }
-      else if (x.notes) { // subject
+      else if (x.notes) {
         map[x.id].name = x.name;
         var nm={};
         (map[x.id].notes||[]).forEach(function(n){ nm[n.id]=n; });
         (x.notes||[]).forEach(function(n){ if(!nm[n.id]||n.updatedAt>nm[n.id].updatedAt) nm[n.id]=n; });
         map[x.id].notes = Object.values(nm);
-      } else if (x.updatedAt > map[x.id].updatedAt) { map[x.id]=x; } // note
+      } else if (x.updatedAt > map[x.id].updatedAt) { map[x.id]=x; }
     });
     return Object.values(map);
   }
@@ -251,7 +251,6 @@
     });
   }
 
-  // Returns [{ref:'idb:...', dataUrl:'data:...'}]
   async function processFiles(files) {
     var out=[];
     for (var f of files) {
@@ -297,7 +296,7 @@
 
     var imgs=[], displayImgs=[];
 
-    function addImages(found) { // found = [{ref, dataUrl}]
+    function addImages(found) {
       found.forEach(function(r){ imgs.push(r.ref); displayImgs.push(r.dataUrl); });
       refreshStrip();
     }
@@ -329,14 +328,12 @@
     }
     refreshStrip();
 
-    // Paste handler — images via event, text via default
     var blockPaste=false;
     ta.addEventListener('paste',function(e){
       if (blockPaste){ e.preventDefault(); blockPaste=false; return; }
       fromPasteEvent(e).then(function(found){ if(found.length) addImages(found); });
     });
 
-    // Drag-drop
     function handleDrop(e){
       e.preventDefault(); e.stopPropagation();
       ta.classList.remove('img-drag-over');
@@ -348,17 +345,14 @@
     strip.addEventListener('dragover', function(e){ e.preventDefault(); });
     strip.addEventListener('drop', handleDrop);
 
-    // ── Add Image button
     var addImgB = btn('📎 Add Image', function(){
       var inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.multiple=true;
       inp.onchange=function(e){ processFiles(Array.from(e.target.files)).then(function(found){ if(found.length) addImages(found); }); };
       inp.click();
     }, 'notes-btn');
 
-    // ── Smart Paste button
     var pasteB = btn('📋 Paste', function(e){
       e.preventDefault(); e.stopPropagation();
-      // Internal clipboard (images copied from a note) takes priority
       if (internalClipboard.images.length) {
         var clip=internalClipboard.images.slice(); internalClipboard.images=[];
         resolveImages(clip).then(function(resolved){
@@ -371,7 +365,6 @@
         setTimeout(function(){ ta.focus(); setTimeout(function(){ blockPaste=false; },300); },0);
         return;
       }
-      // System clipboard
       if (navigator.clipboard&&navigator.clipboard.read) {
         navigator.clipboard.read().then(function(items){
           var imgItem=null;
@@ -393,7 +386,6 @@
       } else { ta.focus(); toast('Use Ctrl+V / Cmd+V'); }
     }, 'notes-btn');
 
-    // Label paste button based on clipboard contents
     function updatePasteLabel() {
       var hasInternal = internalClipboard.images.length > 0;
       if (hasInternal) { pasteB.textContent='🖼 Paste Image'; pasteB.classList.add('notes-btn-primary'); return; }
@@ -407,7 +399,6 @@
     }
     updatePasteLabel();
 
-    // ── Save button
     var row=el('div','editor-btn-row');
     var saveB=btn('Save', function(){
       var content=ta.value.trim();
@@ -417,11 +408,11 @@
       else if (insertAtIndex!==undefined){ subject.notes.splice(insertAtIndex,0,{id:newId,content,images:imgs,createdAt:now(),updatedAt:now()}); }
       else { subject.notes.push({id:newId,content,images:imgs,createdAt:now(),updatedAt:now()}); }
       save(); render(); ov.remove();
-      // Double rAF ensures layout is fully painted before measuring positions
+      // Scroll new note into view
       requestAnimationFrame(function(){
         requestAnimationFrame(function(){
           var noteEl=document.querySelector('.note-row[data-id="'+newId+'"]');
-          if (noteEl) noteEl.scrollIntoView({behavior:'smooth',block:'nearest'});
+          if (noteEl) noteEl.scrollIntoView({block:'nearest'});
         });
       });
     }, 'notes-btn notes-btn-primary');
@@ -470,33 +461,39 @@
 
     var delB=btn('Delete',function(e){
       e.stopPropagation();
-      if (!confirm('Delete this note?')) return;
-      // Save scroll position before delete so page doesn't jump to top
-      var scrollEl=document.querySelector('.subject-notes-list');
-      var savedScroll=scrollEl ? scrollEl.scrollTop : 0;
-      subject.notes=subject.notes.filter(function(n){ return n.id!==note.id; });
-      save(); cleanupOrphanedImages().then(function(n){ if(n>0) updateStorageMeter(); }); render();
-      requestAnimationFrame(function(){
-        requestAnimationFrame(function(){
-          var el=document.querySelector('.subject-notes-list');
-          if (el) el.scrollTop=savedScroll;
-        });
-      });
+      // Swap Delete button for inline Yes/No — no dialog, no scroll jump
+      delB.textContent = 'Sure?';
+      delB.style.pointerEvents = 'none';
+      var yesB = btn('Yes', function(e2){
+        e2.stopPropagation();
+        subject.notes = subject.notes.filter(function(n){ return n.id!==note.id; });
+        save(); cleanupOrphanedImages().then(function(n){ if(n>0) updateStorageMeter(); });
+        var scroller = getScroller();
+        var savedScroll = scroller ? scroller.scrollTop : 0;
+        render();
+        if (scroller) scroller.scrollTop = savedScroll;
+      }, 'notes-btn notes-btn-danger');
+      var noB = btn('No', function(e2){
+        e2.stopPropagation();
+        delB.textContent = 'Delete';
+        delB.style.pointerEvents = '';
+        actions.removeChild(yesB);
+        actions.removeChild(noB);
+      }, 'notes-btn');
+      actions.insertBefore(noB, delB.nextSibling);
+      actions.insertBefore(yesB, noB);
     }); delB.classList.add('notes-btn-danger'); actions.appendChild(delB);
 
     var copyB=btn('Copy',function(e){
       e.stopPropagation();
       var orig=copyB.textContent; copyB.textContent='✓ Copied!'; copyB.style.color='#4ade80';
       setTimeout(function(){ copyB.textContent=orig; copyB.style.color=''; },2000);
-      // Copy text
       var t=document.createElement('textarea'); t.value=note.content;
       document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
-      // Copy images
       var refs=note.images?note.images.slice():[];
       if (!refs.length) return;
       resolveImages(refs).then(function(resolved){
         internalClipboard.images=resolved;
-        // Try system clipboard (HTTPS only)
         if (navigator.clipboard&&window.ClipboardItem) {
           var d=resolved[0], parts=d.split(','), bytes=atob(parts[1]), arr=new Uint8Array(bytes.length);
           for (var i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
@@ -595,7 +592,9 @@
   // ─── Render ───────────────────────────────────────────────────────────────────
   function render() {
     var list=document.getElementById('subjectList'); if(!list) return;
-    var scrollEl=document.querySelector('.subject-notes-list'), scrollTop=scrollEl?scrollEl.scrollTop:0;
+    // Save scroll on .new-container (the real scrollable element)
+    var scroller = getScroller();
+    var savedScroll = scroller ? scroller.scrollTop : 0;
     var term=((document.getElementById('searchBar')||{}).value||'').toLowerCase().trim();
     list.innerHTML='';
     var visible=term ? data.subjects.filter(function(s){
@@ -603,7 +602,8 @@
     }) : data.subjects;
     visible.forEach(function(s){ list.appendChild(buildSubjectCard(s)); });
     var eb=document.getElementById('exportbutton'); if(eb) eb.style.display=data.subjects.length?'':'none';
-    if (expandedSubject&&scrollTop>0){ var el=document.querySelector('.subject-notes-list'); if(el) el.scrollTop=scrollTop; }
+    // Restore scroll — synchronous, runs before browser paints
+    if (scroller && savedScroll > 0) scroller.scrollTop = savedScroll;
   }
 
   // ─── Show / Hide ──────────────────────────────────────────────────────────────
