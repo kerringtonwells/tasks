@@ -32,8 +32,9 @@
     ta.selectionStart = ta.selectionEnd = s + text.length;
     ta.focus();
   }
-  // Get the scrollable container for notes
-  function getScroller() { return document.querySelector('.new-container'); }
+  function getScroller() { return document.querySelector('.subject-notes-list'); }
+  function getScrollY() { var s=getScroller(); return s ? s.scrollTop : 0; }
+  function setScrollY(y) { var s=getScroller(); if(s) s.scrollTop=y; }
 
   // ─── IndexedDB ───────────────────────────────────────────────────────────────
   function openIDB() {
@@ -466,12 +467,12 @@
       delB.style.pointerEvents = 'none';
       var yesB = btn('Yes', function(e2){
         e2.stopPropagation();
-        subject.notes = subject.notes.filter(function(n){ return n.id!==note.id; });
-        save(); cleanupOrphanedImages().then(function(n){ if(n>0) updateStorageMeter(); });
         var scroller = getScroller();
         var savedScroll = scroller ? scroller.scrollTop : 0;
+        subject.notes = subject.notes.filter(function(n){ return n.id!==note.id; });
+        save(); cleanupOrphanedImages().then(function(n){ if(n>0) updateStorageMeter(); });
         render();
-        if (scroller) scroller.scrollTop = savedScroll;
+        if (scroller) requestAnimationFrame(function(){ scroller.scrollTop = savedScroll; });
       }, 'notes-btn notes-btn-danger');
       var noB = btn('No', function(e2){
         e2.stopPropagation();
@@ -541,9 +542,13 @@
     var del=btn('✕',function(e){
       e.stopPropagation();
       if (!confirm('Delete "'+subject.name+'" and all its notes?')) return;
+      var scroller = getScroller();
+      var savedScroll = scroller ? scroller.scrollTop : 0;
       data.subjects=data.subjects.filter(function(s){ return s.id!==subject.id; });
       if (expandedSubject===subject.id) expandedSubject=null;
-      save(); cleanupOrphanedImages().then(function(n){ if(n>0) updateStorageMeter(); }); render();
+      save(); cleanupOrphanedImages().then(function(n){ if(n>0) updateStorageMeter(); });
+      render();
+      if (scroller) requestAnimationFrame(function(){ scroller.scrollTop = savedScroll; });
     }); del.classList.add('notes-btn-danger'); right.appendChild(del);
 
     header.appendChild(left); header.appendChild(right);
@@ -592,9 +597,7 @@
   // ─── Render ───────────────────────────────────────────────────────────────────
   function render() {
     var list=document.getElementById('subjectList'); if(!list) return;
-    // Save scroll on .new-container (the real scrollable element)
-    var scroller = getScroller();
-    var savedScroll = scroller ? scroller.scrollTop : 0;
+    var savedScroll = getScrollY();
     var term=((document.getElementById('searchBar')||{}).value||'').toLowerCase().trim();
     list.innerHTML='';
     var visible=term ? data.subjects.filter(function(s){
@@ -602,8 +605,9 @@
     }) : data.subjects;
     visible.forEach(function(s){ list.appendChild(buildSubjectCard(s)); });
     var eb=document.getElementById('exportbutton'); if(eb) eb.style.display=data.subjects.length?'':'none';
-    // Restore scroll — synchronous, runs before browser paints
-    if (scroller && savedScroll > 0) scroller.scrollTop = savedScroll;
+    // rAF lets the browser apply expanded styles (overflow-y:auto) before we set scrollTop
+    var scroller = getScroller();
+    if (scroller && savedScroll > 0) requestAnimationFrame(function(){ scroller.scrollTop = savedScroll; });
   }
 
   // ─── Show / Hide ──────────────────────────────────────────────────────────────
