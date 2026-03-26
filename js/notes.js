@@ -43,9 +43,17 @@
   // ─── Storage ────────────────────────────────────────────────────────────────
   function save() {
     var ts = now();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    localStorage.setItem(TS_KEY, String(ts));
-    lastSavedTs = ts;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      localStorage.setItem(TS_KEY, String(ts));
+      lastSavedTs = ts;
+    } catch(e) {
+      if (e.name === 'QuotaExceededError') {
+        toast('⚠ Storage full! Images are compressed but this note may have too many. Try removing some images.');
+      } else {
+        toast('⚠ Could not save: ' + e.message);
+      }
+    }
   }
 
   function parseSubjects(raw) {
@@ -151,21 +159,54 @@
   }
 
   // ─── Images ──────────────────────────────────────────────────────────────────
-  function toBase64(file) {
+
+  // Compress image to JPEG at max 1200px wide and 0.75 quality
+  // This keeps base64 size well under 200KB for most images
+  function compressImage(file) {
     return new Promise(function(res, rej) {
-      var r = new FileReader();
-      r.onload = function(e) { res(e.target.result); }; r.onerror = rej;
-      r.readAsDataURL(file);
+      var reader = new FileReader();
+      reader.onerror = rej;
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onerror = rej;
+        img.onload = function() {
+          var MAX = 1600;
+          var w = img.width;
+          var h = img.height;
+          if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+          var canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, w, h);
+          res(canvas.toDataURL('image/jpeg', 0.88));
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
     });
+  }
+
+  async function processImageFiles(files) {
+    var out = [];
+    for (var i = 0; i < files.length; i++) {
+      if (files[i].type.startsWith('image/')) {
+        try { out.push(await compressImage(files[i])); }
+        catch(e) { toast('Could not load image: ' + files[i].name); }
+      }
+    }
+    return out;
   }
 
   async function pastedImages(e) {
     var out = [];
     var items = Array.from((e.clipboardData || {}).items || []);
+    var files = [];
     for (var item of items) {
-      if (item.type.startsWith('image/')) { e.preventDefault(); out.push(await toBase64(item.getAsFile())); }
+      if (item.type.startsWith('image/')) { e.preventDefault(); files.push(item.getAsFile()); }
     }
-    return out;
+    return await processImageFiles(files);
   }
 
   // ─── Toast ───────────────────────────────────────────────────────────────────
@@ -234,7 +275,36 @@
       pastedImages(e).then(function(found){ if (found.length){ imgs = imgs.concat(found); refreshStrip(); } });
     });
 
+    // Drag-and-drop images onto the textarea or strip
+    function handleDrop(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      ta.classList.remove('img-drag-over');
+      var files = Array.from(e.dataTransfer.files);
+      processImageFiles(files).then(function(found) {
+        if (found.length) { imgs = imgs.concat(found); refreshStrip(); }
+      });
+    }
+    ta.addEventListener('dragover',  function(e){ e.preventDefault(); ta.classList.add('img-drag-over'); });
+    ta.addEventListener('dragleave', function()  { ta.classList.remove('img-drag-over'); });
+    ta.addEventListener('drop', handleDrop);
+    strip.addEventListener('dragover',  function(e){ e.preventDefault(); });
+    strip.addEventListener('drop', handleDrop);
+
+    // File picker button
+    var pickImgB = btn('📎 Add Image', function() {
+      var inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+      inp.onchange = function(e) {
+        processImageFiles(Array.from(e.target.files)).then(function(found) {
+          if (found.length) { imgs = imgs.concat(found); refreshStrip(); }
+        });
+      };
+      inp.click();
+    }, 'notes-btn');
+
     var row   = el('div','editor-btn-row');
+    row.appendChild(pickImgB);
     var saveB = btn('Save', function() {
       var content = ta.value.trim();
       if (!content && !imgs.length) { toast('Note is empty'); return; }
