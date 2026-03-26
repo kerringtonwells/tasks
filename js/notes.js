@@ -417,9 +417,12 @@
       else if (insertAtIndex!==undefined){ subject.notes.splice(insertAtIndex,0,{id:newId,content,images:imgs,createdAt:now(),updatedAt:now()}); }
       else { subject.notes.push({id:newId,content,images:imgs,createdAt:now(),updatedAt:now()}); }
       save(); render(); ov.remove();
+      // Double rAF ensures layout is fully painted before measuring positions
       requestAnimationFrame(function(){
-        var noteEl=document.querySelector('.note-row[data-id="'+newId+'"]');
-        if (noteEl) noteEl.scrollIntoView({behavior:'smooth',block:'center'});
+        requestAnimationFrame(function(){
+          var noteEl=document.querySelector('.note-row[data-id="'+newId+'"]');
+          if (noteEl) noteEl.scrollIntoView({behavior:'smooth',block:'nearest'});
+        });
       });
     }, 'notes-btn notes-btn-primary');
 
@@ -468,8 +471,17 @@
     var delB=btn('Delete',function(e){
       e.stopPropagation();
       if (!confirm('Delete this note?')) return;
+      // Save scroll position before delete so page doesn't jump to top
+      var scrollEl=document.querySelector('.subject-notes-list');
+      var savedScroll=scrollEl ? scrollEl.scrollTop : 0;
       subject.notes=subject.notes.filter(function(n){ return n.id!==note.id; });
       save(); cleanupOrphanedImages().then(function(n){ if(n>0) updateStorageMeter(); }); render();
+      requestAnimationFrame(function(){
+        requestAnimationFrame(function(){
+          var el=document.querySelector('.subject-notes-list');
+          if (el) el.scrollTop=savedScroll;
+        });
+      });
     }); delB.classList.add('notes-btn-danger'); actions.appendChild(delB);
 
     var copyB=btn('Copy',function(e){
