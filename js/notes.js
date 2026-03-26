@@ -498,16 +498,19 @@
 
     refreshStrip();
 
-    var blockNextPaste = false; // set true after paste button click to ignore Ctrl+V text
+    var blockNextPaste = false;
     ta.addEventListener('paste', function(e) {
       if (blockNextPaste) {
         e.preventDefault();
         blockNextPaste = false;
         return;
       }
-      // Handle real system clipboard images (screenshots, drags from Finder etc.)
+      // Handle system clipboard images (screenshots, Ctrl+V from Finder etc.)
       pastedImages(e).then(function(found){
-        if (found.length) { imgs = imgs.concat(found); refreshStrip(); }
+        if (found.length) {
+          imgs = imgs.concat(found);
+          refreshStrip(); // show preview immediately after Ctrl+V image paste
+        }
       });
     });
 
@@ -527,7 +530,7 @@
     strip.addEventListener('dragover',  function(e){ e.preventDefault(); });
     strip.addEventListener('drop', handleDrop);
 
-    // File picker button
+    // ── File picker ──
     var pickImgB = btn('📎 Add Image', function() {
       var inp = document.createElement('input');
       inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
@@ -539,7 +542,8 @@
       inp.click();
     }, 'notes-btn');
 
-    // Paste copied images button — shows only when internal clipboard has images
+    // ── Paste Image button — only shown when internal clipboard has images
+    //    NO pre-fill: preview only appears AFTER clicking this button
     var pasteImgB = btn('📋 Paste Image', function(e) {
       e.preventDefault();
       e.stopPropagation();
@@ -547,33 +551,50 @@
       var clipImgs = internalClipboard.images.slice();
       internalClipboard.images = [];
       pasteImgB.style.display = 'none';
-      var savePromises = clipImgs.map(function(dataUrl) {
-        return dataUrl ? saveImageToIDB(dataUrl) : Promise.resolve(null);
+      // Resolve idb: refs then save as new IDB entries
+      resolveImages(clipImgs).then(function(resolved) {
+        var savePromises = resolved.map(function(dataUrl) {
+          return dataUrl ? saveImageToIDB(dataUrl) : Promise.resolve(null);
+        });
+        Promise.all(savePromises).then(function(newRefs) {
+          imgs = imgs.concat(newRefs.filter(Boolean));
+          refreshStrip(); // NOW show preview after paste
+          toast('✓ Image(s) added');
+        });
       });
-      Promise.all(savePromises).then(function(newRefs) {
-        imgs = imgs.concat(newRefs.filter(Boolean));
-        refreshStrip();
-        toast('✓ Image(s) added — write your note and click Save');
-      });
-      // Block the next paste event so returning focus doesn't paste system clipboard text
       blockNextPaste = true;
       setTimeout(function(){ ta.focus(); setTimeout(function(){ blockNextPaste = false; }, 300); }, 0);
     }, 'notes-btn notes-btn-primary');
-    // Only show if there are copied images waiting, and pre-fill strip with previews
-    if (internalClipboard.images.length) {
-      pasteImgB.style.display = 'inline-block';
-      // Resolve idb: refs to real data URLs before showing previews
-      resolveImages(internalClipboard.images.slice()).then(function(resolved) {
-        imgs = resolved;
-        refreshStrip();
-      });
-    } else {
-      pasteImgB.style.display = 'none';
-    }
+    // Show button only — no pre-fill of strip
+    pasteImgB.style.display = internalClipboard.images.length ? 'inline-block' : 'none';
+
+    // ── Paste Text button — pastes system clipboard text into the textarea
+    var pasteTxtB = btn('📋 Paste Text', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (navigator.clipboard && navigator.clipboard.readText) {
+        navigator.clipboard.readText().then(function(text) {
+          if (text) {
+            var start = ta.selectionStart;
+            var end   = ta.selectionEnd;
+            ta.value  = ta.value.slice(0, start) + text + ta.value.slice(end);
+            ta.selectionStart = ta.selectionEnd = start + text.length;
+            ta.focus();
+          }
+        }).catch(function() {
+          ta.focus();
+          toast('Paste text: click into the box and use Ctrl+V / Cmd+V');
+        });
+      } else {
+        ta.focus();
+        toast('Paste text: click into the box and use Ctrl+V / Cmd+V');
+      }
+    }, 'notes-btn');
 
     var row   = el('div','editor-btn-row');
     row.appendChild(pickImgB);
     row.appendChild(pasteImgB);
+    row.appendChild(pasteTxtB);
     var saveB = btn('Save', function() {
       var content = ta.value.trim();
       if (!content && !imgs.length) { toast('Note is empty'); return; }
