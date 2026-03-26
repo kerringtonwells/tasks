@@ -40,7 +40,7 @@ const exportTodoList = () => {
 };
 
 // Time slot options (number of 30-min slots to move down)
-const TIME_OPTIONS = [3, 6, 12, 18, 24, 30, 60];
+const TIME_OPTIONS = [3, 6, 10, 12, 18, 20, 24, 30, 60];
 
 const formatSlots = (slots) => String(slots);
 
