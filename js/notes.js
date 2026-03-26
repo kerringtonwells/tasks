@@ -1,1128 +1,659 @@
 /**
- * notes.js
- * - Subjects displayed side-by-side, click to expand vertically
- * - Notes stack vertically inside expanded subject
- * - Subjects draggable to reorder
- * - Notes draggable between subjects
- * - Show Notes = fullscreen takeover
- * - Cross-tab sync, export/import JSON, paste images
+ * notes.js — Subjects/Notes manager with IndexedDB image storage
+ * Features: expand/collapse, drag-reorder, cross-tab sync, image paste/copy
  */
-
 (function () {
   'use strict';
 
-  var STORAGE_KEY   = 'notes_v2';
-  var TS_KEY        = 'notes_v2_ts';
-  var LEGACY_KEY    = 'subjects';
-  var SYNC_INTERVAL = 15000;
-  var IDB_NAME      = 'kwells_notes';
-  var IDB_STORE     = 'images';
-  var idb           = null; // IndexedDB connection
+  // ─── Constants & State ───────────────────────────────────────────────────────
+  var LS_KEY  = 'notes_v2', TS_KEY = 'notes_v2_ts', LEGACY_KEY = 'subjects';
+  var IDB_NAME = 'kwells_notes', IDB_STORE = 'images';
 
   var data              = { subjects: [] };
   var lastSavedTs       = 0;
   var expandedSubject   = null;
-  var dragNotePayload   = null;   // { noteId, fromSubjectId }
-  var dragSubjectId     = null;   // id of subject being dragged
-  var internalClipboard = { images: [] }; // for copying images between notes
+  var dragNotePayload   = null;
+  var dragSubjectId     = null;
+  var internalClipboard = { images: [] };
+  var idb               = null;
 
-  // ─── Utility ────────────────────────────────────────────────────────────────
-  function uid() { return Math.random().toString(36).slice(2, 9) + Date.now().toString(36); }
-  function now() { return Date.now(); }
-  function esc(str) {
-    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-  function el(tag, cls) {
-    var e = document.createElement(tag);
-    if (cls) e.className = cls;
-    return e;
-  }
-  function btn(label, onClick, cls) {
+  // ─── Tiny DOM helpers ────────────────────────────────────────────────────────
+  function uid()       { return Math.random().toString(36).slice(2,9) + Date.now().toString(36); }
+  function now()       { return Date.now(); }
+  function el(tag,cls) { var e=document.createElement(tag); if(cls) e.className=cls; return e; }
+  function esc(s)      { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function btn(lbl, fn, cls) {
     var b = el('button', cls || 'notes-btn');
-    b.textContent = label;
-    b.addEventListener('click', onClick);
-    return b;
+    b.textContent = lbl; b.addEventListener('click', fn); return b;
+  }
+  function insertText(ta, text) {
+    var s = ta.selectionStart, e = ta.selectionEnd;
+    ta.value = ta.value.slice(0,s) + text + ta.value.slice(e);
+    ta.selectionStart = ta.selectionEnd = s + text.length;
+    ta.focus();
   }
 
-  // ─── IndexedDB Image Store ───────────────────────────────────────────────────
-
+  // ─── IndexedDB ───────────────────────────────────────────────────────────────
   function openIDB() {
-    return new Promise(function(res, rej) {
-      if (idb) { res(idb); return; }
+    if (idb) return Promise.resolve(idb);
+    return new Promise(function(res,rej) {
       var req = indexedDB.open(IDB_NAME, 1);
       req.onupgradeneeded = function(e) {
-        var db = e.target.result;
-        if (!db.objectStoreNames.contains(IDB_STORE)) {
-          db.createObjectStore(IDB_STORE); // key = imageId
-        }
+        if (!e.target.result.objectStoreNames.contains(IDB_STORE))
+          e.target.result.createObjectStore(IDB_STORE);
       };
-      req.onsuccess  = function(e) { idb = e.target.result; res(idb); };
-      req.onerror    = function(e) { rej(e.target.error); };
+      req.onsuccess = function(e) { idb = e.target.result; res(idb); };
+      req.onerror   = function(e) { rej(e.target.error); };
     });
   }
 
-  function idbPut(id, dataUrl) {
+  function idbTx(mode, fn) {
     return openIDB().then(function(db) {
-      return new Promise(function(res, rej) {
-        var tx  = db.transaction(IDB_STORE, 'readwrite');
-        var st  = tx.objectStore(IDB_STORE);
-        var req = st.put(dataUrl, id);
-        req.onsuccess = function() { res(); };
+      return new Promise(function(res,rej) {
+        var tx = db.transaction(IDB_STORE, mode);
+        var req = fn(tx.objectStore(IDB_STORE));
+        req.onsuccess = function() { res(req.result); };
         req.onerror   = function(e) { rej(e.target.error); };
       });
     });
   }
 
-  function idbGet(id) {
-    return openIDB().then(function(db) {
-      return new Promise(function(res, rej) {
-        var tx  = db.transaction(IDB_STORE, 'readonly');
-        var st  = tx.objectStore(IDB_STORE);
-        var req = st.get(id);
-        req.onsuccess = function() { res(req.result || null); };
-        req.onerror   = function(e) { rej(e.target.error); };
-      });
-    });
+  function idbPut(id, url)  { return idbTx('readwrite', function(s){ return s.put(url,id); }); }
+  function idbGet(id)       { return idbTx('readonly',  function(s){ return s.get(id); }); }
+
+  function saveToIDB(dataUrl) {
+    var id = 'img_' + uid();
+    return idbPut(id, dataUrl).then(function(){ return 'idb:' + id; });
   }
 
-  function idbDelete(id) {
-    return openIDB().then(function(db) {
-      return new Promise(function(res, rej) {
-        var tx  = db.transaction(IDB_STORE, 'readwrite');
-        var st  = tx.objectStore(IDB_STORE);
-        var req = st.delete(id);
-        req.onsuccess = function() { res(); };
-        req.onerror   = function(e) { rej(e.target.error); };
-      });
-    });
+  function resolveImages(refs) {
+    return Promise.all(refs.map(function(src) {
+      return src.indexOf('idb:') === 0
+        ? idbGet(src.slice(4)).then(function(d){ return d || src; })
+        : Promise.resolve(src);
+    }));
   }
 
-  // Delete all images in IDB that are no longer referenced by any note
   function cleanupOrphanedImages() {
     return openIDB().then(function(db) {
       return new Promise(function(res) {
-        var tx    = db.transaction(IDB_STORE, 'readonly');
-        var store = tx.objectStore(IDB_STORE);
-        var req   = store.getAllKeys();
+        var req = db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).getAllKeys();
         req.onsuccess = function() {
-          var allKeys = req.result || [];
-          // Collect all idb: refs currently in use
-          var usedIds = {};
-          data.subjects.forEach(function(s) {
-            s.notes.forEach(function(n) {
-              (n.images || []).forEach(function(src) {
-                if (src.indexOf('idb:') === 0) usedIds[src.slice(4)] = true;
-              });
+          var used = {};
+          data.subjects.forEach(function(s){
+            s.notes.forEach(function(n){
+              (n.images||[]).forEach(function(r){ if(r.indexOf('idb:')===0) used[r.slice(4)]=1; });
             });
           });
-          // Delete any key not in use
-          var toDelete = allKeys.filter(function(k) { return !usedIds[k]; });
-          if (!toDelete.length) { res(0); return; }
-          var delTx = db.transaction(IDB_STORE, 'readwrite');
-          var delStore = delTx.objectStore(IDB_STORE);
-          toDelete.forEach(function(k) { delStore.delete(k); });
-          delTx.oncomplete = function() {
-            res(toDelete.length);
-          };
+          var orphans = (req.result||[]).filter(function(k){ return !used[k]; });
+          if (!orphans.length) { res(0); return; }
+          var tx = db.transaction(IDB_STORE,'readwrite'), st = tx.objectStore(IDB_STORE);
+          orphans.forEach(function(k){ st.delete(k); });
+          tx.oncomplete = function(){ res(orphans.length); };
         };
-        req.onerror = function() { res(0); };
+        req.onerror = function(){ res(0); };
       });
-    }).catch(function() { return 0; });
+    }).catch(function(){ return 0; });
   }
 
-  // Save image to IDB, return a reference ID instead of the raw base64
-  // Images in notes are stored as "idb:<id>" — resolved at render time
-  function saveImageToIDB(dataUrl) {
-    var id = 'img_' + uid();
-    return idbPut(id, dataUrl).then(function() { return 'idb:' + id; });
+  // ─── Storage ─────────────────────────────────────────────────────────────────
+  function lsBytes() {
+    var t=0;
+    for (var k in localStorage) if (localStorage.hasOwnProperty(k)) t+=(localStorage[k].length+k.length)*2;
+    return t;
   }
 
-  // Resolve all "idb:<id>" references in a note's images array to real data URLs
-  function resolveImages(images) {
-    var promises = images.map(function(src) {
-      if (src.indexOf('idb:') === 0) {
-        return idbGet(src.slice(4)).then(function(data) { return data || src; });
-      }
-      return Promise.resolve(src);
-    });
-    return Promise.all(promises);
-  }
-
-  // ─── Storage ────────────────────────────────────────────────────────────────
-  function save() {
-    var ts = now();
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      localStorage.setItem(TS_KEY, String(ts));
-      lastSavedTs = ts;
-      checkStorageWarning();
-      updateStorageMeter();
-    } catch(e) {
-      if (e.name === 'QuotaExceededError') {
-        toast('⚠ Storage full! Images are compressed but this note may have too many. Try removing some images.');
-      } else {
-        toast('⚠ Could not save: ' + e.message);
-      }
-    }
-  }
-
-  function parseSubjects(raw) {
-    var parsed   = JSON.parse(raw);
-    var subjects = Array.isArray(parsed) ? parsed : (parsed.subjects || []);
-    return {
-      subjects: subjects.map(function(s) {
-        return {
-          id    : s.id || uid(),
-          name  : s.name || 'Untitled',
-          notes : (s.notes || []).map(function(n) {
-            if (typeof n === 'string') {
-              return { id: uid(), content: decodeURIComponent(n), images: [], createdAt: now(), updatedAt: now() };
-            }
-            return {
-              id        : n.id || uid(),
-              content   : n.content || '',
-              images    : Array.isArray(n.images) ? n.images : [],
-              createdAt : n.createdAt || now(),
-              updatedAt : n.updatedAt || now()
-            };
-          })
-        };
-      })
-    };
-  }
-
-  // ─── Storage usage ──────────────────────────────────────────────────────────
-
-  function getLocalStorageBytes() {
-    var total = 0;
-    for (var key in localStorage) {
-      if (localStorage.hasOwnProperty(key)) {
-        total += (localStorage[key].length + key.length) * 2;
-      }
-    }
-    return total;
-  }
-
-  function getIDBBytes() {
-    return openIDB().then(function(db) {
-      return new Promise(function(res) {
-        var tx    = db.transaction(IDB_STORE, 'readonly');
-        var store = tx.objectStore(IDB_STORE);
-        var req   = store.getAll();
-        req.onsuccess = function() {
-          var total = 0;
-          (req.result || []).forEach(function(val) {
-            total += (val ? val.length * 2 : 0);
-          });
-          res(total);
-        };
-        req.onerror = function() { res(0); };
-      });
-    }).catch(function() { return 0; });
-  }
-
-  function formatBytes(bytes) {
-    if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
-    if (bytes >= 1048576)    return (bytes / 1048576).toFixed(2) + ' MB';
-    if (bytes >= 1024)       return (bytes / 1024).toFixed(1) + ' KB';
-    return bytes + ' B';
-  }
-
-  function checkStorageWarning(totalBytes) {
-    var lsBytes = getLocalStorageBytes();
-    if (lsBytes > 3670016) { // localStorage > 3.5MB
-      toast('⚠ Text storage at ' + formatBytes(lsBytes) + ' — approaching 5MB limit.');
-    }
+  function formatBytes(b) {
+    if (b>=1073741824) return (b/1073741824).toFixed(2)+' GB';
+    if (b>=1048576)    return (b/1048576).toFixed(2)+' MB';
+    if (b>=1024)       return (b/1024).toFixed(1)+' KB';
+    return b+' B';
   }
 
   function updateStorageMeter() {
     var el = document.getElementById('notes-storage-meter');
     if (!el) return;
-    var lsBytes = getLocalStorageBytes();
-    getIDBBytes().then(function(idbBytes) {
-      var total = lsBytes + idbBytes;
-      el.textContent = '💾 ' + formatBytes(total);
-      el.title = 'localStorage: ' + formatBytes(lsBytes) + '  |  Images (IndexedDB): ' + formatBytes(idbBytes);
-      // Color based on localStorage % (that's the real limit)
-      var lsPct = lsBytes / 5242880;
-      if (lsPct > 0.7) {
-        el.style.color = '#f87171';
-        el.style.background = 'rgba(239,68,68,0.15)';
-        el.style.borderColor = 'rgba(239,68,68,0.3)';
-      } else if (lsPct > 0.5) {
-        el.style.color = '#fbbf24';
-        el.style.background = 'rgba(251,191,36,0.15)';
-        el.style.borderColor = 'rgba(251,191,36,0.3)';
-      } else {
-        el.style.color = '#4ade80';
-        el.style.background = 'rgba(74,222,128,0.12)';
-        el.style.borderColor = 'rgba(74,222,128,0.3)';
-      }
-    });
+    var ls = lsBytes();
+    openIDB().then(function(db) {
+      return new Promise(function(res) {
+        var req = db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).getAll();
+        req.onsuccess = function(){
+          var idbB = (req.result||[]).reduce(function(t,v){ return t+(v?v.length*2:0); },0);
+          var total = ls + idbB;
+          var pct   = ls / 5242880;
+          var color = pct>0.7 ? '#f87171' : pct>0.5 ? '#fbbf24' : '#4ade80';
+          var bg    = pct>0.7 ? 'rgba(239,68,68,0.15)' : pct>0.5 ? 'rgba(251,191,36,0.15)' : 'rgba(74,222,128,0.12)';
+          el.textContent  = '💾 ' + formatBytes(total);
+          el.title        = 'Text: '+formatBytes(ls)+'  |  Images: '+formatBytes(idbB);
+          el.style.color  = color;
+          el.style.background   = bg;
+          el.style.borderColor  = color.replace(')',',0.3)').replace('rgb','rgba');
+        };
+        req.onerror = function(){ res(0); };
+      });
+    }).catch(function(){});
   }
 
-  function load() {
-    var raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_KEY);
-    if (raw) { try { data = parseSubjects(raw); } catch(e) { console.error('Notes load error', e); } }
-    lastSavedTs = parseInt(localStorage.getItem(TS_KEY) || '0', 10);
-    // Migrate any raw base64 images still in localStorage to IDB
-    migrateImagesToIDB();
-    // Clean up any orphaned images from previous deletes
-    cleanupOrphanedImages().then(function(n) {
-      if (n > 0) {
-        toast('🧹 Cleaned up ' + n + ' unused image(s) — storage freed');
-        updateStorageMeter();
-      }
-    });
-  }
-
-  function migrateImagesToIDB() {
-    var needsSave = false;
-    var promises  = [];
-    data.subjects.forEach(function(s) {
-      s.notes.forEach(function(n) {
-        if (!n.images || !n.images.length) return;
-        n.images.forEach(function(src, i) {
-          if (src.indexOf('data:') === 0) { // raw base64 — migrate it
-            var p = saveImageToIDB(src).then(function(ref) {
-              n.images[i] = ref;
-              needsSave = true;
-            });
-            promises.push(p);
-          }
-        });
-      });
-    });
-    if (promises.length > 0) {
-      Promise.all(promises).then(function() {
-        if (needsSave) {
-          save();
-          toast('Migrated ' + promises.length + ' image(s) to expanded storage');
-        }
-      });
+  function save() {
+    var ts = now();
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(data));
+      localStorage.setItem(TS_KEY, String(ts));
+      lastSavedTs = ts;
+      if (lsBytes() > 3670016) toast('⚠ Text storage near limit — consider removing old images.');
+      updateStorageMeter();
+    } catch(e) {
+      toast(e.name==='QuotaExceededError'
+        ? '⚠ Storage full! Try removing some images.'
+        : '⚠ Save failed: '+e.message);
     }
   }
 
-  // ─── Cross-tab sync ──────────────────────────────────────────────────────────
-  function mergeNotes(local, incoming) {
-    var map = {};
-    local.forEach(function(n) { map[n.id] = n; });
-    incoming.forEach(function(n) {
-      if (!map[n.id]) { map[n.id] = n; }
-      else if (n.updatedAt > map[n.id].updatedAt) { map[n.id] = n; }
-    });
-    return Object.values(map);
+  function parseSubjects(raw) {
+    var p = JSON.parse(raw), subjects = Array.isArray(p) ? p : (p.subjects||[]);
+    return { subjects: subjects.map(function(s){
+      return { id: s.id||uid(), name: s.name||'Untitled', notes: (s.notes||[]).map(function(n){
+        if (typeof n==='string') return {id:uid(),content:decodeURIComponent(n),images:[],createdAt:now(),updatedAt:now()};
+        return {id:n.id||uid(),content:n.content||'',images:Array.isArray(n.images)?n.images:[],createdAt:n.createdAt||now(),updatedAt:n.updatedAt||now()};
+      })};
+    })};
   }
 
-  function mergeSubjects(local, incoming) {
-    var map = {};
-    local.forEach(function(s) { map[s.id] = s; });
-    incoming.forEach(function(s) {
-      if (!map[s.id]) { map[s.id] = s; }
-      else { map[s.id].name = s.name; map[s.id].notes = mergeNotes(map[s.id].notes, s.notes); }
+  function load() {
+    var raw = localStorage.getItem(LS_KEY) || localStorage.getItem(LEGACY_KEY);
+    if (raw) { try { data = parseSubjects(raw); } catch(e) { console.error('Load error',e); } }
+    lastSavedTs = parseInt(localStorage.getItem(TS_KEY)||'0',10);
+    // Migrate any raw base64 still in localStorage to IDB
+    var promises=[], needsSave=false;
+    data.subjects.forEach(function(s){ s.notes.forEach(function(n){
+      (n.images||[]).forEach(function(src,i){
+        if (src.indexOf('data:')===0) {
+          promises.push(saveToIDB(src).then(function(ref){ n.images[i]=ref; needsSave=true; }));
+        }
+      });
+    }); });
+    if (promises.length) Promise.all(promises).then(function(){ if(needsSave){ save(); toast('Migrated images to expanded storage'); } });
+    // Clean orphans from past deletes
+    cleanupOrphanedImages().then(function(n){
+      if (n>0) { toast('🧹 Freed '+n+' unused image(s)'); updateStorageMeter(); }
     });
-    return Object.values(map);
   }
 
-  function applyIncoming(raw) {
-    try {
-      var inc = parseSubjects(raw);
-      data.subjects = mergeSubjects(data.subjects, inc.subjects);
-      render();
-      toast('Synced from another tab');
-    } catch(e) { console.error('Sync error', e); }
+  // ─── Cross-tab sync ───────────────────────────────────────────────────────────
+  function mergeIn(local, incoming) {
+    var map={};
+    local.forEach(function(x){ map[x.id]=x; });
+    incoming.forEach(function(x){
+      if (!map[x.id]) { map[x.id]=x; }
+      else if (x.notes) { // subject
+        map[x.id].name = x.name;
+        var nm={};
+        (map[x.id].notes||[]).forEach(function(n){ nm[n.id]=n; });
+        (x.notes||[]).forEach(function(n){ if(!nm[n.id]||n.updatedAt>nm[n.id].updatedAt) nm[n.id]=n; });
+        map[x.id].notes = Object.values(nm);
+      } else if (x.updatedAt > map[x.id].updatedAt) { map[x.id]=x; } // note
+    });
+    return Object.values(map);
   }
 
   function startSync() {
-    window.addEventListener('storage', function(e) {
-      if (e.key === STORAGE_KEY && e.newValue) applyIncoming(e.newValue);
-    });
-    setInterval(function() {
-      var remote = parseInt(localStorage.getItem(TS_KEY) || '0', 10);
-      if (remote > lastSavedTs) {
-        var raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) { applyIncoming(raw); lastSavedTs = remote; }
+    window.addEventListener('storage', function(e){
+      if (e.key===LS_KEY && e.newValue) {
+        try { var inc=parseSubjects(e.newValue); data.subjects=mergeIn(data.subjects,inc.subjects); render(); toast('Synced'); } catch(e){}
       }
-    }, SYNC_INTERVAL);
+    });
+    setInterval(function(){
+      var ts=parseInt(localStorage.getItem(TS_KEY)||'0',10);
+      if (ts>lastSavedTs) { var r=localStorage.getItem(LS_KEY); if(r){ try{var inc=parseSubjects(r); data.subjects=mergeIn(data.subjects,inc.subjects); render(); lastSavedTs=ts; }catch(e){} } }
+    }, 15000);
   }
 
-  // ─── Export / Import ────────────────────────────────────────────────────────
+  // ─── Export / Import ─────────────────────────────────────────────────────────
   function exportJSON() {
-    var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
-    a.href = url; a.download = 'notes_' + new Date().toISOString().slice(0,10) + '.json';
-    a.click(); URL.revokeObjectURL(url);
+    toast('Preparing export…');
+    var clone = JSON.parse(JSON.stringify(data));
+    var ps=[];
+    clone.subjects.forEach(function(s){ s.notes.forEach(function(n){
+      if (n.images&&n.images.length) ps.push(resolveImages(n.images).then(function(r){ n.images=r; }));
+    }); });
+    Promise.all(ps).then(function(){
+      var a=document.createElement('a');
+      a.href=URL.createObjectURL(new Blob([JSON.stringify(clone,null,2)],{type:'application/json'}));
+      a.download='notes_'+new Date().toISOString().slice(0,10)+'.json';
+      a.click(); toast('Export done!');
+    });
   }
 
   function importJSON(file) {
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        var inc = parseSubjects(e.target.result);
-        data.subjects = mergeSubjects(data.subjects, inc.subjects);
-        save(); render(); toast('Import complete');
-      } catch(err) { alert('Invalid notes file.'); }
-    };
-    reader.readAsText(file);
+    var r=new FileReader();
+    r.onload=function(e){ try{ var inc=parseSubjects(e.target.result); data.subjects=mergeIn(data.subjects,inc.subjects); save(); render(); toast('Import complete'); }catch(e){ alert('Invalid file.'); } };
+    r.readAsText(file);
   }
 
-  function triggerImport() {
-    var inp = document.createElement('input');
-    inp.type = 'file'; inp.accept = '.json';
-    inp.onchange = function(e) { if (e.target.files[0]) importJSON(e.target.files[0]); };
-    inp.click();
-  }
-
-  // ─── Images ──────────────────────────────────────────────────────────────────
-
-  // Compress image to JPEG at max 1200px wide and 0.75 quality
-  // This keeps base64 size well under 200KB for most images
+  // ─── Images ───────────────────────────────────────────────────────────────────
   function compressImage(file) {
-    return new Promise(function(res, rej) {
-      var reader = new FileReader();
-      reader.onerror = rej;
-      reader.onload = function(e) {
-        var img = new Image();
-        img.onerror = rej;
-        img.onload = function() {
-          var MAX = 1200;
-          var w = img.width;
-          var h = img.height;
-          if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
-          var canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          var ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-          res(canvas.toDataURL('image/jpeg', 0.75));
+    return new Promise(function(res,rej){
+      var r=new FileReader();
+      r.onerror=rej;
+      r.onload=function(e){
+        var img=new Image();
+        img.onerror=rej;
+        img.onload=function(){
+          var MAX=1200, w=img.width, h=img.height;
+          if (w>MAX){ h=Math.round(h*MAX/w); w=MAX; }
+          var c=document.createElement('canvas'); c.width=w; c.height=h;
+          c.getContext('2d').drawImage(img,0,0,w,h);
+          res(c.toDataURL('image/jpeg',0.75));
         };
-        img.src = e.target.result;
+        img.src=e.target.result;
       };
-      reader.readAsDataURL(file);
+      r.readAsDataURL(file);
     });
   }
 
-  async function processImageFiles(files) {
-    // Returns array of { ref: 'idb:...', dataUrl: 'data:...' }
-    var out = [];
-    for (var i = 0; i < files.length; i++) {
-      var f = files[i];
-      if (!f || !f.type) continue;
-      if (f.type.startsWith('image/')) {
-        try {
-          var compressed = await compressImage(f);
-          var ref = await saveImageToIDB(compressed);
-          out.push({ ref: ref, dataUrl: compressed });
-        } catch(e) { toast('Could not load image: ' + (f.name || 'unknown')); }
-      }
+  // Returns [{ref:'idb:...', dataUrl:'data:...'}]
+  async function processFiles(files) {
+    var out=[];
+    for (var f of files) {
+      if (!f||!f.type||!f.type.startsWith('image/')) continue;
+      try { var d=await compressImage(f), ref=await saveToIDB(d); out.push({ref,dataUrl:d}); }
+      catch(e) { toast('Could not load: '+(f.name||'image')); }
     }
     return out;
   }
 
-  async function pastedImages(e) {
-    var items = Array.from((e.clipboardData || {}).items || []);
-    var files = [];
-    for (var item of items) {
-      if (item.type.startsWith('image/')) { e.preventDefault(); files.push(item.getAsFile()); }
-    }
-    return await processImageFiles(files); // returns [{ref, dataUrl}]
+  async function fromPasteEvent(e) {
+    var files=Array.from((e.clipboardData||{}).items||[])
+      .filter(function(i){ return i.type.startsWith('image/'); })
+      .map(function(i){ e.preventDefault(); return i.getAsFile(); });
+    return processFiles(files);
   }
 
-  // ─── Toast ───────────────────────────────────────────────────────────────────
+  // ─── Toast ────────────────────────────────────────────────────────────────────
   function toast(msg) {
-    var old = document.getElementById('notes-toast');
-    if (old) old.remove();
-    var d = document.createElement('div');
-    d.id = 'notes-toast'; d.className = 'notes-toast'; d.textContent = msg;
+    var old=document.getElementById('notes-toast'); if(old) old.remove();
+    var d=el('div','notes-toast'); d.id='notes-toast'; d.textContent=msg;
     document.body.appendChild(d);
     requestAnimationFrame(function(){ requestAnimationFrame(function(){ d.classList.add('visible'); }); });
-    setTimeout(function(){ d.classList.remove('visible'); setTimeout(function(){ d.remove(); }, 400); }, 3000);
+    setTimeout(function(){ d.classList.remove('visible'); setTimeout(function(){ d.remove(); },400); },3000);
   }
 
   // ─── Lightbox ─────────────────────────────────────────────────────────────────
   function openLightbox(src) {
-    var overlay = el('div', 'lightbox-overlay');
-    var img     = el('img', 'lightbox-img');
-    img.src     = src;
-
-    var close       = el('button', 'lightbox-close');
-    close.textContent = '✕';
-    close.addEventListener('click', function(){ overlay.remove(); });
-    overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
-
-    // Close on Escape
-    function onKey(e){ if (e.key === 'Escape'){ overlay.remove(); document.removeEventListener('keydown', onKey); } }
-    document.addEventListener('keydown', onKey);
-
-    overlay.appendChild(close);
-    overlay.appendChild(img);
-    document.body.appendChild(overlay);
+    var ov=el('div','lightbox-overlay'), img=el('img','lightbox-img'), x=el('button','lightbox-close');
+    img.src=src; x.textContent='✕';
+    x.addEventListener('click',function(){ ov.remove(); });
+    ov.addEventListener('click',function(e){ if(e.target===ov) ov.remove(); });
+    function onKey(e){ if(e.key==='Escape'){ ov.remove(); document.removeEventListener('keydown',onKey); } }
+    document.addEventListener('keydown',onKey);
+    ov.appendChild(x); ov.appendChild(img); document.body.appendChild(ov);
   }
 
-  // ─── Editor Modal ────────────────────────────────────────────────────────────
+  // ─── Editor Modal ─────────────────────────────────────────────────────────────
   function openEditor(subjectId, noteId, insertAtIndex) {
-    var subject  = data.subjects.find(function(s){ return s.id === subjectId; });
+    var subject = data.subjects.find(function(s){ return s.id===subjectId; });
     if (!subject) return;
-    var existing = noteId ? subject.notes.find(function(n){ return n.id === noteId; }) : null;
-    var imgs = [];
+    var existing = noteId ? subject.notes.find(function(n){ return n.id===noteId; }) : null;
 
-    var overlay = el('div','note-editor-overlay');
-    var modal   = el('div','note-editor-modal');
-    var title   = el('h3','editor-title');
-    var modeLabel = (insertAtIndex !== undefined) ? 'Insert note in' : 'New note in';
-    title.textContent = existing ? ('Edit — ' + subject.name) : (modeLabel + ' "' + subject.name + '"');
+    var imgs=[], displayImgs=[];
 
-    var ta = el('textarea','editor-textarea');
-    ta.value = existing ? existing.content : '';
-    ta.placeholder = 'Write your note… paste images with Ctrl+V';
-    ta.spellcheck = true;
+    function addImages(found) { // found = [{ref, dataUrl}]
+      found.forEach(function(r){ imgs.push(r.ref); displayImgs.push(r.dataUrl); });
+      refreshStrip();
+    }
 
-    var strip = el('div','editor-img-strip');
-    // displayImgs holds real data URLs for preview thumbnails
-    // imgs holds idb: refs for saving — always kept in sync
-    var displayImgs = [];
+    var ov=el('div','note-editor-overlay'), modal=el('div','note-editor-modal');
+    var title=el('h3','editor-title');
+    var lbl = existing ? 'Edit — '+subject.name : ((insertAtIndex!==undefined?'Insert':'New')+' note in "'+subject.name+'"');
+    title.textContent=lbl;
 
+    var ta=el('textarea','editor-textarea');
+    ta.value=existing?existing.content:'';
+    ta.placeholder='Write your note… paste images with Ctrl+V';
+    ta.spellcheck=true;
+
+    var strip=el('div','editor-img-strip');
     function refreshStrip() {
-      strip.innerHTML = '';
-      displayImgs.forEach(function(src, i) {
-        var wrap = el('div','editor-img-thumb-wrap');
-        var img  = el('img','editor-img-thumb'); img.src = src;
-        var rm   = el('button','img-rm-btn'); rm.textContent = '×';
-        rm.onclick = function(){ imgs.splice(i,1); displayImgs.splice(i,1); refreshStrip(); };
+      strip.innerHTML='';
+      displayImgs.forEach(function(src,i){
+        var wrap=el('div','editor-img-thumb-wrap'), img=el('img','editor-img-thumb'), rm=el('button','img-rm-btn');
+        img.src=src; rm.textContent='×';
+        rm.onclick=function(){ imgs.splice(i,1); displayImgs.splice(i,1); refreshStrip(); };
         wrap.appendChild(img); wrap.appendChild(rm); strip.appendChild(wrap);
       });
     }
 
-    // Load existing note images: resolve idb: refs to real URLs for display
-    if (existing && existing.images && existing.images.length) {
-      imgs = existing.images.slice(); // keep idb: refs for saving
-      resolveImages(imgs).then(function(resolved) {
-        displayImgs = resolved;
-        refreshStrip();
-      });
+    if (existing&&existing.images&&existing.images.length) {
+      imgs=existing.images.slice();
+      resolveImages(imgs).then(function(r){ displayImgs=r; refreshStrip(); });
     }
-
     refreshStrip();
 
-    var blockNextPaste = false;
-    ta.addEventListener('paste', function(e) {
-      if (blockNextPaste) {
-        e.preventDefault();
-        blockNextPaste = false;
-        return;
-      }
-      // Handle system clipboard images (screenshots, Ctrl+V from Finder etc.)
-      pastedImages(e).then(function(found){
-        if (found.length) {
-          found.forEach(function(r){ imgs.push(r.ref); displayImgs.push(r.dataUrl); });
-          refreshStrip();
-        }
-      });
+    // Paste handler — images via event, text via default
+    var blockPaste=false;
+    ta.addEventListener('paste',function(e){
+      if (blockPaste){ e.preventDefault(); blockPaste=false; return; }
+      fromPasteEvent(e).then(function(found){ if(found.length) addImages(found); });
     });
 
-    // Drag-and-drop images onto the textarea or strip
-    function handleDrop(e) {
-      e.preventDefault();
-      e.stopPropagation();
+    // Drag-drop
+    function handleDrop(e){
+      e.preventDefault(); e.stopPropagation();
       ta.classList.remove('img-drag-over');
-      var files = Array.from(e.dataTransfer.files);
-      processImageFiles(files).then(function(found) {
-        if (found.length) {
-          found.forEach(function(r){ imgs.push(r.ref); displayImgs.push(r.dataUrl); });
-          refreshStrip();
-        }
-      });
+      processFiles(Array.from(e.dataTransfer.files)).then(function(found){ if(found.length) addImages(found); });
     }
-    ta.addEventListener('dragover',  function(e){ e.preventDefault(); ta.classList.add('img-drag-over'); });
-    ta.addEventListener('dragleave', function()  { ta.classList.remove('img-drag-over'); });
+    ta.addEventListener('dragover', function(e){ e.preventDefault(); ta.classList.add('img-drag-over'); });
+    ta.addEventListener('dragleave',function(){ ta.classList.remove('img-drag-over'); });
     ta.addEventListener('drop', handleDrop);
-    strip.addEventListener('dragover',  function(e){ e.preventDefault(); });
+    strip.addEventListener('dragover', function(e){ e.preventDefault(); });
     strip.addEventListener('drop', handleDrop);
 
-    // ── File picker ──
-    var pickImgB = btn('📎 Add Image', function() {
-      var inp = document.createElement('input');
-      inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
-      inp.onchange = function(e) {
-        processImageFiles(Array.from(e.target.files)).then(function(found) {
-          if (found.length) {
-            found.forEach(function(r){ imgs.push(r.ref); displayImgs.push(r.dataUrl); });
-            refreshStrip();
-          }
-        });
-      };
+    // ── Add Image button
+    var addImgB = btn('📎 Add Image', function(){
+      var inp=document.createElement('input'); inp.type='file'; inp.accept='image/*'; inp.multiple=true;
+      inp.onchange=function(e){ processFiles(Array.from(e.target.files)).then(function(found){ if(found.length) addImages(found); }); };
       inp.click();
     }, 'notes-btn');
 
-    // ── Smart Paste button — reads system clipboard and acts accordingly
-    var smartPasteB = btn('📋 Paste', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // First check internal clipboard (copied from a note)
+    // ── Smart Paste button
+    var pasteB = btn('📋 Paste', function(e){
+      e.preventDefault(); e.stopPropagation();
+      // Internal clipboard (images copied from a note) takes priority
       if (internalClipboard.images.length) {
-        var clipImgs = internalClipboard.images.slice();
-        internalClipboard.images = [];
-        smartPasteB.textContent = '📋 Paste';
-        resolveImages(clipImgs).then(function(resolved) {
-          var savePromises = resolved.map(function(dataUrl) {
-            return dataUrl ? saveImageToIDB(dataUrl) : Promise.resolve(null);
-          });
-          Promise.all(savePromises).then(function(newRefs) {
-            var validRefs = newRefs.filter(Boolean);
-            imgs = imgs.concat(validRefs); // idb: refs for saving
-            resolveImages(validRefs).then(function(urls) {
-              displayImgs = displayImgs.concat(urls); // real URLs for preview
-              refreshStrip();
-            });
+        var clip=internalClipboard.images.slice(); internalClipboard.images=[];
+        resolveImages(clip).then(function(resolved){
+          Promise.all(resolved.map(function(d){ return d?saveToIDB(d):Promise.resolve(null); })).then(function(refs){
+            addImages(refs.filter(Boolean).map(function(ref,i){ return {ref:ref,dataUrl:resolved[i]}; }));
             toast('✓ Image(s) pasted');
           });
         });
-        blockNextPaste = true;
-        setTimeout(function(){ ta.focus(); setTimeout(function(){ blockNextPaste = false; }, 300); }, 0);
+        blockPaste=true;
+        setTimeout(function(){ ta.focus(); setTimeout(function(){ blockPaste=false; },300); },0);
         return;
       }
-
-      // Otherwise check system clipboard
-      if (navigator.clipboard && navigator.clipboard.read) {
-        navigator.clipboard.read().then(function(items) {
-          var hasImage = items.some(function(item) {
-            return item.types.some(function(t) { return t.startsWith('image/'); });
+      // System clipboard
+      if (navigator.clipboard&&navigator.clipboard.read) {
+        navigator.clipboard.read().then(function(items){
+          var imgItem=null;
+          items.forEach(function(item){
+            item.types.forEach(function(t){ if(t.startsWith('image/')&&!imgItem) imgItem={item,t}; });
           });
-          if (hasImage) {
-            // Extract and process the image
-            items.forEach(function(item) {
-              item.types.forEach(function(type) {
-                if (type.startsWith('image/')) {
-                  item.getType(type).then(function(blob) {
-                    processImageFiles([blob]).then(function(found) {
-                      if (found.length) {
-                        found.forEach(function(r){ imgs.push(r.ref); displayImgs.push(r.dataUrl); });
-                        refreshStrip();
-                      }
-                    });
-                  });
-                }
-              });
+          if (imgItem) {
+            imgItem.item.getType(imgItem.t).then(function(blob){
+              processFiles([blob]).then(function(found){ if(found.length) addImages(found); });
             });
           } else {
-            // Paste text
-            navigator.clipboard.readText().then(function(text) {
-              if (text) {
-                var start = ta.selectionStart, end = ta.selectionEnd;
-                ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
-                ta.selectionStart = ta.selectionEnd = start + text.length;
-                ta.focus();
-              }
-            }).catch(function() { ta.focus(); });
+            navigator.clipboard.readText().then(function(text){ if(text) insertText(ta,text); }).catch(function(){});
           }
-        }).catch(function() {
-          // Fallback: try text only
-          if (navigator.clipboard.readText) {
-            navigator.clipboard.readText().then(function(text) {
-              if (text) {
-                var start = ta.selectionStart, end = ta.selectionEnd;
-                ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
-                ta.selectionStart = ta.selectionEnd = start + text.length;
-                ta.focus();
-              }
-            }).catch(function() { ta.focus(); toast('Use Ctrl+V / Cmd+V to paste'); });
-          }
+        }).catch(function(){
+          navigator.clipboard.readText&&navigator.clipboard.readText().then(function(text){ if(text) insertText(ta,text); }).catch(function(){});
         });
-      } else if (navigator.clipboard && navigator.clipboard.readText) {
-        navigator.clipboard.readText().then(function(text) {
-          if (text) {
-            var start = ta.selectionStart, end = ta.selectionEnd;
-            ta.value = ta.value.slice(0, start) + text + ta.value.slice(end);
-            ta.selectionStart = ta.selectionEnd = start + text.length;
-            ta.focus();
-          }
-        }).catch(function() { ta.focus(); toast('Use Ctrl+V / Cmd+V to paste'); });
-      } else {
-        ta.focus();
-        toast('Use Ctrl+V / Cmd+V to paste');
-      }
+      } else if (navigator.clipboard&&navigator.clipboard.readText) {
+        navigator.clipboard.readText().then(function(text){ if(text) insertText(ta,text); }).catch(function(){ ta.focus(); toast('Use Ctrl+V / Cmd+V'); });
+      } else { ta.focus(); toast('Use Ctrl+V / Cmd+V'); }
     }, 'notes-btn');
 
-    // Update button label based on clipboard contents
-    function updatePasteBtn() {
-      if (internalClipboard.images.length) {
-        smartPasteB.textContent = '🖼 Paste Image';
-        smartPasteB.classList.add('notes-btn-primary');
-        return;
-      }
-      // Check system clipboard for images
-      if (navigator.clipboard && navigator.clipboard.read) {
-        navigator.clipboard.read().then(function(items) {
-          var hasImage = items.some(function(item) {
-            return item.types.some(function(t){ return t.startsWith('image/'); });
-          });
-          if (hasImage) {
-            smartPasteB.textContent = '🖼 Paste Image';
-            smartPasteB.classList.add('notes-btn-primary');
-          } else {
-            smartPasteB.textContent = '📋 Paste Text';
-            smartPasteB.classList.remove('notes-btn-primary');
-          }
-        }).catch(function() {
-          smartPasteB.textContent = '📋 Paste';
-          smartPasteB.classList.remove('notes-btn-primary');
-        });
-      } else {
-        smartPasteB.textContent = '📋 Paste';
-        smartPasteB.classList.remove('notes-btn-primary');
+    // Label paste button based on clipboard contents
+    function updatePasteLabel() {
+      var hasInternal = internalClipboard.images.length > 0;
+      if (hasInternal) { pasteB.textContent='🖼 Paste Image'; pasteB.classList.add('notes-btn-primary'); return; }
+      if (navigator.clipboard&&navigator.clipboard.read) {
+        navigator.clipboard.read().then(function(items){
+          var hasImg=items.some(function(i){ return i.types.some(function(t){ return t.startsWith('image/'); }); });
+          pasteB.textContent = hasImg ? '🖼 Paste Image' : '📋 Paste Text';
+          hasImg ? pasteB.classList.add('notes-btn-primary') : pasteB.classList.remove('notes-btn-primary');
+        }).catch(function(){ pasteB.textContent='📋 Paste'; });
       }
     }
-    updatePasteBtn();
+    updatePasteLabel();
 
-    var row   = el('div','editor-btn-row');
-    row.appendChild(pickImgB);
-    row.appendChild(smartPasteB);
-    var saveB = btn('Save', function() {
-      var content = ta.value.trim();
-      if (!content && !imgs.length) { toast('Note is empty'); return; }
-      var newId = uid();
-      if (existing) {
-        existing.content = content; existing.images = imgs; existing.updatedAt = now();
-        newId = existing.id;
-      } else if (insertAtIndex !== undefined) {
-        subject.notes.splice(insertAtIndex, 0, { id: newId, content: content, images: imgs, createdAt: now(), updatedAt: now() });
-      } else {
-        subject.notes.push({ id: newId, content: content, images: imgs, createdAt: now(), updatedAt: now() });
-      }
-      save(); render(); overlay.remove();
-      // Scroll the new note into view after render
-      requestAnimationFrame(function() {
-        var noteEl = document.querySelector('.note-row[data-id="' + newId + '"]');
-        if (noteEl) noteEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // ── Save button
+    var row=el('div','editor-btn-row');
+    var saveB=btn('Save', function(){
+      var content=ta.value.trim();
+      if (!content&&!imgs.length){ toast('Note is empty'); return; }
+      var newId=uid();
+      if (existing){ existing.content=content; existing.images=imgs; existing.updatedAt=now(); newId=existing.id; }
+      else if (insertAtIndex!==undefined){ subject.notes.splice(insertAtIndex,0,{id:newId,content,images:imgs,createdAt:now(),updatedAt:now()}); }
+      else { subject.notes.push({id:newId,content,images:imgs,createdAt:now(),updatedAt:now()}); }
+      save(); render(); ov.remove();
+      requestAnimationFrame(function(){
+        var noteEl=document.querySelector('.note-row[data-id="'+newId+'"]');
+        if (noteEl) noteEl.scrollIntoView({behavior:'smooth',block:'center'});
       });
     }, 'notes-btn notes-btn-primary');
-    var cancelB = btn('Cancel', function(){ overlay.remove(); });
-    row.appendChild(saveB); row.appendChild(cancelB);
 
-    modal.appendChild(title); modal.appendChild(ta);
-    modal.appendChild(strip); modal.appendChild(row);
-    overlay.appendChild(modal);
-    overlay.addEventListener('click', function(e){ if (e.target === overlay) overlay.remove(); });
-    document.body.appendChild(overlay);
+    row.appendChild(addImgB); row.appendChild(pasteB);
+    row.appendChild(saveB); row.appendChild(btn('Cancel',function(){ ov.remove(); }));
+
+    modal.appendChild(title); modal.appendChild(ta); modal.appendChild(strip); modal.appendChild(row);
+    ov.appendChild(modal);
+    ov.addEventListener('click',function(e){ if(e.target===ov) ov.remove(); });
+    document.body.appendChild(ov);
     ta.focus();
   }
 
-  // ─── Note Row ────────────────────────────────────────────────────────────────
+  // ─── Note Row ─────────────────────────────────────────────────────────────────
   function buildNoteRow(note, subjectId) {
-    var subject = data.subjects.find(function(s){ return s.id === subjectId; });
-    var row     = el('div','note-row');
-    row.dataset.id = note.id;
-    row.draggable  = true;
+    var subject = data.subjects.find(function(s){ return s.id===subjectId; });
+    var row=el('div','note-row'); row.dataset.id=note.id; row.draggable=true;
 
-    var content = el('div','note-row-content');
-    if (note.images && note.images.length) {
-      var imgWrap = el('div','note-row-images');
-      // Resolve IDB references async, render placeholders first
-      note.images.forEach(function(src) {
-        var imgEl = el('img','note-row-img');
-        imgEl.style.minWidth = '60px'; imgEl.style.minHeight = '40px';
-        if (src.indexOf('idb:') === 0) {
-          idbGet(src.slice(4)).then(function(data) {
-            if (data) {
-              imgEl.src = data;
-              imgEl.addEventListener('click', function(e){ e.stopPropagation(); openLightbox(data); });
-            }
-          });
-        } else {
-          imgEl.src = src;
-          imgEl.addEventListener('click', function(e){ e.stopPropagation(); openLightbox(src); });
-        }
-        imgWrap.appendChild(imgEl);
+    var content=el('div','note-row-content');
+    if (note.images&&note.images.length) {
+      var wrap=el('div','note-row-images');
+      note.images.forEach(function(src){
+        var img=el('img','note-row-img'); img.style.minWidth='60px'; img.style.minHeight='40px';
+        if (src.indexOf('idb:')===0) {
+          idbGet(src.slice(4)).then(function(d){ if(d){ img.src=d; img.addEventListener('click',function(e){ e.stopPropagation(); openLightbox(d); }); } });
+        } else { img.src=src; img.addEventListener('click',function(e){ e.stopPropagation(); openLightbox(src); }); }
+        wrap.appendChild(img);
       });
-      content.appendChild(imgWrap);
+      content.appendChild(wrap);
     }
-    var txt = el('div','note-row-text');
-    txt.innerHTML = esc(note.content).replace(/\n/g,'<br>');
+    var txt=el('div','note-row-text'); txt.innerHTML=esc(note.content).replace(/\n/g,'<br>');
     content.appendChild(txt);
 
-    var actions = el('div','note-row-actions');
+    var actions=el('div','note-row-actions');
 
-    actions.appendChild(btn('Add Above', function(e){
-      e.stopPropagation();
-      var idx = subject.notes.findIndex(function(n){ return n.id === note.id; });
-      openEditor(subjectId, null, idx);
-    }));
+    function addEditBtn(lbl, fn){ actions.appendChild(btn(lbl,function(e){ e.stopPropagation(); fn(); })); }
 
-    actions.appendChild(btn('Add Below', function(e){
-      e.stopPropagation();
-      var idx = subject.notes.findIndex(function(n){ return n.id === note.id; });
-      openEditor(subjectId, null, idx + 1);
-    }));
+    addEditBtn('Add Above', function(){
+      openEditor(subjectId, null, subject.notes.findIndex(function(n){ return n.id===note.id; }));
+    });
+    addEditBtn('Add Below', function(){
+      openEditor(subjectId, null, subject.notes.findIndex(function(n){ return n.id===note.id; })+1);
+    });
+    addEditBtn('Edit', function(){ openEditor(subjectId, note.id); });
 
-    actions.appendChild(btn('Edit', function(e){
-      e.stopPropagation(); openEditor(subjectId, note.id);
-    }));
-
-    var delB = btn('Delete', function(e){
+    var delB=btn('Delete',function(e){
       e.stopPropagation();
       if (!confirm('Delete this note?')) return;
-      subject.notes = subject.notes.filter(function(n){ return n.id !== note.id; });
-      save();
-      cleanupOrphanedImages().then(function(n) {
-        if (n > 0) updateStorageMeter();
-      });
-      render();
-    });
-    delB.classList.add('notes-btn-danger');
-    actions.appendChild(delB);
+      subject.notes=subject.notes.filter(function(n){ return n.id!==note.id; });
+      save(); cleanupOrphanedImages().then(function(n){ if(n>0) updateStorageMeter(); }); render();
+    }); delB.classList.add('notes-btn-danger'); actions.appendChild(delB);
 
-    var copyB = btn('Copy', function(e){
+    var copyB=btn('Copy',function(e){
       e.stopPropagation();
-      // Visual feedback on the button itself
-      var orig = copyB.textContent;
-      copyB.textContent = '✓ Copied!';
-      copyB.style.color = '#4ade80';
-      setTimeout(function(){ copyB.textContent = orig; copyB.style.color = ''; }, 2000);
+      var orig=copyB.textContent; copyB.textContent='✓ Copied!'; copyB.style.color='#4ade80';
+      setTimeout(function(){ copyB.textContent=orig; copyB.style.color=''; },2000);
+      // Copy text
+      var t=document.createElement('textarea'); t.value=note.content;
+      document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
+      // Copy images
+      var refs=note.images?note.images.slice():[];
+      if (!refs.length) return;
+      resolveImages(refs).then(function(resolved){
+        internalClipboard.images=resolved;
+        // Try system clipboard (HTTPS only)
+        if (navigator.clipboard&&window.ClipboardItem) {
+          var d=resolved[0], parts=d.split(','), bytes=atob(parts[1]), arr=new Uint8Array(bytes.length);
+          for (var i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i);
+          navigator.clipboard.write([new ClipboardItem({'image/png':new Blob([arr],{type:'image/png'})})])
+            .then(function(){ toast('✓ Image in system clipboard — paste anywhere'); })
+            .catch(function(){ toast('Copied! ('+refs.length+' image(s) — use 📋 Paste in editor)'); });
+        } else { toast('Copied! ('+refs.length+' image(s) — use 📋 Paste in editor)'); }
+      });
+    }); actions.appendChild(copyB);
 
-      // Copy text to system clipboard
-      var clipTa = document.createElement('textarea');
-      clipTa.value = note.content; document.body.appendChild(clipTa);
-      clipTa.select(); document.execCommand('copy'); document.body.removeChild(clipTa);
+    row.appendChild(content); row.appendChild(actions);
 
-      var imgRefs = note.images ? note.images.slice() : [];
-      if (imgRefs.length) {
-        resolveImages(imgRefs).then(function(resolved) {
-          internalClipboard.images = resolved;
-
-          // Try to write first image to system clipboard (works on HTTPS, not file://)
-          if (resolved.length && navigator.clipboard && window.ClipboardItem) {
-            try {
-              // Convert base64 data URL to a Blob
-              var dataUrl = resolved[0];
-              var parts   = dataUrl.split(',');
-              var mime    = parts[0].match(/:(.*?);/)[1]; // e.g. "image/jpeg"
-              var bytes   = atob(parts[1]);
-              var arr     = new Uint8Array(bytes.length);
-              for (var i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
-              var blob    = new Blob([arr], { type: 'image/png' }); // browsers only accept png
-              navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-                .then(function() {
-                  toast('✓ Copied! Image is in your system clipboard — paste anywhere');
-                })
-                .catch(function() {
-                  // Clipboard write blocked (file:// or permissions)
-                  toast('Copied! (' + imgRefs.length + ' image(s) — use 📋 Paste Image in editor)');
-                });
-            } catch(err) {
-              toast('Copied! (' + imgRefs.length + ' image(s) — use 📋 Paste Image in editor)');
-            }
-          } else {
-            toast('Copied! (' + imgRefs.length + ' image(s) — use 📋 Paste Image in editor)');
-          }
-        });
-      } else {
-        internalClipboard.images = [];
-      }
+    row.addEventListener('dragstart',function(e){
+      dragNotePayload={noteId:note.id,fromSubjectId:subjectId}; dragSubjectId=null;
+      e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain','note:'+note.id);
+      e.stopPropagation(); setTimeout(function(){ row.classList.add('dragging'); },0);
     });
-    actions.appendChild(copyB);
-
-    row.appendChild(content);
-    row.appendChild(actions);
-
-    // Note drag (to move between subjects)
-    row.addEventListener('dragstart', function(e){
-      dragNotePayload = { noteId: note.id, fromSubjectId: subjectId };
-      dragSubjectId   = null; // note drag takes priority
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', 'note:' + note.id);
-      e.stopPropagation(); // don't let card's dragstart fire
-      setTimeout(function(){ row.classList.add('dragging'); }, 0);
-    });
-    row.addEventListener('dragend', function(){
-      row.classList.remove('dragging'); dragNotePayload = null;
-    });
-
+    row.addEventListener('dragend',function(){ row.classList.remove('dragging'); dragNotePayload=null; });
     return row;
   }
 
-  // ─── Subject Card ────────────────────────────────────────────────────────────
+  // ─── Subject Card ─────────────────────────────────────────────────────────────
   function buildSubjectCard(subject) {
-    var isOpen = (expandedSubject === subject.id);
-    var card   = el('div', isOpen ? 'subject-card subject-card-expanded' : 'subject-card');
-    card.dataset.id = subject.id;
+    var isOpen = expandedSubject===subject.id;
+    var card=el('div',isOpen?'subject-card subject-card-expanded':'subject-card'); card.dataset.id=subject.id;
 
-    // ── Header ──────────────────────────────────────────────────
-    var header  = el('div','subject-card-header');
-    // Grab handle indicator
-    var grip    = el('span','subject-grip'); grip.textContent = '⠿';
-    var chevron = el('span','subject-chevron');
-    chevron.textContent = isOpen ? '▼' : '▶';
-    var nameEl  = el('span','subject-name');
-    nameEl.textContent = subject.name;
-    nameEl.style.color = document.body.getAttribute("data-theme") === "dark" ? "#f0f0f0" : "#111827";
-    nameEl.style.fontWeight = "700";
-    nameEl.style.flex = "1";
-    var count   = el('span','subject-count');
-    count.textContent = subject.notes.length + ' note' + (subject.notes.length !== 1 ? 's' : '');
+    var header=el('div','subject-card-header');
+    var grip=el('span','subject-grip'); grip.textContent='⠿';
+    var chev=el('span','subject-chevron'); chev.textContent=isOpen?'▼':'▶';
+    var nameEl=el('span','subject-name'); nameEl.textContent=subject.name;
+    nameEl.style.color=document.body.getAttribute('data-theme')==='dark'?'#f0f0f0':'#111827';
+    nameEl.style.fontWeight='700'; nameEl.style.flex='1';
+    var count=el('span','subject-count'); count.textContent=subject.notes.length+' note'+(subject.notes.length!==1?'s':'');
 
-    var left = el('div','subject-header-left');
-    left.appendChild(grip);
-    left.appendChild(chevron);
-    left.appendChild(nameEl);
-    left.appendChild(count);
+    var left=el('div','subject-header-left');
+    [grip,chev,nameEl,count].forEach(function(x){ left.appendChild(x); });
 
-    var right  = el('div','subject-header-right');
-    right.appendChild(btn('＋', function(e){ e.stopPropagation(); openEditor(subject.id); }));
-    right.appendChild(btn('✎', function(e){
+    var right=el('div','subject-header-right');
+    right.appendChild(btn('＋',function(e){ e.stopPropagation(); openEditor(subject.id); }));
+    right.appendChild(btn('✎',function(e){
       e.stopPropagation();
-      var n = prompt('New name:', subject.name);
-      if (n && n.trim()) { subject.name = n.trim(); save(); render(); }
+      var n=prompt('New name:',subject.name);
+      if (n&&n.trim()){ subject.name=n.trim(); save(); render(); }
     }));
-    var delB = btn('✕', function(e){
+    var del=btn('✕',function(e){
       e.stopPropagation();
-      if (confirm('Delete "' + subject.name + '" and all its notes?')) {
-        data.subjects = data.subjects.filter(function(s){ return s.id !== subject.id; });
-        if (expandedSubject === subject.id) expandedSubject = null;
-        save();
-        cleanupOrphanedImages().then(function(n) {
-          if (n > 0) updateStorageMeter();
-        });
-        render();
-      }
-    });
-    delB.classList.add('notes-btn-danger');
-    right.appendChild(delB);
+      if (!confirm('Delete "'+subject.name+'" and all its notes?')) return;
+      data.subjects=data.subjects.filter(function(s){ return s.id!==subject.id; });
+      if (expandedSubject===subject.id) expandedSubject=null;
+      save(); cleanupOrphanedImages().then(function(n){ if(n>0) updateStorageMeter(); }); render();
+    }); del.classList.add('notes-btn-danger'); right.appendChild(del);
 
-    header.appendChild(left);
-    header.appendChild(right);
-
-    // Toggle expand/collapse on header click
-    header.addEventListener('click', function(e){
-      if (e.target.closest('button') || e.target.closest('.subject-grip')) return;
-      // Use live check, not stale closure value
-      expandedSubject = (expandedSubject === subject.id) ? null : subject.id;
-      render();
+    header.appendChild(left); header.appendChild(right);
+    header.addEventListener('click',function(e){
+      if (e.target.closest('button')||e.target.closest('.subject-grip')) return;
+      expandedSubject = expandedSubject===subject.id ? null : subject.id; render();
     });
 
-    // ── Notes list ────────────────────────────────────────────────
-    var notesList = el('div','subject-notes-list');
-    notesList.style.display = isOpen ? 'flex' : 'none';
+    var notesList=el('div','subject-notes-list'); notesList.style.display=isOpen?'flex':'none';
+    subject.notes.forEach(function(n){ notesList.appendChild(buildNoteRow(n,subject.id)); });
+    if (!subject.notes.length){ var empty=el('div','notes-empty'); empty.textContent='No notes yet — click ＋ to add one.'; notesList.appendChild(empty); }
 
-    subject.notes.forEach(function(note){
-      notesList.appendChild(buildNoteRow(note, subject.id));
-    });
-
-    if (!subject.notes.length) {
-      var empty = el('div','notes-empty');
-      empty.textContent = 'No notes yet — click "+ Note" to add one.';
-      notesList.appendChild(empty);
-    }
-
-    // Drop target for note-to-subject drag
-    notesList.addEventListener('dragover', function(e){
-      if (!dragNotePayload) return;
-      e.preventDefault(); notesList.classList.add('note-drop-over');
-    });
-    notesList.addEventListener('dragleave', function(){
+    notesList.addEventListener('dragover',function(e){ if(!dragNotePayload)return; e.preventDefault(); notesList.classList.add('note-drop-over'); });
+    notesList.addEventListener('dragleave',function(){ notesList.classList.remove('note-drop-over'); });
+    notesList.addEventListener('drop',function(e){
       notesList.classList.remove('note-drop-over');
-    });
-    notesList.addEventListener('drop', function(e){
-      notesList.classList.remove('note-drop-over');
-      if (dragNotePayload && dragNotePayload.fromSubjectId !== subject.id) {
+      if (dragNotePayload&&dragNotePayload.fromSubjectId!==subject.id) {
         e.preventDefault();
-        moveNote(dragNotePayload.noteId, dragNotePayload.fromSubjectId, subject.id);
+        var from=data.subjects.find(function(s){ return s.id===dragNotePayload.fromSubjectId; });
+        var to=subject, idx=from.notes.findIndex(function(n){ return n.id===dragNotePayload.noteId; });
+        if (from&&to&&idx!==-1){ var note=from.notes.splice(idx,1)[0]; to.notes.push(note); save(); render(); toast('Moved to "'+to.name+'"'); }
       }
     });
 
-    // ── Subject drag-to-reorder ───────────────────────────────────
-    // Only the grip handle triggers subject drag
-    grip.addEventListener('mousedown', function(){
-      card.draggable = true;
+    grip.addEventListener('mousedown',function(){ card.draggable=true; });
+    card.addEventListener('dragstart',function(e){
+      if(!card.draggable)return; dragSubjectId=subject.id; dragNotePayload=null;
+      e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain','subject:'+subject.id);
+      setTimeout(function(){ card.classList.add('subject-dragging'); },0);
     });
-    card.addEventListener('dragstart', function(e){
-      if (!card.draggable) return;
-      dragSubjectId   = subject.id;
-      dragNotePayload = null;
-      e.dataTransfer.effectAllowed = 'move';
-      e.dataTransfer.setData('text/plain', 'subject:' + subject.id);
-      setTimeout(function(){ card.classList.add('subject-dragging'); }, 0);
-    });
-    card.addEventListener('dragend', function(){
-      card.classList.remove('subject-dragging');
-      card.draggable  = false;
-      dragSubjectId   = null;
-    });
-    card.addEventListener('dragover', function(e){
-      if (!dragSubjectId || dragSubjectId === subject.id) return;
-      e.preventDefault();
-      card.classList.add('subject-drag-over');
-    });
-    card.addEventListener('dragleave', function(){
+    card.addEventListener('dragend',function(){ card.classList.remove('subject-dragging'); card.draggable=false; dragSubjectId=null; });
+    card.addEventListener('dragover',function(e){ if(!dragSubjectId||dragSubjectId===subject.id)return; e.preventDefault(); card.classList.add('subject-drag-over'); });
+    card.addEventListener('dragleave',function(){ card.classList.remove('subject-drag-over'); });
+    card.addEventListener('drop',function(e){
       card.classList.remove('subject-drag-over');
-    });
-    card.addEventListener('drop', function(e){
-      card.classList.remove('subject-drag-over');
-      if (!dragSubjectId || dragSubjectId === subject.id) return;
+      if (!dragSubjectId||dragSubjectId===subject.id) return;
       e.preventDefault();
-      var fromIdx = data.subjects.findIndex(function(s){ return s.id === dragSubjectId; });
-      var toIdx   = data.subjects.findIndex(function(s){ return s.id === subject.id; });
-      if (fromIdx === -1 || toIdx === -1) return;
-      var moved = data.subjects.splice(fromIdx, 1)[0];
-      data.subjects.splice(toIdx, 0, moved);
-      save(); render();
+      var fi=data.subjects.findIndex(function(s){ return s.id===dragSubjectId; });
+      var ti=data.subjects.findIndex(function(s){ return s.id===subject.id; });
+      if (fi!==-1&&ti!==-1){ data.subjects.splice(ti,0,data.subjects.splice(fi,1)[0]); save(); render(); }
     });
 
-    card.appendChild(header);
-    card.appendChild(notesList);
-    return card;
-  }
-
-  // ─── Move note ────────────────────────────────────────────────────────────────
-  function moveNote(noteId, fromId, toId) {
-    var from = data.subjects.find(function(s){ return s.id === fromId; });
-    var to   = data.subjects.find(function(s){ return s.id === toId; });
-    if (!from || !to) return;
-    var idx = from.notes.findIndex(function(n){ return n.id === noteId; });
-    if (idx === -1) return;
-    var note = from.notes.splice(idx, 1)[0];
-    to.notes.push(note);
-    save(); render(); toast('Moved to "' + to.name + '"');
+    card.appendChild(header); card.appendChild(notesList); return card;
   }
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   function render() {
-    var list = document.getElementById('subjectList');
-    if (!list) return;
-
-    // Save scroll position of the expanded subject's notes list before re-render
-    var scrollEl  = document.querySelector('.subject-notes-list');
-    var scrollTop = scrollEl ? scrollEl.scrollTop : 0;
-    var scrollId  = expandedSubject; // which subject was expanded
-
-    var term = ((document.getElementById('searchBar') || {}).value || '').toLowerCase().trim();
-    list.innerHTML = '';
-
-    var visible = term
-      ? data.subjects.filter(function(s){
-          return s.name.toLowerCase().includes(term) ||
-            s.notes.some(function(n){ return n.content.toLowerCase().includes(term); });
-        })
-      : data.subjects;
-
+    var list=document.getElementById('subjectList'); if(!list) return;
+    var scrollEl=document.querySelector('.subject-notes-list'), scrollTop=scrollEl?scrollEl.scrollTop:0;
+    var term=((document.getElementById('searchBar')||{}).value||'').toLowerCase().trim();
+    list.innerHTML='';
+    var visible=term ? data.subjects.filter(function(s){
+      return s.name.toLowerCase().includes(term)||s.notes.some(function(n){ return n.content.toLowerCase().includes(term); });
+    }) : data.subjects;
     visible.forEach(function(s){ list.appendChild(buildSubjectCard(s)); });
-
-    var expBtn = document.getElementById('exportbutton');
-    if (expBtn) expBtn.style.display = data.subjects.length ? '' : 'none';
-
-    // Restore scroll position after re-render
-    if (scrollId && scrollTop > 0) {
-      var newScrollEl = document.querySelector('.subject-notes-list');
-      if (newScrollEl) newScrollEl.scrollTop = scrollTop;
-    }
+    var eb=document.getElementById('exportbutton'); if(eb) eb.style.display=data.subjects.length?'':'none';
+    if (expandedSubject&&scrollTop>0){ var el=document.querySelector('.subject-notes-list'); if(el) el.scrollTop=scrollTop; }
   }
 
-  // ─── Show/Hide fullscreen ─────────────────────────────────────────────────────
+  // ─── Show / Hide ──────────────────────────────────────────────────────────────
   function showNotes() {
-    document.querySelectorAll('.container').forEach(function(e){ e.style.display = 'none'; });
-    var nc = document.querySelector('.new-container');
-    if (nc) {
-      nc.querySelectorAll('h2').forEach(function(h){ h.style.display = 'none'; });
-      var sw = nc.querySelector('.stopwatch'); if (sw) sw.style.display = 'none';
-    }
-    var ns = document.querySelector('.new-container .notes-section');
-    if (ns) ns.style.display = 'flex';
-    var show = document.getElementById('showNotes'), hide = document.getElementById('hideNotes');
-    if (show) show.style.display = 'none';
-    if (hide) hide.style.display = 'inline-block';
-    updateStorageMeter(); // refresh meter every time notes are opened
+    document.querySelectorAll('.container').forEach(function(e){ e.style.display='none'; });
+    var nc=document.querySelector('.new-container');
+    if (nc){ nc.querySelectorAll('h2').forEach(function(h){ h.style.display='none'; }); var sw=nc.querySelector('.stopwatch'); if(sw) sw.style.display='none'; }
+    var ns=document.querySelector('.new-container .notes-section'); if(ns) ns.style.display='flex';
+    var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
+    if(show) show.style.display='none'; if(hide) hide.style.display='inline-block';
+    updateStorageMeter();
   }
 
   function hideNotes() {
-    document.querySelectorAll('.container').forEach(function(e){ e.style.display = 'block'; });
-    var nc = document.querySelector('.new-container');
-    if (nc) {
-      nc.querySelectorAll('h2').forEach(function(h){ h.style.display = ''; });
-      var sw = nc.querySelector('.stopwatch'); if (sw) sw.style.display = '';
-    }
-    var ns = document.querySelector('.new-container .notes-section');
-    if (ns) ns.style.display = 'none';
-    var show = document.getElementById('showNotes'), hide = document.getElementById('hideNotes');
-    if (show) show.style.display = 'inline-block';
-    if (hide) hide.style.display = 'none';
+    document.querySelectorAll('.container').forEach(function(e){ e.style.display='block'; });
+    var nc=document.querySelector('.new-container');
+    if (nc){ nc.querySelectorAll('h2').forEach(function(h){ h.style.display=''; }); var sw=nc.querySelector('.stopwatch'); if(sw) sw.style.display=''; }
+    var ns=document.querySelector('.new-container .notes-section'); if(ns) ns.style.display='none';
+    var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
+    if(show) show.style.display='inline-block'; if(hide) hide.style.display='none';
   }
 
   // ─── Init ─────────────────────────────────────────────────────────────────────
   function init() {
     load();
 
-    var addBtn = document.getElementById('addSubjectBtn');
-    if (addBtn) addBtn.addEventListener('click', function(){
-      var name = prompt('Subject name:');
-      if (name && name.trim()) {
-        data.subjects.push({ id: uid(), name: name.trim(), notes: [] });
-        save(); render();
-      }
+    var addBtn=document.getElementById('addSubjectBtn');
+    if (addBtn) addBtn.addEventListener('click',function(){
+      var n=prompt('Subject name:'); if(n&&n.trim()){ data.subjects.push({id:uid(),name:n.trim(),notes:[]}); save(); render(); }
     });
 
-    var sb = document.getElementById('searchBar');
-    if (sb) sb.addEventListener('input', render);
+    var sb=document.getElementById('searchBar'); if(sb) sb.addEventListener('input',render);
 
-    var expBtn = document.getElementById('exportbutton');
-    if (expBtn) expBtn.addEventListener('click', exportJSON);
+    var expBtn=document.getElementById('exportbutton'); if(expBtn) expBtn.addEventListener('click',exportJSON);
 
-    // Inject Import button
-    var expCont = document.getElementById('exportButtonContainer');
-    if (expCont && !document.getElementById('importNotesBtn')) {
-      var impBtn = document.createElement('button');
-      impBtn.id = 'importNotesBtn'; impBtn.textContent = 'Import'; impBtn.className = 'notes-btn notes-btn-primary';
-      impBtn.addEventListener('click', triggerImport);
+    var expCont=document.getElementById('exportButtonContainer');
+    if (expCont&&!document.getElementById('importNotesBtn')) {
+      var impBtn=document.createElement('button');
+      impBtn.id='importNotesBtn'; impBtn.textContent='Import'; impBtn.className='notes-btn notes-btn-primary';
+      impBtn.addEventListener('click',function(){ var inp=document.createElement('input'); inp.type='file'; inp.accept='.json'; inp.onchange=function(e){ if(e.target.files[0]) importJSON(e.target.files[0]); }; inp.click(); });
       expCont.appendChild(impBtn);
     }
 
-    // Build top toolbar: [search] [Add Subject] [Export] [Import] [Hide Notes]
-    var ns = document.querySelector('.new-container .notes-section');
-    if (ns && !document.querySelector('.notes-top-bar')) {
-      var bar = document.createElement('div');
-      bar.className = 'notes-top-bar';
-
-      var els = [
-        document.getElementById('searchBar'),
-        document.getElementById('addSubjectBtn'),
-        document.getElementById('exportButtonContainer'),
-        document.getElementById('hideNotes')
-      ];
-      els.forEach(function(e) { if (e) bar.appendChild(e); });
-
-      // Storage meter — sits at far right of toolbar
-      var meter = document.createElement('div');
-      meter.id = 'notes-storage-meter';
-      meter.style.cssText = [
-        'font-size:11px',
-        'font-weight:600',
-        'white-space:nowrap',
-        'padding:3px 10px',
-        'border-radius:10px',
-        'border:1px solid rgba(255,255,255,0.12)',
-        'margin-left:auto',
-        'flex-shrink:0',
-        'display:inline-block'
-      ].join(';');
-      bar.appendChild(meter);
+    var ns=document.querySelector('.new-container .notes-section');
+    if (ns&&!document.querySelector('.notes-top-bar')) {
+      var bar=document.createElement('div'); bar.className='notes-top-bar';
+      [document.getElementById('searchBar'),document.getElementById('addSubjectBtn'),document.getElementById('exportButtonContainer'),document.getElementById('hideNotes')]
+        .forEach(function(e){ if(e) bar.appendChild(e); });
+      var meter=document.createElement('div'); meter.id='notes-storage-meter';
+      meter.style.cssText='font-size:11px;font-weight:600;white-space:nowrap;padding:3px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);margin-left:auto;flex-shrink:0;display:inline-block';
+      bar.appendChild(meter); ns.insertBefore(bar,ns.firstChild);
       updateStorageMeter();
-
-      ns.insertBefore(bar, ns.firstChild);
     }
 
-    // Hidden by default
-    if (ns) ns.style.display = 'none';
-    var show = document.getElementById('showNotes'), hide = document.getElementById('hideNotes');
-    if (show) { show.style.display = 'inline-block'; show.addEventListener('click', showNotes); }
-    if (hide) { hide.style.display = 'none';         hide.addEventListener('click', hideNotes); }
+    if (ns) ns.style.display='none';
+    var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
+    if(show){ show.style.display='inline-block'; show.addEventListener('click',showNotes); }
+    if(hide){ hide.style.display='none';         hide.addEventListener('click',hideNotes); }
 
-    startSync();
-    render();
+    startSync(); render();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  document.readyState==='loading' ? document.addEventListener('DOMContentLoaded',init) : init();
 
 })();
