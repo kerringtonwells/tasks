@@ -14,68 +14,75 @@ const saveLinksList = (linksListElement) => {
 };
 
 const addLink = (linkData, linksListElement) => {
-    const createElem = (type, props = {}, ...children) => {
-        const el = document.createElement(type);
-        Object.entries(props).forEach(([key, value]) => el[key] = value);
-        children.forEach(child => el.appendChild(child));
-        return el;
-    };
+    const li = document.createElement('li');
+    li.className = 'no-bullet link-item';
 
-    const toggleMenu = (menu) => {
-        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
-    };
+    // ── Link itself ──
+    const a = document.createElement('a');
+    a.href = linkData.url;
+    a.target = '_blank';
+    a.textContent = linkData.text;
+    a.className = 'link-text';
 
-    const li = createElem('li', { className: 'no-bullet' });
-    const linkWrapper = createElem('div', { className: 'link-wrapper' });
-    const buttonsWrapper = createElem('div', { className: 'buttons-wrapper' });
-    const menuIcon = createElem('span', { innerHTML: '⁝', className: 'menu-icon' });
+    // ── Action buttons (shown on hover via CSS) ──
+    const actions = document.createElement('div');
+    actions.className = 'link-actions';
 
-    buttonsWrapper.append(menuIcon);
-
-    const menu = createElem('div', { className: 'menu', style: 'display: none;' });
-    const editButton = createElem('button', { textContent: 'Edit' });
-    const deleteButton = createElem('button', { textContent: 'Delete' });
-
-    menu.append(editButton, deleteButton);
-    buttonsWrapper.append(menu);
-
-    editButton.addEventListener('click', () => {
-        const newText = prompt('Enter the new link text:', linkData.text);
-        const newUrl = prompt('Enter the new link URL:', linkData.url);
-        if (newText && newUrl) {
-            linkData.text = newText;
-            linkData.url = newUrl;
-            a.textContent = newText;
-            a.href = newUrl;
+    // Edit Name
+    const editNameBtn = document.createElement('button');
+    editNameBtn.textContent = '✎ Name';
+    editNameBtn.className = 'link-action-btn';
+    editNameBtn.title = 'Edit link name';
+    editNameBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const newText = prompt('Edit link name:', linkData.text);
+        if (newText && newText.trim()) {
+            linkData.text = newText.trim();
+            a.textContent = newText.trim();
             saveLinksList(linksListElement);
         }
     });
 
-    deleteButton.addEventListener('click', () => {
-        linksListElement.removeChild(li);
-        saveLinksList(linksListElement);
-    });
-
-    menuIcon.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleMenu(menu);
-    });
-
-    document.addEventListener('click', () => {
-        if (menu.style.display === 'block') {
-            toggleMenu(menu);
+    // Edit URL
+    const editUrlBtn = document.createElement('button');
+    editUrlBtn.textContent = '✎ URL';
+    editUrlBtn.className = 'link-action-btn';
+    editUrlBtn.title = 'Edit link URL';
+    editUrlBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const newUrl = prompt('Edit link URL:', linkData.url);
+        if (newUrl && newUrl.trim()) {
+            linkData.url = newUrl.trim();
+            a.href = newUrl.trim();
+            saveLinksList(linksListElement);
         }
     });
 
-    const a = createElem('a', { href: linkData.url, target: '_blank', textContent: linkData.text, className: 'link-text' });
-    linkWrapper.append(buttonsWrapper, a);
-    li.append(linkWrapper);
-    linksListElement.append(li);
+    // Delete
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = '✕';
+    deleteBtn.className = 'link-action-btn link-delete-btn';
+    deleteBtn.title = 'Delete link';
+    deleteBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (confirm(`Delete "${linkData.text}"?`)) {
+            linksListElement.removeChild(li);
+            saveLinksList(linksListElement);
+        }
+    });
+
+    actions.appendChild(editNameBtn);
+    actions.appendChild(editUrlBtn);
+    actions.appendChild(deleteBtn);
+
+    li.appendChild(a);
+    li.appendChild(actions);
+    linksListElement.appendChild(li);
 };
 
 document.getElementById('addLink').addEventListener('click', () => {
     const newLinkText = prompt('Enter the link text:', '');
-    const newLinkUrl = prompt('Enter the link URL:', 'http://');
+    const newLinkUrl = prompt('Enter the link URL:', 'https://');
     if (newLinkText && newLinkUrl) {
         const linksListElement = document.getElementById('linksList');
         addLink({ text: newLinkText, url: newLinkUrl }, linksListElement);
