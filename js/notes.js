@@ -15,12 +15,16 @@
   var TS_KEY        = 'notes_v2_ts';
   var LEGACY_KEY    = 'subjects';
   var SYNC_INTERVAL = 15000;
+  var IDB_NAME      = 'kwells_notes';
+  var IDB_STORE     = 'images';
+  var idb           = null; // IndexedDB connection
 
-  var data            = { subjects: [] };
-  var lastSavedTs     = 0;
-  var expandedSubject = null;
-  var dragNotePayload = null;   // { noteId, fromSubjectId }
-  var dragSubjectId   = null;   // id of subject being dragged
+  var data              = { subjects: [] };
+  var lastSavedTs       = 0;
+  var expandedSubject   = null;
+  var dragNotePayload   = null;   // { noteId, fromSubjectId }
+  var dragSubjectId     = null;   // id of subject being dragged
+  var internalClipboard = { images: [] }; // for copying images between notes
 
   // ─── Utility ────────────────────────────────────────────────────────────────
   function uid() { return Math.random().toString(36).slice(2, 9) + Date.now().toString(36); }
@@ -40,6 +44,77 @@
     return b;
   }
 
+  // ─── IndexedDB Image Store ───────────────────────────────────────────────────
+
+  function openIDB() {
+    return new Promise(function(res, rej) {
+      if (idb) { res(idb); return; }
+      var req = indexedDB.open(IDB_NAME, 1);
+      req.onupgradeneeded = function(e) {
+        var db = e.target.result;
+        if (!db.objectStoreNames.contains(IDB_STORE)) {
+          db.createObjectStore(IDB_STORE); // key = imageId
+        }
+      };
+      req.onsuccess  = function(e) { idb = e.target.result; res(idb); };
+      req.onerror    = function(e) { rej(e.target.error); };
+    });
+  }
+
+  function idbPut(id, dataUrl) {
+    return openIDB().then(function(db) {
+      return new Promise(function(res, rej) {
+        var tx  = db.transaction(IDB_STORE, 'readwrite');
+        var st  = tx.objectStore(IDB_STORE);
+        var req = st.put(dataUrl, id);
+        req.onsuccess = function() { res(); };
+        req.onerror   = function(e) { rej(e.target.error); };
+      });
+    });
+  }
+
+  function idbGet(id) {
+    return openIDB().then(function(db) {
+      return new Promise(function(res, rej) {
+        var tx  = db.transaction(IDB_STORE, 'readonly');
+        var st  = tx.objectStore(IDB_STORE);
+        var req = st.get(id);
+        req.onsuccess = function() { res(req.result || null); };
+        req.onerror   = function(e) { rej(e.target.error); };
+      });
+    });
+  }
+
+  function idbDelete(id) {
+    return openIDB().then(function(db) {
+      return new Promise(function(res, rej) {
+        var tx  = db.transaction(IDB_STORE, 'readwrite');
+        var st  = tx.objectStore(IDB_STORE);
+        var req = st.delete(id);
+        req.onsuccess = function() { res(); };
+        req.onerror   = function(e) { rej(e.target.error); };
+      });
+    });
+  }
+
+  // Save image to IDB, return a reference ID instead of the raw base64
+  // Images in notes are stored as "idb:<id>" — resolved at render time
+  function saveImageToIDB(dataUrl) {
+    var id = 'img_' + uid();
+    return idbPut(id, dataUrl).then(function() { return 'idb:' + id; });
+  }
+
+  // Resolve all "idb:<id>" references in a note's images array to real data URLs
+  function resolveImages(images) {
+    var promises = images.map(function(src) {
+      if (src.indexOf('idb:') === 0) {
+        return idbGet(src.slice(4)).then(function(data) { return data || src; });
+      }
+      return Promise.resolve(src);
+    });
+    return Promise.all(promises);
+  }
+
   // ─── Storage ────────────────────────────────────────────────────────────────
   function save() {
     var ts = now();
@@ -47,6 +122,8 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       localStorage.setItem(TS_KEY, String(ts));
       lastSavedTs = ts;
+      checkStorageWarning();
+      updateStorageMeter();
     } catch(e) {
       if (e.name === 'QuotaExceededError') {
         toast('⚠ Storage full! Images are compressed but this note may have too many. Try removing some images.');
@@ -81,10 +158,109 @@
     };
   }
 
+  // ─── Storage usage ──────────────────────────────────────────────────────────
+
+  function getLocalStorageBytes() {
+    var total = 0;
+    for (var key in localStorage) {
+      if (localStorage.hasOwnProperty(key)) {
+        total += (localStorage[key].length + key.length) * 2;
+      }
+    }
+    return total;
+  }
+
+  function getIDBBytes() {
+    return openIDB().then(function(db) {
+      return new Promise(function(res) {
+        var tx    = db.transaction(IDB_STORE, 'readonly');
+        var store = tx.objectStore(IDB_STORE);
+        var req   = store.getAll();
+        req.onsuccess = function() {
+          var total = 0;
+          (req.result || []).forEach(function(val) {
+            total += (val ? val.length * 2 : 0);
+          });
+          res(total);
+        };
+        req.onerror = function() { res(0); };
+      });
+    }).catch(function() { return 0; });
+  }
+
+  function formatBytes(bytes) {
+    if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
+    if (bytes >= 1048576)    return (bytes / 1048576).toFixed(2) + ' MB';
+    if (bytes >= 1024)       return (bytes / 1024).toFixed(1) + ' KB';
+    return bytes + ' B';
+  }
+
+  function checkStorageWarning(totalBytes) {
+    var lsBytes = getLocalStorageBytes();
+    if (lsBytes > 3670016) { // localStorage > 3.5MB
+      toast('⚠ Text storage at ' + formatBytes(lsBytes) + ' — approaching 5MB limit.');
+    }
+  }
+
+  function updateStorageMeter() {
+    var el = document.getElementById('notes-storage-meter');
+    if (!el) return;
+    var lsBytes = getLocalStorageBytes();
+    getIDBBytes().then(function(idbBytes) {
+      var total = lsBytes + idbBytes;
+      el.textContent = '💾 ' + formatBytes(total);
+      el.title = 'localStorage: ' + formatBytes(lsBytes) + '  |  Images (IndexedDB): ' + formatBytes(idbBytes);
+      // Color based on localStorage % (that's the real limit)
+      var lsPct = lsBytes / 5242880;
+      if (lsPct > 0.7) {
+        el.style.color = '#f87171';
+        el.style.background = 'rgba(239,68,68,0.15)';
+        el.style.borderColor = 'rgba(239,68,68,0.3)';
+      } else if (lsPct > 0.5) {
+        el.style.color = '#fbbf24';
+        el.style.background = 'rgba(251,191,36,0.15)';
+        el.style.borderColor = 'rgba(251,191,36,0.3)';
+      } else {
+        el.style.color = '#4ade80';
+        el.style.background = 'rgba(74,222,128,0.12)';
+        el.style.borderColor = 'rgba(74,222,128,0.3)';
+      }
+    });
+  }
+
   function load() {
     var raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_KEY);
     if (raw) { try { data = parseSubjects(raw); } catch(e) { console.error('Notes load error', e); } }
     lastSavedTs = parseInt(localStorage.getItem(TS_KEY) || '0', 10);
+    // Migrate any raw base64 images still in localStorage to IDB
+    migrateImagesToIDB();
+  }
+
+  function migrateImagesToIDB() {
+    var needsSave = false;
+    var promises  = [];
+    data.subjects.forEach(function(s) {
+      s.notes.forEach(function(n) {
+        if (!n.images || !n.images.length) return;
+        n.images.forEach(function(src, i) {
+          if (src.indexOf('data:') === 0) { // raw base64 — migrate it
+            var p = saveImageToIDB(src).then(function(ref) {
+              n.images[i] = ref;
+              needsSave = true;
+            });
+            promises.push(p);
+          }
+        });
+      });
+    });
+    if (promises.length > 0) {
+      Promise.all(promises).then(function() {
+        if (needsSave) {
+          save();
+          toast('Migrated ' + promises.length + ' image(s) to expanded storage');
+        }
+      });
+    }
   }
 
   // ─── Cross-tab sync ──────────────────────────────────────────────────────────
@@ -170,17 +346,15 @@
         var img = new Image();
         img.onerror = rej;
         img.onload = function() {
-          var MAX = 1600;
+          var MAX = 1200;
           var w = img.width;
           var h = img.height;
           if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
           var canvas = document.createElement('canvas');
           canvas.width = w; canvas.height = h;
           var ctx = canvas.getContext('2d');
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, w, h);
-          res(canvas.toDataURL('image/jpeg', 0.88));
+          res(canvas.toDataURL('image/jpeg', 0.75));
         };
         img.src = e.target.result;
       };
@@ -192,15 +366,17 @@
     var out = [];
     for (var i = 0; i < files.length; i++) {
       if (files[i].type.startsWith('image/')) {
-        try { out.push(await compressImage(files[i])); }
-        catch(e) { toast('Could not load image: ' + files[i].name); }
+        try {
+          var compressed = await compressImage(files[i]);
+          var ref = await saveImageToIDB(compressed); // store in IDB, get ref
+          out.push(ref);
+        } catch(e) { toast('Could not load image: ' + files[i].name); }
       }
     }
     return out;
   }
 
   async function pastedImages(e) {
-    var out = [];
     var items = Array.from((e.clipboardData || {}).items || []);
     var files = [];
     for (var item of items) {
@@ -245,7 +421,7 @@
     var subject  = data.subjects.find(function(s){ return s.id === subjectId; });
     if (!subject) return;
     var existing = noteId ? subject.notes.find(function(n){ return n.id === noteId; }) : null;
-    var imgs     = existing ? existing.images.slice() : [];
+    var imgs = [];
 
     var overlay = el('div','note-editor-overlay');
     var modal   = el('div','note-editor-modal');
@@ -259,6 +435,8 @@
     ta.spellcheck = true;
 
     var strip = el('div','editor-img-strip');
+
+    // refreshStrip defined before any async call that uses it
     function refreshStrip() {
       strip.innerHTML = '';
       imgs.forEach(function(src, i) {
@@ -269,10 +447,28 @@
         wrap.appendChild(img); wrap.appendChild(rm); strip.appendChild(wrap);
       });
     }
+
+    // Resolve existing images from IDB after strip is ready
+    if (existing && existing.images && existing.images.length) {
+      resolveImages(existing.images).then(function(resolved) {
+        imgs = resolved;
+        refreshStrip();
+      });
+    }
+
     refreshStrip();
 
+    var blockNextPaste = false; // set true after paste button click to ignore Ctrl+V text
     ta.addEventListener('paste', function(e) {
-      pastedImages(e).then(function(found){ if (found.length){ imgs = imgs.concat(found); refreshStrip(); } });
+      if (blockNextPaste) {
+        e.preventDefault();
+        blockNextPaste = false;
+        return;
+      }
+      // Handle real system clipboard images (screenshots, drags from Finder etc.)
+      pastedImages(e).then(function(found){
+        if (found.length) { imgs = imgs.concat(found); refreshStrip(); }
+      });
     });
 
     // Drag-and-drop images onto the textarea or strip
@@ -303,8 +499,32 @@
       inp.click();
     }, 'notes-btn');
 
+    // Paste copied images button — shows only when internal clipboard has images
+    var pasteImgB = btn('📋 Paste Image', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!internalClipboard.images.length) { toast('No copied images — click Copy on a note first'); return; }
+      var clipImgs = internalClipboard.images.slice();
+      internalClipboard.images = [];
+      pasteImgB.style.display = 'none';
+      var savePromises = clipImgs.map(function(dataUrl) {
+        return dataUrl ? saveImageToIDB(dataUrl) : Promise.resolve(null);
+      });
+      Promise.all(savePromises).then(function(newRefs) {
+        imgs = imgs.concat(newRefs.filter(Boolean));
+        refreshStrip();
+        toast('✓ Image(s) added — write your note and click Save');
+      });
+      // Block the next paste event so returning focus doesn't paste system clipboard text
+      blockNextPaste = true;
+      setTimeout(function(){ ta.focus(); setTimeout(function(){ blockNextPaste = false; }, 300); }, 0);
+    }, 'notes-btn notes-btn-primary');
+    // Only show if there are copied images waiting
+    pasteImgB.style.display = internalClipboard.images.length ? 'inline-block' : 'none';
+
     var row   = el('div','editor-btn-row');
     row.appendChild(pickImgB);
+    row.appendChild(pasteImgB);
     var saveB = btn('Save', function() {
       var content = ta.value.trim();
       if (!content && !imgs.length) { toast('Note is empty'); return; }
@@ -336,10 +556,22 @@
     var content = el('div','note-row-content');
     if (note.images && note.images.length) {
       var imgWrap = el('div','note-row-images');
-      note.images.forEach(function(src){
-        var img = el('img','note-row-img'); img.src = src;
-        img.addEventListener('click', function(e){ e.stopPropagation(); openLightbox(src); });
-        imgWrap.appendChild(img);
+      // Resolve IDB references async, render placeholders first
+      note.images.forEach(function(src) {
+        var imgEl = el('img','note-row-img');
+        imgEl.style.minWidth = '60px'; imgEl.style.minHeight = '40px';
+        if (src.indexOf('idb:') === 0) {
+          idbGet(src.slice(4)).then(function(data) {
+            if (data) {
+              imgEl.src = data;
+              imgEl.addEventListener('click', function(e){ e.stopPropagation(); openLightbox(data); });
+            }
+          });
+        } else {
+          imgEl.src = src;
+          imgEl.addEventListener('click', function(e){ e.stopPropagation(); openLightbox(src); });
+        }
+        imgWrap.appendChild(imgEl);
       });
       content.appendChild(imgWrap);
     }
@@ -374,13 +606,55 @@
     delB.classList.add('notes-btn-danger');
     actions.appendChild(delB);
 
-    actions.appendChild(btn('Copy', function(e){
+    var copyB = btn('Copy', function(e){
       e.stopPropagation();
-      var ta = document.createElement('textarea');
-      ta.value = note.content; document.body.appendChild(ta);
-      ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-      toast('Copied!');
-    }));
+      // Visual feedback on the button itself
+      var orig = copyB.textContent;
+      copyB.textContent = '✓ Copied!';
+      copyB.style.color = '#4ade80';
+      setTimeout(function(){ copyB.textContent = orig; copyB.style.color = ''; }, 2000);
+
+      // Copy text to system clipboard
+      var clipTa = document.createElement('textarea');
+      clipTa.value = note.content; document.body.appendChild(clipTa);
+      clipTa.select(); document.execCommand('copy'); document.body.removeChild(clipTa);
+
+      var imgRefs = note.images ? note.images.slice() : [];
+      if (imgRefs.length) {
+        resolveImages(imgRefs).then(function(resolved) {
+          internalClipboard.images = resolved;
+
+          // Try to write first image to system clipboard (works on HTTPS, not file://)
+          if (resolved.length && navigator.clipboard && window.ClipboardItem) {
+            try {
+              // Convert base64 data URL to a Blob
+              var dataUrl = resolved[0];
+              var parts   = dataUrl.split(',');
+              var mime    = parts[0].match(/:(.*?);/)[1]; // e.g. "image/jpeg"
+              var bytes   = atob(parts[1]);
+              var arr     = new Uint8Array(bytes.length);
+              for (var i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+              var blob    = new Blob([arr], { type: 'image/png' }); // browsers only accept png
+              navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+                .then(function() {
+                  toast('✓ Copied! Image is in your system clipboard — paste anywhere');
+                })
+                .catch(function() {
+                  // Clipboard write blocked (file:// or permissions)
+                  toast('Copied! (' + imgRefs.length + ' image(s) — use 📋 Paste Image in editor)');
+                });
+            } catch(err) {
+              toast('Copied! (' + imgRefs.length + ' image(s) — use 📋 Paste Image in editor)');
+            }
+          } else {
+            toast('Copied! (' + imgRefs.length + ' image(s) — use 📋 Paste Image in editor)');
+          }
+        });
+      } else {
+        internalClipboard.images = [];
+      }
+    });
+    actions.appendChild(copyB);
 
     row.appendChild(content);
     row.appendChild(actions);
@@ -575,6 +849,7 @@
     var show = document.getElementById('showNotes'), hide = document.getElementById('hideNotes');
     if (show) show.style.display = 'none';
     if (hide) hide.style.display = 'inline-block';
+    updateStorageMeter(); // refresh meter every time notes are opened
   }
 
   function hideNotes() {
@@ -632,6 +907,24 @@
         document.getElementById('hideNotes')
       ];
       els.forEach(function(e) { if (e) bar.appendChild(e); });
+
+      // Storage meter — sits at far right of toolbar
+      var meter = document.createElement('div');
+      meter.id = 'notes-storage-meter';
+      meter.style.cssText = [
+        'font-size:11px',
+        'font-weight:600',
+        'white-space:nowrap',
+        'padding:3px 10px',
+        'border-radius:10px',
+        'border:1px solid rgba(255,255,255,0.12)',
+        'margin-left:auto',
+        'flex-shrink:0',
+        'display:inline-block'
+      ].join(';');
+      bar.appendChild(meter);
+      updateStorageMeter();
+
       ns.insertBefore(bar, ns.firstChild);
     }
 
