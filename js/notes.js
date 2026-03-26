@@ -681,12 +681,21 @@
     var saveB = btn('Save', function() {
       var content = ta.value.trim();
       if (!content && !imgs.length) { toast('Note is empty'); return; }
-      if (existing) { existing.content = content; existing.images = imgs; existing.updatedAt = now(); }
-      else if (insertAtIndex !== undefined) {
-        subject.notes.splice(insertAtIndex, 0, { id: uid(), content: content, images: imgs, createdAt: now(), updatedAt: now() });
+      var newId = uid();
+      if (existing) {
+        existing.content = content; existing.images = imgs; existing.updatedAt = now();
+        newId = existing.id;
+      } else if (insertAtIndex !== undefined) {
+        subject.notes.splice(insertAtIndex, 0, { id: newId, content: content, images: imgs, createdAt: now(), updatedAt: now() });
+      } else {
+        subject.notes.push({ id: newId, content: content, images: imgs, createdAt: now(), updatedAt: now() });
       }
-      else { subject.notes.push({ id: uid(), content: content, images: imgs, createdAt: now(), updatedAt: now() }); }
       save(); render(); overlay.remove();
+      // Scroll the new note into view after render
+      requestAnimationFrame(function() {
+        var noteEl = document.querySelector('.note-row[data-id="' + newId + '"]');
+        if (noteEl) noteEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
     }, 'notes-btn notes-btn-primary');
     var cancelB = btn('Cancel', function(){ overlay.remove(); });
     row.appendChild(saveB); row.appendChild(cancelB);
