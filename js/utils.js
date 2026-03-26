@@ -1,17 +1,5 @@
-let timeSlots = [];
-for (let i = 6; i <= 29; i++) {
-    for (let j = 0; j < 2; j++) {
-        let startTime = ('0' + i).slice(-2) + ':' + (j === 0 ? '00' : '30');
-        let endTime = ('0' + (j === 1 ? i + 1 : i)).slice(-2) + ':' + (j === 0 ? '30' : '00');
-        timeSlots.push({ time: `${startTime} - ${endTime}`, status: 0 });
-    }
-}
-
-let selectedIndex = parseInt(localStorage.getItem('selectedIndex')) || 0;
-let startedIndex = parseInt(localStorage.getItem('startedIndex'));
-startedIndex = isNaN(startedIndex) ? -1 : startedIndex;
-let combineCounter = parseInt(localStorage.getItem('combineCounter')) || 0;
-let itemCount = 0;
+// utils.js — shared utilities only
+// timeSlots, selectedIndex, combineCounter are declared in timeslots.js
 
 const formatTime12Hour = (hour24, minute, second) => {
     const ampm = hour24 >= 12 ? 'pm' : 'am';
@@ -49,7 +37,7 @@ const showTemporaryMessage = (message, element) => {
     }, 50);
 };
 
-// Theme Toggle Functionality
+// Theme Toggle
 const toggleThemeButton = document.getElementById('toggleTheme');
 const applyTheme = (theme) => {
     document.body.setAttribute('data-theme', theme);
