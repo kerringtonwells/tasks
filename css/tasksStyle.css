@@ -801,7 +801,6 @@ body[data-theme="light"] .subject-header-right button {
     gap: 6px;
     padding: 10px;
     border-radius: 0 0 10px 10px;
-    overflow: hidden;
 }
 
 .subject-notes-list.note-drop-over { background: rgba(59,130,246,0.07); }
@@ -1124,4 +1123,165 @@ body[data-theme="light"] .notes-toast { background: rgba(15,20,40,0.88);  color:
 /* Hint text on textarea placeholder */
 .note-editor-modal textarea.editor-textarea::placeholder {
     opacity: 0.5;
+}
+
+/* ============================================================
+   VISUAL POLISH — Modern improvements
+   ============================================================ */
+
+/* ── 1. Subject cards — hover lift + glow ────────────────── */
+.subject-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+body[data-theme="dark"] .subject-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(59,130,246,0.2), 0 4px 12px rgba(0,0,0,0.3);
+    border-color: rgba(99,160,255,0.3);
+}
+body[data-theme="light"] .subject-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(99,130,220,0.2), 0 4px 12px rgba(99,130,220,0.1);
+    border-color: rgba(99,130,220,0.3);
+}
+/* Don't lift expanded cards */
+.subject-card.subject-card-expanded:hover {
+    transform: none;
+}
+
+/* ── 2. Todo task name — larger, bolder hierarchy ────────── */
+.content-wrapper span {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+    line-height: 1.4;
+}
+
+/* ── 3. TIME table header — gradient ─────────────────────── */
+body[data-theme="dark"] th {
+    background: linear-gradient(135deg, rgba(59,130,246,0.5) 0%, rgba(139,92,246,0.4) 100%);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    letter-spacing: 2px;
+}
+body[data-theme="light"] th {
+    background: linear-gradient(135deg, rgba(59,130,246,0.65) 0%, rgba(139,92,246,0.5) 100%);
+    letter-spacing: 2px;
+}
+
+/* ── 4. Current Time — styled as a card ──────────────────── */
+#currentTime {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 12px;
+    margin: 0 0 16px;
+    width: fit-content;
+}
+body[data-theme="dark"] #currentTime {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #cbd5e1;
+}
+body[data-theme="light"] #currentTime {
+    background: rgba(255,255,255,0.5);
+    border: 1px solid rgba(200,210,255,0.5);
+    color: #374151;
+    box-shadow: 0 1px 4px rgba(99,130,220,0.1);
+}
+
+/* ── 5. Stopwatch — glow on digits ───────────────────────── */
+.time-display {
+    font-size: 2.8rem;
+    letter-spacing: 3px;
+}
+body[data-theme="dark"] .time-display {
+    text-shadow: 0 0 20px rgba(59,130,246,0.4), 0 0 40px rgba(59,130,246,0.15);
+}
+body[data-theme="light"] .time-display {
+    text-shadow: 0 2px 8px rgba(99,130,220,0.25);
+}
+
+/* ── 6. Sidebar links — pill/card row treatment ──────────── */
+.link-item {
+    padding: 6px 10px;
+    border-radius: 8px;
+    margin: 2px 0;
+    border: 1px solid transparent;
+    transition: background 0.15s, border-color 0.15s, transform 0.12s;
+}
+body[data-theme="dark"] .link-item:hover {
+    background: rgba(59,130,246,0.1);
+    border-color: rgba(99,160,255,0.2);
+    transform: translateX(3px);
+}
+body[data-theme="light"] .link-item:hover {
+    background: rgba(99,130,220,0.08);
+    border-color: rgba(99,130,220,0.2);
+    transform: translateX(3px);
+}
+
+/* ── 7. Column dividers — gradient separator ─────────────── */
+body[data-theme="dark"] .container,
+body[data-theme="dark"] .new-container {
+    border-right: 1px solid transparent;
+    border-image: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(99,160,255,0.15) 20%,
+        rgba(139,92,246,0.15) 60%,
+        transparent 100%) 1;
+}
+body[data-theme="light"] .container,
+body[data-theme="light"] .new-container {
+    border-right: 1px solid transparent;
+    border-image: linear-gradient(to bottom,
+        transparent 0%,
+        rgba(99,130,220,0.2) 20%,
+        rgba(139,92,246,0.15) 60%,
+        transparent 100%) 1;
+}
+
+/* ── 8. Note rows — subtle hover lift ────────────────────── */
+.note-row {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+body[data-theme="dark"] .note-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    border-color: rgba(255,255,255,0.2);
+}
+body[data-theme="light"] .note-row:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(99,130,220,0.12);
+    border-color: rgba(99,130,220,0.25);
+}
+
+/* ── 9. H1 title — subtle gradient text ─────────────────── */
+body[data-theme="dark"] h1 {
+    background: linear-gradient(135deg, #f1f5f9 0%, #93c5fd 50%, #c4b5fd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+body[data-theme="light"] h1 {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #7c3aed 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ── 10. Todo list items — hover glow ────────────────────── */
+#todoList li {
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s;
+}
+body[data-theme="dark"] #todoList li:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
+    border-color: rgba(99,160,255,0.25);
+}
+body[data-theme="light"] #todoList li:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(99,130,220,0.15), inset 0 1px 0 rgba(255,255,255,0.98);
+    border-color: rgba(99,130,220,0.25);
 }
