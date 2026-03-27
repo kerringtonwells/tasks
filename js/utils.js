@@ -54,3 +54,17 @@ toggleThemeButton.addEventListener('click', () => {
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     applyTheme(newTheme);
 });
+
+// ── Icon buttons setup ────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    var icons = [
+        ['moveUp',    '▲', 'Move Up'],
+        ['moveDown',  '▼', 'Move Down'],
+        ['clearState','✕', 'Clear State'],
+        ['showNotes', '📋', 'Show Notes'],
+    ];
+    icons.forEach(function(item) {
+        var el = document.getElementById(item[0]);
+        if (el) { el.textContent = item[1]; el.title = item[2]; }
+    });
+});
