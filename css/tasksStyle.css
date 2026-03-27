@@ -27,8 +27,6 @@ body[data-theme="light"] {
     color: #1a1a2e;
 }
 
-/* Aurora — single layer, static gradient, opacity-only animation
-   Most GPU-friendly approach: no repaints, no transforms, one composited layer */
 body::before {
     content: '';
     position: fixed;
@@ -39,7 +37,6 @@ body::before {
     animation: auroraFade 6s ease-in-out infinite alternate;
 }
 
-/* No ::after layer — halves GPU work entirely */
 body::after { display: none; }
 
 body[data-theme="dark"]::before {
@@ -64,7 +61,6 @@ body[data-theme="light"]::before {
     100% { opacity: 0.55; }
 }
 
-/* Respect OS reduced-motion setting — no animation at all */
 @media (prefers-reduced-motion: reduce) {
     body::before { animation: none; opacity: 0.85; }
 }
@@ -82,6 +78,11 @@ body[data-theme="light"]::before {
     padding: 2rem;
     box-sizing: border-box;
     overflow-y: auto;
+}
+
+/* Center column (todo list) gets more space */
+.container:nth-child(2) {
+    flex: 1.6;
 }
 
 body[data-theme="dark"] .container,
@@ -143,7 +144,6 @@ body[data-theme="dark"] button {
     color: #ffffff;
     border: 1px solid rgba(99, 160, 255, 0.55);
     box-shadow: 0 2px 8px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
-    -webkit-
 }
 
 body[data-theme="dark"] button:hover {
@@ -158,7 +158,6 @@ body[data-theme="light"] button {
     color: #1e3a8a;
     border: 1px solid rgba(255, 255, 255, 0.85);
     box-shadow: 0 2px 8px rgba(99,130,220,0.18), inset 0 1px 0 rgba(255,255,255,0.9);
-    -webkit-
 }
 
 body[data-theme="light"] button:hover {
@@ -237,7 +236,6 @@ body[data-theme="dark"] #todoList li {
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: #e2e8f0;
     box-shadow: 0 4px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08);
-    -webkit-
 }
 
 body[data-theme="light"] #todoList li {
@@ -245,7 +243,6 @@ body[data-theme="light"] #todoList li {
     border: 1px solid rgba(255, 255, 255, 0.88);
     color: #1a1a2e;
     box-shadow: 0 4px 20px rgba(99,130,220,0.12), inset 0 1px 0 rgba(255,255,255,0.95);
-    -webkit-
 }
 
 #todoList button {
@@ -502,8 +499,8 @@ body[data-theme="light"] .menu-icon { color: #64748b; }
     box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 
-body[data-theme="dark"] .menu { background: rgba(10,15,30,0.82); border: 1px solid rgba(255,255,255,0.15); -webkit- }
-body[data-theme="light"] .menu { background: rgba(255,255,255,0.75); border: 1px solid rgba(200,210,255,0.6); -webkit- }
+body[data-theme="dark"] .menu { background: rgba(10,15,30,0.82); border: 1px solid rgba(255,255,255,0.15); }
+body[data-theme="light"] .menu { background: rgba(255,255,255,0.75); border: 1px solid rgba(200,210,255,0.6); }
 
 .menu button {
     border: none;
@@ -548,8 +545,8 @@ body[data-theme="light"] .menu button:hover { background: rgba(99,130,220,0.1); 
     box-shadow: 0 8px 24px rgba(0,0,0,0.3);
 }
 
-body[data-theme="dark"] .time-dropdown { background: rgba(10,15,30,0.82); border: 1px solid rgba(255,255,255,0.15); -webkit- }
-body[data-theme="light"] .time-dropdown { background: rgba(255,255,255,0.75); border: 1px solid rgba(200,210,255,0.6); -webkit- }
+body[data-theme="dark"] .time-dropdown { background: rgba(10,15,30,0.82); border: 1px solid rgba(255,255,255,0.15); }
+body[data-theme="light"] .time-dropdown { background: rgba(255,255,255,0.75); border: 1px solid rgba(200,210,255,0.6); }
 
 .time-option-btn {
     padding: 5px 10px;
@@ -613,14 +610,12 @@ body[data-theme="light"] .time-option-btn:hover {
 body[data-theme="dark"] .notes-top-bar {
     background: rgba(255,255,255,0.07);
     border: 1px solid rgba(255,255,255,0.15);
-    -webkit-
 }
 
 body[data-theme="light"] .notes-top-bar {
     background: rgba(255,255,255,0.48);
     border: 1px solid rgba(255,255,255,0.85);
     box-shadow: 0 1px 6px rgba(99,130,220,0.1);
-    -webkit-
 }
 
 #searchBar {
@@ -681,14 +676,12 @@ body[data-theme="dark"] .subject-card {
     background: rgba(255,255,255,0.07);
     border: 1px solid rgba(255,255,255,0.15);
     box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-    -webkit-
 }
 
 body[data-theme="light"] .subject-card {
     background: rgba(255,255,255,0.48);
     border: 1px solid rgba(255,255,255,0.85);
     box-shadow: 0 4px 20px rgba(99,130,220,0.12);
-    -webkit-
 }
 
 .subject-card-header {
@@ -727,7 +720,6 @@ body[data-theme="light"] .subject-card-header:hover { background: rgba(255,255,2
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.15s;
-    /* position absolute so it never squishes the subject name */
     position: absolute;
     right: 10px;
     top: 50%;
@@ -777,7 +769,6 @@ body[data-theme="light"] .subject-name { color: #111827; }
 body[data-theme="dark"] .subject-count  { background: rgba(255,255,255,0.1);  color: #9ca3af; }
 body[data-theme="light"] .subject-count { background: rgba(99,130,220,0.12); color: #6b7280; }
 
-/* Subject header buttons */
 body[data-theme="dark"]  .subject-header-right button,
 body[data-theme="light"] .subject-header-right button {
     padding: 2px 8px;
@@ -789,11 +780,10 @@ body[data-theme="light"] .subject-header-right button {
     min-width: unset;
 }
 
-/* Drag states */
 .subject-card.subject-dragging  { opacity: 0.4; }
 .subject-card.subject-drag-over { outline: 2px dashed #3b82f6; outline-offset: 3px; }
 
-/* ── Notes list (vertical inside expanded) ───────────────── */
+/* ── Notes list ──────────────────────────────────────────── */
 
 .subject-notes-list {
     display: flex;
@@ -820,14 +810,12 @@ body[data-theme="dark"] .note-row {
     background: rgba(255,255,255,0.06);
     border: 1px solid rgba(255,255,255,0.14);
     color: #e2e8f0;
-    -webkit-
 }
 
 body[data-theme="light"] .note-row {
     background: rgba(255,255,255,0.52);
     border: 1px solid rgba(255,255,255,0.85);
     color: #1f2937;
-    -webkit-
 }
 
 .note-row.dragging { opacity: 0.4; }
@@ -862,7 +850,6 @@ body[data-theme="light"] .note-row-text { color: #1f2937; }
 
 /* ── Notes buttons ───────────────────────────────────────── */
 
-/* Ghost style — scoped with .notes-btn class to avoid conflicts */
 body[data-theme="dark"] button.notes-btn {
     background: rgba(255,255,255,0.07);
     color: #cbd5e1;
@@ -903,7 +890,6 @@ body[data-theme="light"] button.notes-btn:hover {
     box-shadow: 0 2px 6px rgba(99,130,220,0.15);
 }
 
-/* Primary (Save, Export, Import) */
 body[data-theme="dark"] button.notes-btn.notes-btn-primary,
 body[data-theme="light"] button.notes-btn.notes-btn-primary {
     background: rgba(59,130,246,0.35);
@@ -918,7 +904,6 @@ body[data-theme="light"] button.notes-btn.notes-btn-primary:hover {
     box-shadow: 0 4px 16px rgba(59,130,246,0.4);
 }
 
-/* Danger (Delete) */
 body[data-theme="dark"] button.notes-btn.notes-btn-danger,
 body[data-theme="light"] button.notes-btn.notes-btn-danger {
     background: rgba(239,68,68,0.1);
@@ -969,14 +954,12 @@ body[data-theme="dark"] .note-editor-modal {
     background: rgba(8,13,30,0.82);
     border: 1px solid rgba(255,255,255,0.15);
     color: #e2e8f0;
-    -webkit-
 }
 
 body[data-theme="light"] .note-editor-modal {
     background: rgba(255,255,255,0.78);
     border: 1px solid rgba(200,210,255,0.7);
     color: #111827;
-    -webkit-
 }
 
 @keyframes modalIn {
@@ -1048,10 +1031,7 @@ body[data-theme="light"] .note-editor-modal textarea.editor-textarea {
 
 /* ── Lightbox ────────────────────────────────────────────── */
 
-.note-editor-overlay.lightbox-overlay,
-.lightbox-overlay {
-    cursor: zoom-out;
-}
+.lightbox-overlay { cursor: zoom-out; }
 
 .lightbox-img {
     max-width: 90vw;
@@ -1113,14 +1093,12 @@ body[data-theme="light"] .notes-toast { background: rgba(15,20,40,0.88);  color:
     .notes-top-bar { flex-direction: column; align-items: stretch; }
 }
 
-/* ── Image drag-over state on editor textarea ─────────────── */
 .note-editor-modal textarea.editor-textarea.img-drag-over {
     border-color: #3b82f6;
     box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
     background: rgba(59,130,246,0.06);
 }
 
-/* Hint text on textarea placeholder */
 .note-editor-modal textarea.editor-textarea::placeholder {
     opacity: 0.5;
 }
@@ -1143,10 +1121,7 @@ body[data-theme="light"] .subject-card:hover {
     box-shadow: 0 8px 30px rgba(99,130,220,0.2), 0 4px 12px rgba(99,130,220,0.1);
     border-color: rgba(99,130,220,0.3);
 }
-/* Don't lift expanded cards */
-.subject-card.subject-card-expanded:hover {
-    transform: none;
-}
+.subject-card.subject-card-expanded:hover { transform: none; }
 
 /* ── 2. Todo task name — larger, bolder hierarchy ────────── */
 .content-wrapper span {
@@ -1192,18 +1167,11 @@ body[data-theme="light"] #currentTime {
 }
 
 /* ── 5. Stopwatch — glow on digits ───────────────────────── */
-.time-display {
-    font-size: 2.8rem;
-    letter-spacing: 3px;
-}
-body[data-theme="dark"] .time-display {
-    text-shadow: 0 0 20px rgba(59,130,246,0.4), 0 0 40px rgba(59,130,246,0.15);
-}
-body[data-theme="light"] .time-display {
-    text-shadow: 0 2px 8px rgba(99,130,220,0.25);
-}
+.time-display { font-size: 2.8rem; letter-spacing: 3px; }
+body[data-theme="dark"] .time-display { text-shadow: 0 0 20px rgba(59,130,246,0.4), 0 0 40px rgba(59,130,246,0.15); }
+body[data-theme="light"] .time-display { text-shadow: 0 2px 8px rgba(99,130,220,0.25); }
 
-/* ── 6. Sidebar links — pill/card row treatment ──────────── */
+/* ── 6. Sidebar links — slide right on hover ─────────────── */
 .link-item {
     padding: 6px 10px;
     border-radius: 8px;
@@ -1222,168 +1190,73 @@ body[data-theme="light"] .link-item:hover {
     transform: translateX(3px);
 }
 
-/* ── 7. Column dividers — gradient separator ─────────────── */
+/* ── 7. Column dividers — gradient ───────────────────────── */
 body[data-theme="dark"] .container,
 body[data-theme="dark"] .new-container {
     border-right: 1px solid transparent;
-    border-image: linear-gradient(to bottom,
-        transparent 0%,
-        rgba(99,160,255,0.15) 20%,
-        rgba(139,92,246,0.15) 60%,
-        transparent 100%) 1;
+    border-image: linear-gradient(to bottom, transparent 0%, rgba(99,160,255,0.15) 20%, rgba(139,92,246,0.15) 60%, transparent 100%) 1;
 }
 body[data-theme="light"] .container,
 body[data-theme="light"] .new-container {
     border-right: 1px solid transparent;
-    border-image: linear-gradient(to bottom,
-        transparent 0%,
-        rgba(99,130,220,0.2) 20%,
-        rgba(139,92,246,0.15) 60%,
-        transparent 100%) 1;
+    border-image: linear-gradient(to bottom, transparent 0%, rgba(99,130,220,0.2) 20%, rgba(139,92,246,0.15) 60%, transparent 100%) 1;
 }
 
 /* ── 8. Note rows — subtle hover lift ────────────────────── */
-.note-row {
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-body[data-theme="dark"] .note-row:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-    border-color: rgba(255,255,255,0.2);
-}
-body[data-theme="light"] .note-row:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(99,130,220,0.12);
-    border-color: rgba(99,130,220,0.25);
-}
+.note-row { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+body[data-theme="dark"] .note-row:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.2); }
+body[data-theme="light"] .note-row:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99,130,220,0.12); border-color: rgba(99,130,220,0.25); }
 
-/* ── 9. H1 title — subtle gradient text ─────────────────── */
-body[data-theme="dark"] h1 {
-    background: linear-gradient(135deg, #f1f5f9 0%, #93c5fd 50%, #c4b5fd 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-body[data-theme="light"] h1 {
-    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #7c3aed 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
+/* ── 9. H1 gradient text ─────────────────────────────────── */
+body[data-theme="dark"] h1 { background: linear-gradient(135deg, #f1f5f9 0%, #93c5fd 50%, #c4b5fd 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+body[data-theme="light"] h1 { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #7c3aed 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 
 /* ── 10. Todo list items — hover glow ────────────────────── */
-#todoList li {
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s;
-}
-body[data-theme="dark"] #todoList li:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1);
-    border-color: rgba(99,160,255,0.25);
-}
-body[data-theme="light"] #todoList li:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 24px rgba(99,130,220,0.15), inset 0 1px 0 rgba(255,255,255,0.98);
-    border-color: rgba(99,130,220,0.25);
-}
-
+#todoList li { transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s; }
+body[data-theme="dark"] #todoList li:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.1); border-color: rgba(99,160,255,0.25); }
+body[data-theme="light"] #todoList li:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(99,130,220,0.15), inset 0 1px 0 rgba(255,255,255,0.98); border-color: rgba(99,130,220,0.25); }
 
 /* ============================================================
    VISUAL POLISH — Batch 2
    ============================================================ */
 
-/* ── 1. Subject count badge — colored by content ─────────── */
-.subject-count {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 2px 9px;
-    border-radius: 99px;
-    flex-shrink: 0;
-    white-space: nowrap;
-    transition: background 0.2s, color 0.2s;
-}
-body[data-theme="dark"]  .subject-count { background: rgba(59,130,246,0.2);  color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
+/* ── 1. Subject count badge ──────────────────────────────── */
+.subject-count { font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 99px; flex-shrink: 0; white-space: nowrap; transition: background 0.2s, color 0.2s; }
+body[data-theme="dark"]  .subject-count { background: rgba(59,130,246,0.2); color: #93c5fd; border: 1px solid rgba(59,130,246,0.3); }
 body[data-theme="light"] .subject-count { background: rgba(59,130,246,0.12); color: #2563eb; border: 1px solid rgba(59,130,246,0.2); }
 body[data-theme="dark"]  .subject-count.subject-count-empty { background: rgba(255,255,255,0.06); color: #4b5563; border-color: rgba(255,255,255,0.08); }
-body[data-theme="light"] .subject-count.subject-count-empty { background: rgba(0,0,0,0.04);       color: #9ca3af; border-color: rgba(0,0,0,0.08); }
+body[data-theme="light"] .subject-count.subject-count-empty { background: rgba(0,0,0,0.04); color: #9ca3af; border-color: rgba(0,0,0,0.08); }
 
-/* ── 2. h2 section headers — accent underline ────────────── */
-h2 {
-    position: relative;
-    padding-bottom: 8px;
-    margin-bottom: 1.2rem;
-}
-h2::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 32px;
-    height: 2px;
-    border-radius: 2px;
-    background: linear-gradient(90deg, rgba(59,130,246,0.8), rgba(139,92,246,0.8));
-}
+/* ── 2. h2 accent underline ──────────────────────────────── */
+h2 { position: relative; padding-bottom: 8px; margin-bottom: 1.2rem; }
+h2::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 32px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, rgba(59,130,246,0.8), rgba(139,92,246,0.8)); }
 
-/* ── 3. Memory Game footer — subtle top border ───────────── */
-.new-container > div:last-child {
-    margin-top: 20px;
-    padding: 10px 0 4px;
-    font-size: 12px;
-    text-align: center;
-    border-top: 1px solid;
-    background: none;
-}
+/* ── 3. Memory Game footer ───────────────────────────────── */
+.new-container > div:last-child { margin-top: 20px; padding: 10px 0 4px; font-size: 12px; text-align: center; border-top: 1px solid; background: none; }
 body[data-theme="dark"] .new-container > div:last-child { border-color: rgba(255,255,255,0.07); color: #475569; }
 body[data-theme="light"] .new-container > div:last-child { border-color: rgba(99,130,220,0.15); color: #94a3b8; }
 
-/* ── 4. Column dividers — reliable rgba ─────────────────── */
-body[data-theme="dark"] .container,
-body[data-theme="dark"] .new-container {
-    border-right: 1px solid rgba(99,130,246,0.12);
-    border-image: none;
-}
-body[data-theme="light"] .container,
-body[data-theme="light"] .new-container {
-    border-right: 1px solid rgba(99,130,220,0.18);
-    border-image: none;
-}
+/* ── 4. Column dividers — reliable rgba override ─────────── */
+body[data-theme="dark"] .container, body[data-theme="dark"] .new-container { border-right: 1px solid rgba(99,130,246,0.12); border-image: none; }
+body[data-theme="light"] .container, body[data-theme="light"] .new-container { border-right: 1px solid rgba(99,130,220,0.18); border-image: none; }
 
-/* ── 5. Search bar — search icon ─────────────────────────── */
-#searchBar {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: 12px center;
-    padding-left: 34px;
-}
+/* ── 5. Search icon ──────────────────────────────────────── */
+#searchBar { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: 12px center; padding-left: 34px; }
 
-/* ── 6. Sidebar — top accent bar ────────────────────────── */
-body[data-theme="dark"] .container:first-child {
-    background: rgba(255,255,255,0.03);
-    border-top: 2px solid transparent;
-    border-image: linear-gradient(90deg, rgba(59,130,246,0.6), rgba(139,92,246,0.6)) 1;
-}
-body[data-theme="light"] .container:first-child {
-    background: rgba(255,255,255,0.38);
-    border-top: 2px solid transparent;
-    border-image: linear-gradient(90deg, rgba(59,130,246,0.5), rgba(139,92,246,0.5)) 1;
-}
+/* ── 6. Sidebar accent bar ───────────────────────────────── */
+body[data-theme="dark"] .container:first-child { background: rgba(255,255,255,0.03); border-top: 2px solid transparent; border-image: linear-gradient(90deg, rgba(59,130,246,0.6), rgba(139,92,246,0.6)) 1; }
+body[data-theme="light"] .container:first-child { background: rgba(255,255,255,0.38); border-top: 2px solid transparent; border-image: linear-gradient(90deg, rgba(59,130,246,0.5), rgba(139,92,246,0.5)) 1; }
 
-/* ── 7. Light mode — more aurora visibility ─────────────── */
-body[data-theme="light"] .container,
-body[data-theme="light"] .new-container {
-    background: rgba(255,255,255,0.22);
-}
+/* ── 7. Light mode aurora visibility ─────────────────────── */
+body[data-theme="light"] .container, body[data-theme="light"] .new-container { background: rgba(255,255,255,0.22); }
 
 /* ── 8. Sidebar title ────────────────────────────────────── */
-.container:first-child h2 {
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    opacity: 0.7;
-}
+.container:first-child h2 { font-size: 1rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; opacity: 0.7; }
 .container:first-child h2::after { width: 24px; }
 
 /* ── 9. Time slot text ───────────────────────────────────── */
 body[data-theme="dark"] td  { font-size: 15px; font-weight: 500; letter-spacing: 0.3px; color: #e2e8f0; }
 body[data-theme="light"] td { font-size: 15px; font-weight: 500; letter-spacing: 0.3px; color: #1e3a8a; }
+
+/* ── Center column wider ─────────────────────────────────── */
+.container:nth-child(2) { flex: 2.0; }
