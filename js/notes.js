@@ -631,19 +631,42 @@
     document.querySelectorAll('.container').forEach(function(e){ e.style.display='none'; });
     var nc=document.querySelector('.new-container');
     if (nc){ nc.querySelectorAll('h2').forEach(function(h){ h.style.display='none'; }); var sw=nc.querySelector('.stopwatch'); if(sw) sw.style.display='none'; }
-    var ns=document.querySelector('.new-container .notes-section'); if(ns) ns.style.display='flex';
+    var ns=document.querySelector('.new-container .notes-section');
+    if (ns) {
+      ns.style.opacity='0';
+      ns.style.display='flex';
+      requestAnimationFrame(function(){
+        ns.style.transition='opacity 0.4s ease';
+        ns.style.opacity='1';
+      });
+    }
     var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
     if(show) show.style.display='none'; if(hide) hide.style.display='inline-block';
     updateStorageMeter();
   }
 
   function hideNotes() {
-    document.querySelectorAll('.container').forEach(function(e){ e.style.display='block'; });
-    var nc=document.querySelector('.new-container');
-    if (nc){ nc.querySelectorAll('h2').forEach(function(h){ h.style.display=''; }); var sw=nc.querySelector('.stopwatch'); if(sw) sw.style.display=''; }
-    var ns=document.querySelector('.new-container .notes-section'); if(ns) ns.style.display='none';
-    var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
-    if(show) show.style.display='inline-block'; if(hide) hide.style.display='none';
+    var ns=document.querySelector('.new-container .notes-section');
+    if (ns) {
+      ns.style.transition='opacity 0.4s ease';
+      ns.style.opacity='0';
+      setTimeout(function(){
+        ns.style.display='none';
+        ns.style.opacity='';
+        ns.style.transition='';
+        document.querySelectorAll('.container').forEach(function(e){ e.style.display='block'; });
+        var nc=document.querySelector('.new-container');
+        if (nc){ nc.querySelectorAll('h2').forEach(function(h){ h.style.display=''; }); var sw=nc.querySelector('.stopwatch'); if(sw) sw.style.display=''; }
+        var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
+        if(show) show.style.display='inline-block'; if(hide) hide.style.display='none';
+      }, 400);
+    } else {
+      document.querySelectorAll('.container').forEach(function(e){ e.style.display='block'; });
+      var nc=document.querySelector('.new-container');
+      if (nc){ nc.querySelectorAll('h2').forEach(function(h){ h.style.display=''; }); var sw=nc.querySelector('.stopwatch'); if(sw) sw.style.display=''; }
+      var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
+      if(show) show.style.display='inline-block'; if(hide) hide.style.display='none';
+    }
   }
 
   // ─── Init ─────────────────────────────────────────────────────────────────────
