@@ -15,7 +15,7 @@ body {
     position: relative;
     overflow-x: hidden;
     transition: background-color 0.3s, color 0.3s;
-    animation: pageFadeIn 0.25s ease forwards;
+    animation: pageFadeIn 0.5s ease forwards;
 }
 
 @keyframes pageFadeIn {
@@ -40,7 +40,7 @@ body::before {
     pointer-events: none;
     z-index: 0;
     will-change: opacity;
-    animation: auroraFade 6s ease-in-out infinite alternate;
+    animation: auroraFade 20s ease-in-out infinite alternate;
 }
 
 body::after { display: none; }
@@ -62,9 +62,9 @@ body[data-theme="light"]::before {
 }
 
 @keyframes auroraFade {
-    0%   { opacity: 0.5;  }
-    50%  { opacity: 1.0;  }
-    100% { opacity: 0.55; }
+    0%   { opacity: 0.4;  }
+    50%  { opacity: 0.75; }
+    100% { opacity: 0.45; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -435,7 +435,7 @@ body[data-theme="light"] .links-box h2 { color: #0f172a; }
 body[data-theme="dark"]  .link-item:hover { background: rgba(255,255,255,0.05); }
 body[data-theme="light"] .link-item:hover { background: rgba(99,130,220,0.07); }
 
-.link-text { font-size: 14px; text-decoration: none; transition: color 0.15s; }
+.link-text { font-size: 13px; text-decoration: none; transition: color 0.15s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 body[data-theme="dark"] .link-text  { color: #93c5fd; }
 body[data-theme="light"] .link-text { color: #2563eb; }
 body[data-theme="dark"] .link-text:hover  { color: #60a5fa; }
@@ -529,6 +529,14 @@ body[data-theme="dark"] .menu button:hover  { background: rgba(255,255,255,0.08)
 body[data-theme="light"] .menu button:hover { background: rgba(99,130,220,0.1); transform: none; box-shadow: none; }
 
 #addLink { margin-bottom: 10px; }
+
+/* Sidebar bottom buttons — compact, no wrap */
+.links-box > button {
+    font-size: 11px;
+    padding: 6px 10px;
+    margin: 3px 2px;
+    white-space: nowrap;
+}
 
 /* ── Add Time dropdown ───────────────────────────────────── */
 
