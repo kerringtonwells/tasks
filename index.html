@@ -7,7 +7,8 @@
     <link rel="stylesheet" href="css/tasksStyle.css">
 </head>
 <body>
-    <div class="container">
+    <!-- Left: Links sidebar -->
+    <div class="container links-container">
         <h2>Useful Links</h2>
         <div class="links-toolbar">
             <button id="addLink">Add Link</button>
@@ -18,59 +19,87 @@
         <input type="file" id="importLinksFile" accept=".json" style="display:none">
         <ul id="linksList"></ul>
     </div>
-    <div class="container">
+
+    <!-- Center: Everything -->
+    <div class="container" id="mainContainer">
         <h1>Productivity Booster</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>Time</th>
-                </tr>
-            </thead>
-            <tbody id="timeTable"></tbody>
-        </table>
-        <button id="moveUp">Move Up</button>
-        <button id="moveDown">Move Down</button>
-        <button id="clearState">Clear State</button>
-        <div id="currentTime"></div>
-        <h2>To-Do List</h2>
-        <ul id="todoList"></ul>
-        <button id="addTodoItem">Add Task</button>
-        <button id="exportTodoList">Export To-Do List</button>
-    </div>
-    <div class="new-container">
-        <h2>Stopwatch</h2>
-        <div class="stopwatch">
-            <div class="time-display">
-                <span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>:<span class="milliseconds">000</span>
+
+        <!-- Main content -->
+        <div id="mainContent">
+            <table>
+                <thead><tr><th>Time Box</th></tr></thead>
+                <tbody id="timeTable"></tbody>
+            </table>
+
+            <!-- Controls row: ▲ ▼ ✕ ⏱ 📋 ＋ ↑ -->
+            <div class="controls-row">
+                <button id="moveUp"        title="Move Up">▲</button>
+                <button id="moveDown"      title="Move Down">▼</button>
+                <button id="clearState"    title="Clear State">✕</button>
+                <button id="stopwatchToggle" class="icon-btn" title="Stopwatch">⏱</button>
+                <button id="showNotes"     class="icon-btn" title="Show Notes">📋</button>
+                <button id="addTodoItem"   class="icon-btn" title="Add Task">＋</button>
+                <button id="exportTodoList" class="icon-btn" title="Export To-Do List">↑</button>
             </div>
-            <div class="buttons">
-                <button id="startBtn">Start</button>
-                <button class="hidden" id="pauseBtn">Pause</button>
-                <button class="hidden" id="resetBtn">Reset</button>
+
+            <!-- Current time on its own row -->
+            <div id="currentTimeRow">
+                <div id="currentTime"></div>
+            </div>
+
+            <!-- Inline stopwatch -->
+            <div id="inlineStopwatch" style="display:none">
+                <div class="stopwatch">
+                    <div class="time-display">
+                        <span class="hours">00</span>:<span class="minutes">00</span>:<span class="seconds">00</span>:<span class="milliseconds">000</span>
+                    </div>
+                    <div class="buttons">
+                        <button id="startBtn">Start</button>
+                        <button class="hidden" id="pauseBtn">Pause</button>
+                        <button class="hidden" id="resetBtn">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <h2>To-Do List</h2>
+            <ul id="todoList"></ul>
+
+            <div>
+                <p>Check out my <a href="shortTermMemoryGame.html" target="_blank" rel="noopener noreferrer">Memory Game</a></p>
             </div>
         </div>
-        <h2>Notes</h2>
-        <div class="notes-section">
+
+        <!-- Notes section -->
+        <div class="notes-section" style="display:none">
             <input id="searchBar" placeholder="Search notes" type="text"/>
             <button id="addSubjectBtn">Add Subject</button>
             <ul id="subjectList"></ul>
             <div id="exportButtonContainer">
                 <button id="exportbutton">Export</button>
             </div>
-        </div>
-        <div id="notesToggleButtons">
-            <button id="showNotes">Show Notes</button>
-            <button id="hideNotes" style="display: none;">Hide Notes</button>
-        </div>
-        <div>
-            <p>Check out my <a href="shortTermMemoryGame.html" target="_blank" rel="noopener noreferrer">Memory Game</a></p>
+            <button id="hideNotes" style="display:none">Hide Notes</button>
         </div>
     </div>
+
     <script defer src="js/utils.js"></script>
     <script defer src="js/timeSlots.js"></script>
     <script defer src="js/todoList.js"></script>
     <script defer src="js/links.js"></script>
     <script defer src="js/stopwatch.js"></script>
     <script defer src="js/notes.js"></script>
+
+    <script defer>
+        document.addEventListener('DOMContentLoaded', function() {
+            var btn = document.getElementById('stopwatchToggle');
+            var sw  = document.getElementById('inlineStopwatch');
+            if (btn && sw) {
+                btn.addEventListener('click', function() {
+                    var visible = sw.style.display !== 'none';
+                    sw.style.display = visible ? 'none' : 'block';
+                    btn.classList.toggle('active-icon', !visible);
+                });
+            }
+        });
+    </script>
 </body>
 </html>
