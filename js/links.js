@@ -98,3 +98,67 @@ document.getElementById('addLink').addEventListener('click', () => {
 });
 
 loadLinksList();
+
+// ── Export / Import icons ──────────────────────────────────
+const exportLinksBtn = document.getElementById('exportLinks');
+if (exportLinksBtn) {
+    exportLinksBtn.textContent = '↑';
+    exportLinksBtn.title = 'Export links';
+}
+
+const importLinksBtn = document.getElementById('importLinks');
+if (importLinksBtn) {
+    importLinksBtn.textContent = '↓';
+    importLinksBtn.title = 'Import links';
+}
+
+// Export — download as JSON
+document.getElementById('exportLinks').addEventListener('click', () => {
+    const linksListElement = document.getElementById('linksList');
+    const links = Array.from(linksListElement.querySelectorAll('li')).map(li => ({
+        text: li.querySelector('a').textContent,
+        url: li.querySelector('a').href
+    }));
+    const blob = new Blob([JSON.stringify(links, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'links_' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+});
+
+// Import — merge with existing, re-sort, no duplicates
+document.getElementById('importLinks').addEventListener('click', () => {
+    document.getElementById('importLinksFile').click();
+});
+
+document.getElementById('importLinksFile').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+        try {
+            const incoming = JSON.parse(ev.target.result);
+            if (!Array.isArray(incoming)) throw new Error('Invalid format');
+            const linksListElement = document.getElementById('linksList');
+            // Get existing URLs to avoid duplicates
+            const existingUrls = new Set(
+                Array.from(linksListElement.querySelectorAll('a')).map(a => a.href)
+            );
+            let added = 0;
+            incoming.forEach(link => {
+                if (link.text && link.url && !existingUrls.has(link.url)) {
+                    addLink(link, linksListElement);
+                    existingUrls.add(link.url);
+                    added++;
+                }
+            });
+            saveLinksList(linksListElement);
+            alert(`Imported ${added} link(s).`);
+        } catch (err) {
+            alert('Invalid file. Please use a links JSON export.');
+        }
+        // Reset so same file can be imported again if needed
+        e.target.value = '';
+    };
+    reader.readAsText(file);
+});
