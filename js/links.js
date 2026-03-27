@@ -80,6 +80,13 @@ const addLink = (linkData, linksListElement) => {
     linksListElement.appendChild(li);
 };
 
+// Set add link button to icon on load
+const addLinkBtn = document.getElementById('addLink');
+if (addLinkBtn) {
+    addLinkBtn.textContent = '＋';
+    addLinkBtn.title = 'Add link';
+}
+
 document.getElementById('addLink').addEventListener('click', () => {
     const newLinkText = prompt('Enter the link text:', '');
     const newLinkUrl = prompt('Enter the link URL:', 'https://');
