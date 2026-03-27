@@ -85,8 +85,8 @@ const clearState = () => {
     saveState(); renderTable(); updateCurrentTime();
 };
 
-document.getElementById('moveUp').addEventListener('click', moveUp);
-document.getElementById('moveDown').addEventListener('click', moveDown);
+document.getElementById('moveUp').addEventListener('click', moveDown);
+document.getElementById('moveDown').addEventListener('click', moveUp);
 document.getElementById('clearState').addEventListener('click', clearState);
 
 renderTable();
