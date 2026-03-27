@@ -1274,3 +1274,18 @@ body[data-theme="light"] td { font-size: 15px; font-weight: 500; letter-spacing:
 
 /* ── Center column wider ─────────────────────────────────── */
 .container:nth-child(2) { flex: 2.0; }
+
+/* ── Sidebar scales down instead of wrapping on small screens */
+@media (max-width: 1200px) {
+    .links-box { width: 200px; }
+    .link-text { font-size: 12px; }
+    .links-box h2 { font-size: 0.85rem; }
+    .links-box > button { font-size: 10px; padding: 5px 8px; }
+}
+
+@media (max-width: 1000px) {
+    .links-box { width: 160px; }
+    .link-text { font-size: 11px; }
+    .links-box h2 { font-size: 0.75rem; }
+    .links-box > button { font-size: 9px; padding: 4px 6px; }
+}
