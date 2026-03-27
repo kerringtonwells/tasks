@@ -36,7 +36,7 @@ body::before {
     pointer-events: none;
     z-index: 0;
     will-change: opacity;
-    animation: auroraFade 40s ease-in-out infinite alternate;
+    animation: auroraFade 6s ease-in-out infinite alternate;
 }
 
 /* No ::after layer — halves GPU work entirely */
@@ -59,9 +59,9 @@ body[data-theme="light"]::before {
 }
 
 @keyframes auroraFade {
-    0%   { opacity: 0.7;  }
+    0%   { opacity: 0.5;  }
     50%  { opacity: 1.0;  }
-    100% { opacity: 0.75; }
+    100% { opacity: 0.55; }
 }
 
 /* Respect OS reduced-motion setting — no animation at all */
