@@ -777,6 +777,14 @@ body[data-theme="light"] .note-row-text { color: #1f2937; }
 .note-row-img:hover { transform: scale(1.02); }
 .note-row-actions { display: flex; flex-wrap: wrap; gap: 4px; }
 
+.note-last-modified {
+    font-size: 11px;
+    opacity: 0.4;
+    margin-top: 6px;
+    letter-spacing: 0.2px;
+    font-style: italic;
+}
+
 /* ── Notes buttons ───────────────────────────────────────── */
 button.notes-btn { padding: 5px 14px; font-size: 12px; border-radius: 20px; margin: 2px; font-weight: 600; box-shadow: none; }
 body[data-theme="dark"]  button.notes-btn { background: rgba(255,255,255,0.07); color: #cbd5e1; border: 1px solid rgba(255,255,255,0.13); }
