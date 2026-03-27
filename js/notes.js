@@ -448,6 +448,12 @@
     var txt=el('div','note-row-text'); txt.innerHTML=esc(note.content).replace(/\n/g,'<br>');
     content.appendChild(txt);
 
+    // Last modified timestamp
+    var modEl = el('div', 'note-last-modified');
+    var modDate = note.updatedAt ? new Date(note.updatedAt).toLocaleString() : '';
+    modEl.textContent = modDate ? 'Modified: ' + modDate : '';
+    content.appendChild(modEl);
+
     var actions=el('div','note-row-actions');
 
     function addEditBtn(lbl, fn){ actions.appendChild(btn(lbl,function(e){ e.stopPropagation(); fn(); })); }
