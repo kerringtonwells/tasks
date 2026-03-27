@@ -410,11 +410,23 @@
       else if (insertAtIndex!==undefined){ subject.notes.splice(insertAtIndex,0,{id:newId,content,images:imgs,createdAt:now(),updatedAt:now()}); }
       else { subject.notes.push({id:newId,content,images:imgs,createdAt:now(),updatedAt:now()}); }
       save(); render(); ov.remove();
-      // Scroll new note into view
+      // Scroll new note to top of view using both scroll contexts
       requestAnimationFrame(function(){
         requestAnimationFrame(function(){
-          var noteEl=document.querySelector('.note-row[data-id="'+newId+'"]');
-          if (noteEl) noteEl.scrollIntoView({block:'nearest'});
+          var noteEl = document.querySelector('.note-row[data-id="'+newId+'"]');
+          if (!noteEl) return;
+
+          // Scroll the inner expanded list so the note is at the top
+          var innerList = document.querySelector('.subject-card-expanded .subject-notes-list');
+          if (innerList) {
+            innerList.scrollTop = noteEl.offsetTop - innerList.offsetTop;
+          }
+
+          // Scroll the page so the note is near the top of the viewport
+          var noteRect    = noteEl.getBoundingClientRect();
+          var pageOffset  = document.documentElement.scrollTop || window.scrollY || 0;
+          var targetScroll = pageOffset + noteRect.top - 80; // 80px from top
+          document.documentElement.scrollTop = targetScroll;
         });
       });
     }, 'notes-btn notes-btn-primary');
