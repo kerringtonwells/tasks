@@ -291,7 +291,7 @@
   }
 
   // ─── Editor Modal ─────────────────────────────────────────────────────────────
-  function openEditor(subjectId, noteId, insertAtIndex) {
+  function openEditor(subjectId, noteId, insertAtIndex, scrollToBottom) {
     var subject = data.subjects.find(function(s){ return s.id===subjectId; });
     if (!subject) return;
     var existing = noteId ? subject.notes.find(function(n){ return n.id===noteId; }) : null;
@@ -410,6 +410,13 @@
       else if (insertAtIndex!==undefined){ subject.notes.splice(insertAtIndex,0,{id:newId,content,images:imgs,createdAt:now(),updatedAt:now()}); }
       else { subject.notes.push({id:newId,content,images:imgs,createdAt:now(),updatedAt:now()}); }
       save(); render(); ov.remove();
+      if (scrollToBottom) {
+        requestAnimationFrame(function(){ requestAnimationFrame(function(){
+          var inner = document.querySelector('.subject-card-expanded .subject-notes-list');
+          if (inner) inner.scrollTop = inner.scrollHeight;
+          document.documentElement.scrollTop = document.documentElement.scrollHeight;
+        }); });
+      }
     }, 'notes-btn notes-btn-primary');
 
     row.appendChild(addImgB); row.appendChild(pasteB);
@@ -450,7 +457,9 @@
       openEditor(subjectId, null, subject.notes.findIndex(function(n){ return n.id===note.id; }));
     });
     addEditBtn('Add Below', function(){
-      openEditor(subjectId, null, subject.notes.findIndex(function(n){ return n.id===note.id; })+1);
+      var idx = subject.notes.findIndex(function(n){ return n.id===note.id; });
+      var isLast = idx === subject.notes.length - 1;
+      openEditor(subjectId, null, idx+1, isLast);
     });
     addEditBtn('Edit', function(){ openEditor(subjectId, note.id); });
 
@@ -461,9 +470,18 @@
       delB.style.pointerEvents = 'none';
       var yesB = btn('Yes', function(e2){
         e2.stopPropagation();
+        var idx = subject.notes.findIndex(function(n){ return n.id===note.id; });
+        var wasLast = idx === subject.notes.length - 1;
         subject.notes = subject.notes.filter(function(n){ return n.id!==note.id; });
         save(); cleanupOrphanedImages().then(function(n){ if(n>0) updateStorageMeter(); });
         render();
+        if (wasLast && subject.notes.length > 0) {
+          requestAnimationFrame(function(){ requestAnimationFrame(function(){
+            var inner = document.querySelector('.subject-card-expanded .subject-notes-list');
+            if (inner) inner.scrollTop = inner.scrollHeight;
+            document.documentElement.scrollTop = document.documentElement.scrollHeight;
+          }); });
+        }
       }, 'notes-btn notes-btn-danger');
       var noB = btn('No', function(e2){
         e2.stopPropagation();
