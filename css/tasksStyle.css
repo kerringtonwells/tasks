@@ -435,7 +435,7 @@ body[data-theme="light"] .links-box h2 { color: #0f172a; }
 body[data-theme="dark"]  .link-item:hover { background: rgba(255,255,255,0.05); }
 body[data-theme="light"] .link-item:hover { background: rgba(99,130,220,0.07); }
 
-.link-text { font-size: 13px; text-decoration: none; transition: color 0.15s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.link-text { font-size: 13px; text-decoration: none; transition: color 0.15s; }
 body[data-theme="dark"] .link-text  { color: #93c5fd; }
 body[data-theme="light"] .link-text { color: #2563eb; }
 body[data-theme="dark"] .link-text:hover  { color: #60a5fa; }
@@ -1275,17 +1275,22 @@ body[data-theme="light"] td { font-size: 15px; font-weight: 500; letter-spacing:
 /* ── Center column wider ─────────────────────────────────── */
 .container:nth-child(2) { flex: 2.0; }
 
-/* ── Sidebar scales down instead of wrapping on small screens */
-@media (max-width: 1200px) {
-    .links-box { width: 200px; }
+/* ── Sidebar scales down on smaller screens — full names, smaller text */
+@media (max-width: 1400px) {
+    .links-box { width: 210px; }
     .link-text { font-size: 12px; }
-    .links-box h2 { font-size: 0.85rem; }
-    .links-box > button { font-size: 10px; padding: 5px 8px; }
+    .links-box > button { font-size: 11px; padding: 6px 10px; margin: 2px 2px; }
 }
 
-@media (max-width: 1000px) {
-    .links-box { width: 160px; }
+@media (max-width: 1200px) {
+    .links-box { width: 185px; }
+    .link-text { font-size: 11.5px; }
+    .links-box > button { font-size: 10px; padding: 5px 8px; margin: 2px 1px; }
+}
+
+@media (max-width: 1050px) {
+    .links-box { width: 165px; }
     .link-text { font-size: 11px; }
-    .links-box h2 { font-size: 0.75rem; }
-    .links-box > button { font-size: 9px; padding: 4px 6px; }
+    /* Force buttons onto one line by making them full width */
+    .links-box > button { font-size: 10px; padding: 5px 6px; margin: 2px 0; display: block; width: calc(100% - 8px); text-align: center; }
 }
