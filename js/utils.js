@@ -41,7 +41,8 @@ const showTemporaryMessage = (message, element) => {
 const toggleThemeButton = document.getElementById('toggleTheme');
 const applyTheme = (theme) => {
     document.body.setAttribute('data-theme', theme);
-    toggleThemeButton.textContent = theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme';
+    toggleThemeButton.textContent = theme === 'dark' ? '💡' : '🌙';
+    toggleThemeButton.title = theme === 'dark' ? 'Turn on the lights' : 'Turn off the lights';
     localStorage.setItem('theme', theme);
 };
 
