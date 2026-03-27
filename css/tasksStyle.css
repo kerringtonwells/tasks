@@ -879,6 +879,33 @@ body[data-theme="light"] .notes-toast { background: rgba(15,20,40,0.88);   color
 .notes-toast.visible { opacity: 1; transform: none; }
 
 /* ── Responsive ──────────────────────────────────────────── */
+
+/* Large screens — sidebar slightly narrower */
+@media (max-width: 1600px) {
+    .links-container { flex: 0 0 380px !important; min-width: 380px; max-width: 380px; }
+}
+
+/* Medium-large — sidebar shrinks more, grid stays 3 col */
+@media (max-width: 1400px) {
+    .links-container { flex: 0 0 320px !important; min-width: 320px; max-width: 320px; }
+    #subjectList { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Medium — sidebar narrow, grid drops to 2 columns */
+@media (max-width: 1150px) {
+    .links-container { flex: 0 0 260px !important; min-width: 260px; max-width: 260px; }
+    .link-text { font-size: 12px; }
+    #subjectList { grid-template-columns: repeat(2, 1fr); }
+    .notes-top-bar { max-width: 100%; }
+}
+
+/* Smaller medium — sidebar even narrower */
+@media (max-width: 900px) {
+    .links-container { flex: 0 0 200px !important; min-width: 200px; max-width: 200px; }
+    .link-text { font-size: 11px; }
+    #subjectList { grid-template-columns: repeat(2, 1fr); }
+}
+
 @media (max-width: 768px) {
     body { font-size: 12px; }
 
@@ -889,6 +916,7 @@ body[data-theme="light"] .notes-toast { background: rgba(15,20,40,0.88);   color
     .links-toolbar button { width: 26px; height: 26px; font-size: 13px; }
 
     #mainContainer { padding: 0.6rem 0.5rem; }
+    #subjectList { grid-template-columns: 1fr; }
 
     h1 { font-size: 1rem; }
     h2 { font-size: 0.75rem; }
