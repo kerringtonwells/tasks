@@ -1147,12 +1147,73 @@ body[data-theme="light"] .notes-toast { background: rgba(15,20,40,0.88);  color:
 
 /* ── Responsive ──────────────────────────────────────────── */
 
-@media (max-width: 600px) {
-    .container, .new-container { padding: 1rem; min-width: 0; }
-    button { padding: 6px 12px; font-size: 12px; }
-    .time-dropdown { left: 0; transform: none; min-width: 180px; }
-    #searchBar { max-width: 100%; width: 100%; }
-    .notes-top-bar { flex-direction: column; align-items: stretch; }
+/* ── Mobile scaling — keep 3-column layout, just smaller ──── */
+@media (max-width: 768px) {
+    /* Scale everything with font-size on body */
+    body { font-size: 12px; }
+
+    /* Sidebar — narrow but still fixed */
+    .links-box { width: 100px; padding: 0.75rem 0.5rem; }
+    .links-box h2 { font-size: 0.6rem; letter-spacing: 0.5px; }
+    .link-text { font-size: 9px; }
+    .links-toolbar { gap: 2px; flex-wrap: wrap; }
+    .links-toolbar button { width: 26px; height: 26px; font-size: 13px; }
+
+    /* All containers — tighter padding */
+    .container, .new-container {
+        padding: 0.6rem 0.5rem;
+        min-width: 0;
+    }
+
+    /* Push content past the sidebar */
+    body { padding-left: 0; }
+
+    /* Headings */
+    h1 { font-size: 1rem; margin-bottom: 0.75rem; }
+    h2 { font-size: 0.75rem; margin-bottom: 0.6rem; }
+
+    /* Buttons — smaller all around */
+    button { padding: 4px 8px; font-size: 10px; margin: 2px; }
+
+    /* Table */
+    th, td { padding: 5px; font-size: 10px; }
+
+    /* Stopwatch */
+    .time-display { font-size: 1.4rem; letter-spacing: 1px; }
+
+    /* Todo list */
+    #todoList li { padding: 8px 10px; }
+    #todoList button { font-size: 10px; padding: 3px 7px; }
+    .content-wrapper span { font-size: 12px; }
+    .count { font-size: 12px; min-width: 20px; }
+
+    /* Time dropdown */
+    .time-dropdown { left: 0; transform: none; min-width: 160px; }
+    .time-option-btn { min-width: 36px; font-size: 10px; padding: 3px 6px; }
+
+    /* Notes section */
+    #searchBar { font-size: 10px; padding: 4px 8px 4px 28px; min-width: 80px; }
+    button.notes-btn { padding: 3px 8px; font-size: 10px; }
+    .note-row-text { font-size: 12px; }
+    .notes-top-bar { padding: 6px 8px; gap: 4px; }
+
+    /* Subject cards */
+    .subject-name { font-size: 11px; }
+    .subject-count { font-size: 9px; padding: 1px 5px; }
+}
+
+@media (max-width: 480px) {
+    body { font-size: 11px; }
+    .links-box { width: 80px; }
+    .link-text { font-size: 8px; }
+    .links-toolbar button { width: 22px; height: 22px; font-size: 11px; }
+    h1 { font-size: 0.85rem; }
+    .time-display { font-size: 1.1rem; }
+    button { padding: 3px 6px; font-size: 9px; }
+    #todoList button { font-size: 9px; padding: 2px 5px; }
+    .content-wrapper span { font-size: 11px; }
+    button.notes-btn { padding: 2px 6px; font-size: 9px; }
+    .note-row-text { font-size: 11px; }
 }
 
 .note-editor-modal textarea.editor-textarea.img-drag-over {
