@@ -33,7 +33,6 @@
     ta.focus();
   }
   function getScroller() {
-    // Return the visible (expanded) notes list, not a hidden collapsed one
     return document.querySelector('.subject-card-expanded .subject-notes-list') || null;
   }
 
@@ -465,7 +464,6 @@
 
     var delB=btn('Delete',function(e){
       e.stopPropagation();
-      // Swap Delete button for inline Yes/No — no dialog, no scroll jump
       delB.textContent = 'Sure?';
       delB.style.pointerEvents = 'none';
       var yesB = btn('Yes', function(e2){
@@ -532,7 +530,7 @@
 
     var header=el('div','subject-card-header');
     var grip=el('span','subject-grip'); grip.textContent='⠿';
-    var chev=el('span','subject-chevron'); chev.textContent=isOpen?'▼':'▶';
+    var chev=el('span','subject-chevron'); chev.textContent='▶';
     var nameEl=el('span','subject-name'); nameEl.textContent=subject.name;
     nameEl.style.color=document.body.getAttribute('data-theme')==='dark'?'#f0f0f0':'#111827';
     nameEl.style.fontWeight='700'; nameEl.style.flex='1';
@@ -562,10 +560,23 @@
     header.appendChild(left); header.appendChild(right);
     header.addEventListener('click',function(e){
       if (e.target.closest('button')||e.target.closest('.subject-grip')) return;
-      expandedSubject = expandedSubject===subject.id ? null : subject.id; render();
+      if (expandedSubject === subject.id) {
+        // Play close animation then collapse
+        notesList.classList.remove('is-open');
+        notesList.classList.add('is-closing');
+        setTimeout(function(){
+          expandedSubject = null;
+          render();
+        }, 280);
+      } else {
+        expandedSubject = subject.id;
+        render();
+      }
     });
 
-    var notesList=el('div','subject-notes-list'); notesList.style.display=isOpen?'flex':'none';
+    var notesList=el('div','subject-notes-list');
+    notesList.style.display = isOpen ? 'flex' : 'none';
+    if (isOpen) notesList.classList.add('is-open');
     subject.notes.forEach(function(n){ notesList.appendChild(buildNoteRow(n,subject.id)); });
     if (!subject.notes.length){ var empty=el('div','notes-empty'); empty.textContent='No notes yet — click ＋ to add one.'; notesList.appendChild(empty); }
 
@@ -605,7 +616,6 @@
   // ─── Render ───────────────────────────────────────────────────────────────────
   function render() {
     var list=document.getElementById('subjectList'); if(!list) return;
-    // Save BOTH scroll positions — page scroll (HTML) and inner list scroll
     var pageScroll   = document.documentElement.scrollTop || window.scrollY || 0;
     var scroller     = getScroller();
     var innerScroll  = scroller ? scroller.scrollTop : 0;
@@ -616,7 +626,6 @@
     }) : data.subjects;
     visible.forEach(function(s){ list.appendChild(buildSubjectCard(s)); });
     var eb=document.getElementById('exportbutton'); if(eb) eb.style.display=data.subjects.length?'':'none';
-    // Double rAF to restore both after full DOM rebuild
     requestAnimationFrame(function() {
       requestAnimationFrame(function() {
         if (pageScroll > 0) document.documentElement.scrollTop = pageScroll;
@@ -628,16 +637,20 @@
 
   // ─── Show / Hide ──────────────────────────────────────────────────────────────
   function showNotes() {
-    document.querySelectorAll('.container').forEach(function(e){ e.style.display='none'; });
-    var nc=document.querySelector('.new-container');
-    if (nc){ nc.querySelectorAll('h2').forEach(function(h){ h.style.display='none'; }); var sw=nc.querySelector('.stopwatch'); if(sw) sw.style.display='none'; }
-    var ns=document.querySelector('.new-container .notes-section');
+    var mc = document.getElementById('mainContent');
+    if (mc) mc.style.display = 'none';
+
+    // Hide title + memory game link while notes are open
+    var mainContainer = document.getElementById('mainContainer');
+    if (mainContainer) mainContainer.classList.add('notes-active');
+
+    var ns = document.querySelector('.notes-section');
     if (ns) {
-      ns.style.opacity='0';
-      ns.style.display='flex';
+      ns.style.opacity = '0';
+      ns.style.display = 'flex';
       requestAnimationFrame(function(){
-        ns.style.transition='opacity 0.4s ease';
-        ns.style.opacity='1';
+        ns.style.transition = 'opacity 0.4s ease';
+        ns.style.opacity = '1';
       });
     }
     var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
@@ -646,24 +659,30 @@
   }
 
   function hideNotes() {
-    var ns=document.querySelector('.new-container .notes-section');
+    var ns = document.querySelector('.notes-section');
     if (ns) {
-      ns.style.transition='opacity 0.4s ease';
-      ns.style.opacity='0';
+      ns.style.transition = 'opacity 0.4s ease';
+      ns.style.opacity = '0';
       setTimeout(function(){
-        ns.style.display='none';
-        ns.style.opacity='';
-        ns.style.transition='';
-        document.querySelectorAll('.container').forEach(function(e){ e.style.display='block'; });
-        var nc=document.querySelector('.new-container');
-        if (nc){ nc.querySelectorAll('h2').forEach(function(h){ h.style.display=''; }); var sw=nc.querySelector('.stopwatch'); if(sw) sw.style.display=''; }
+        ns.style.display = 'none';
+        ns.style.opacity = '';
+        ns.style.transition = '';
+
+        // Restore title + memory game link
+        var mainContainer = document.getElementById('mainContainer');
+        if (mainContainer) mainContainer.classList.remove('notes-active');
+
+        var mc = document.getElementById('mainContent');
+        if (mc) mc.style.display = 'block';
         var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
         if(show) show.style.display='inline-block'; if(hide) hide.style.display='none';
       }, 400);
     } else {
-      document.querySelectorAll('.container').forEach(function(e){ e.style.display='block'; });
-      var nc=document.querySelector('.new-container');
-      if (nc){ nc.querySelectorAll('h2').forEach(function(h){ h.style.display=''; }); var sw=nc.querySelector('.stopwatch'); if(sw) sw.style.display=''; }
+      var mainContainer = document.getElementById('mainContainer');
+      if (mainContainer) mainContainer.classList.remove('notes-active');
+
+      var mc = document.getElementById('mainContent');
+      if (mc) mc.style.display = 'block';
       var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
       if(show) show.style.display='inline-block'; if(hide) hide.style.display='none';
     }
@@ -690,7 +709,7 @@
       expCont.appendChild(impBtn);
     }
 
-    var ns=document.querySelector('.new-container .notes-section');
+    var ns=document.querySelector('.notes-section');
     if (ns&&!document.querySelector('.notes-top-bar')) {
       var bar=document.createElement('div'); bar.className='notes-top-bar';
       [document.getElementById('searchBar'),document.getElementById('addSubjectBtn'),document.getElementById('exportButtonContainer'),document.getElementById('hideNotes')]
@@ -702,6 +721,8 @@
     }
 
     if (ns) ns.style.display='none';
+    var mc = document.getElementById('mainContent');
+    if (mc) mc.style.display='block';
     var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
     if(show){ show.style.display='inline-block'; show.addEventListener('click',showNotes); }
     if(hide){ hide.style.display='none';         hide.addEventListener('click',hideNotes); }
