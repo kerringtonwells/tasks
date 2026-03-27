@@ -430,11 +430,11 @@ body[data-theme="light"] .links-box h2 { color: #0f172a; }
     border-radius: 6px;
     gap: 6px;
     transition: background 0.12s;
-    border-top: 1px solid rgba(255,255,255,0.06);
+    border-top: 1px solid rgba(255,255,255,0.25);
 }
 
 body[data-theme="light"] .link-item {
-    border-top-color: rgba(99,130,220,0.12);
+    border-top-color: rgba(99,130,220,0.35);
 }
 
 #linksList li:first-child .link-item {
@@ -1239,7 +1239,16 @@ body[data-theme="light"] .time-display { text-shadow: 0 2px 8px rgba(99,130,220,
     border-radius: 8px;
     margin: 2px 0;
     border: 1px solid transparent;
+    border-top: 1px solid rgba(255,255,255,0.25);
     transition: background 0.15s, border-color 0.15s, transform 0.12s;
+}
+
+body[data-theme="light"] .link-item {
+    border-top-color: rgba(99,130,220,0.35);
+}
+
+#linksList li:first-child .link-item {
+    border-top: none;
 }
 body[data-theme="dark"] .link-item:hover {
     background: rgba(59,130,246,0.1);
