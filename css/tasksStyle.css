@@ -226,7 +226,7 @@ body[data-theme="light"] .controls-row { background: rgba(255,255,255,0.5); bord
 table {
     border-collapse: collapse;
     width: fit-content;
-    min-width: 320px;
+    min-width: 0;
     margin: 0 auto 1.5rem;
     border-radius: 20px;
     overflow: hidden;
@@ -241,15 +241,15 @@ th {
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 3px;
-    padding: 10px 32px 6px;
+    padding: 8px 20px 5px;
     background: linear-gradient(135deg, rgba(59,130,246,0.55) 0%, rgba(139,92,246,0.45) 100%);
 }
 
 body[data-theme="dark"]  tr.current { background: rgba(255,255,255,0.06); backdrop-filter: blur(8px); }
 body[data-theme="light"] tr.current { background: rgba(255,255,255,0.55); }
 
-body[data-theme="dark"]  td { font-size: 22px; font-weight: 300; letter-spacing: 1px; color: #f1f5f9; padding: 12px 32px 14px; font-variant-numeric: tabular-nums; }
-body[data-theme="light"] td { font-size: 22px; font-weight: 300; letter-spacing: 1px; color: #1e3a8a; padding: 12px 32px 14px; font-variant-numeric: tabular-nums; }
+body[data-theme="dark"]  td { font-size: 22px; font-weight: 300; letter-spacing: 1px; color: #f1f5f9; padding: 10px 20px 12px; font-variant-numeric: tabular-nums; }
+body[data-theme="light"] td { font-size: 22px; font-weight: 300; letter-spacing: 1px; color: #1e3a8a; padding: 10px 20px 12px; font-variant-numeric: tabular-nums; }
 
 body[data-theme="dark"]  table { border: 1px solid rgba(99,130,246,0.25); }
 body[data-theme="light"] table { border: 1px solid rgba(139,92,246,0.2); }
