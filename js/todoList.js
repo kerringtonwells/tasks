@@ -361,7 +361,6 @@ const addTodoItem = (itemText, itemCount, todoListElement, lastModifiedParam, im
         opt.className   = 'time-option-btn';
         opt.addEventListener('click', e => {
             e.stopPropagation();
-            for (let i = 0; i < slots; i++) moveDown();
             counterSpan.textContent = parseInt(counterSpan.textContent) + slots;
             updateLastModifiedDate(li);
             saveTodoList(todoListElement);
