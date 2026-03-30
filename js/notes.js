@@ -538,7 +538,6 @@
     var grip=el('span','subject-grip'); grip.textContent='⠿';
     var chev=el('span','subject-chevron'); chev.textContent='▶';
     var nameEl=el('span','subject-name'); nameEl.textContent=subject.name;
-    nameEl.style.color=document.body.getAttribute('data-theme')==='dark'?'#f0f0f0':'#111827';
     nameEl.style.fontWeight='700'; nameEl.style.flex='1';
     var count=el('span','subject-count');
     count.textContent=subject.notes.length+' note'+(subject.notes.length!==1?'s':'');
