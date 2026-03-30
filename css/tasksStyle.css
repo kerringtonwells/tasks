@@ -340,10 +340,10 @@ body[data-theme="dark"]  .link-item:hover { background: rgba(59,130,246,0.1);  b
 body[data-theme="light"] .link-item:hover { background: rgba(99,130,220,0.08); border-color: rgba(99,130,220,0.2); transform: translateX(3px); }
 
 .link-text { font-size: 13px; text-decoration: none; transition: color 0.15s; }
-body[data-theme="dark"]  .link-text       { color: #93c5fd; }
-body[data-theme="light"] .link-text       { color: #2563eb; }
-body[data-theme="dark"]  .link-text:hover { color: #60a5fa; }
-body[data-theme="light"] .link-text:hover { color: #1d4ed8; }
+body[data-theme="dark"]  .link-text       { color: #e2e8f0; }
+body[data-theme="light"] .link-text       { color: #1a1a2e; }
+body[data-theme="dark"]  .link-text:hover { color: #ffffff; }
+body[data-theme="light"] .link-text:hover { color: #3b82f6; }
 
 .link-actions { display: flex; gap: 3px; opacity: 0; transition: opacity 0.15s; flex-shrink: 0; }
 .link-item:hover .link-actions { opacity: 1; }
