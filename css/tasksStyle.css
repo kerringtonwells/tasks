@@ -20,15 +20,12 @@ body {
     background: var(--bg);
     color: var(--text);
     transition: background-color 0.3s, color 0.3s;
-    animation: premiumPageFadeIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    animation: pageFadeIn 0.5s ease forwards;
 }
 
-@keyframes premiumPageFadeIn {
-    0%   { opacity: 0; transform: scale(0.96) translateY(12px); filter: blur(6px); }
-    100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
-}
+@keyframes pageFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* ── Static aurora background ────────────────────────────── */
+/* ── Static aurora background (no animation) ─────────────── */
 body::before {
     content: '';
     position: fixed;
@@ -146,7 +143,7 @@ button {
     font-family: inherit;
     cursor: pointer;
     letter-spacing: 0.3px;
-    transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.18s ease;
     background: var(--btn-bg);
     border: 1px solid var(--btn-border);
 }
@@ -271,7 +268,7 @@ body[data-theme="light"] .status-on-schedule { background: rgba(22,163,74,0.1); 
 body[data-theme="dark"]  .time-display, body[data-theme="dark"]  .time-display span { color: #f1f5f9; text-shadow: 0 0 20px rgba(59,130,246,0.4), 0 0 40px rgba(59,130,246,0.15); }
 body[data-theme="light"] .time-display, body[data-theme="light"] .time-display span { color: #0f172a; text-shadow: 0 2px 8px rgba(99,130,220,0.25); }
 
-#inlineStopwatch { margin-bottom: 16px; padding: 12px 16px; border-radius: 12px; text-align: center; animation: premiumPageFadeIn 0.3s ease; }
+#inlineStopwatch { margin-bottom: 16px; padding: 12px 16px; border-radius: 12px; text-align: center; animation: pageFadeIn 0.3s ease; }
 body[data-theme="dark"]  #inlineStopwatch { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
 body[data-theme="light"] #inlineStopwatch { background: rgba(255,255,255,0.5);  border: 1px solid rgba(200,210,255,0.5); box-shadow: 0 2px 8px rgba(99,130,220,0.1); }
 #inlineStopwatch .time-display { font-size: 2rem; margin-bottom: 8px; }
@@ -411,33 +408,8 @@ body[data-theme="light"] #searchBar { background-color: rgba(255,255,255,0.7);  
 #subjectList { list-style: none; padding: 0; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; width: 100%; max-width: 960px; }
 #subjectList:has(.subject-card-expanded) { max-width: none; }
 
-/* ── Subject card — base z-index so expanded card wins ────── */
-.subject-card {
-    border-radius: 10px;
-    overflow: visible;
-    position: relative;
-    z-index: 1;               /* baseline — expanded card overrides to 10 */
-    transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1),
-                box-shadow  0.55s cubic-bezier(0.34, 1.56, 0.64, 1),
-                border-color 0.3s ease;
-}
-
-/* ── Expanded card sits above all siblings ─────────────────── */
-.subject-card.subject-card-expanded {
-    grid-column: 1 / -1;
-    z-index: 10;              /* ← FIX: prevents siblings painting on top */
-    transform: scale(1.018) translateY(-4px);
-    box-shadow:
-        0 25px 50px -12px rgb(59 130 246 / 0.35),
-        0 0 0 2px rgb(147 197 253 / 0.25) inset;
-    animation: cardBloom 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-@keyframes cardBloom {
-    0%   { box-shadow: 0 4px 24px rgba(0,0,0,0.2); }
-    50%  { box-shadow: 0 30px 60px -15px rgb(59 130 246 / 0.45); }
-    100% { box-shadow: 0 25px 50px -12px rgb(59 130 246 / 0.35); }
-}
+.subject-card { border-radius: 10px; overflow: visible; transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.subject-card.subject-card-expanded { grid-column: 1 / -1; }
 
 body[data-theme="dark"]  .subject-card { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
 body[data-theme="light"] .subject-card { background: rgba(255,255,255,0.48); border: 1px solid rgba(255,255,255,0.85); box-shadow: 0 4px 20px rgba(99,130,220,0.12); }
@@ -476,63 +448,40 @@ body[data-theme="light"] .subject-count.subject-count-empty { background: rgba(0
 .subject-card.subject-dragging  { opacity: 0.4; }
 .subject-card.subject-drag-over { outline: 2px dashed #3b82f6; outline-offset: 3px; }
 
-/* ── Notes list ──────────────────────────────────────────── */
+/* ── Notes list & rows ───────────────────────────────────── */
 .subject-notes-list { display: flex; flex-direction: column; gap: 6px; padding: 10px; border-radius: 0 0 10px 10px; }
 
-/* ── Premium panel open / close ─────────────────────────── */
-.subject-notes-list.is-open {
-    animation: premiumPanelOpen 0.62s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+.subject-notes-list.is-open    { animation: notesPanelOpen  0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.subject-notes-list.is-closing { animation: notesPanelClose 0.3s  cubic-bezier(0.4, 0, 1, 1)    forwards; pointer-events: none; }
+
+@keyframes notesPanelOpen {
+    0%   { clip-path: inset(0 0 100% 0 round 0 0 10px 10px); opacity: 0; transform: scaleY(0.92); transform-origin: top center; }
+    60%  { opacity: 1; }
+    100% { clip-path: inset(0 0 0% 0 round 0 0 10px 10px); opacity: 1; transform: scaleY(1); }
 }
-body[data-theme="dark"] .subject-notes-list.is-open::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    border-radius: 0 0 10px 10px;
-    box-shadow: 0 0 40px 8px rgba(59,130,246,0.3);
-    animation: neonPulse 1.2s ease-out forwards;
-}
-@keyframes premiumPanelOpen {
-    0%   { opacity: 0; transform: scaleY(0.68) translateY(-28px); filter: blur(14px); clip-path: polygon(0 0, 100% 0, 100% 0%, 0 0%); }
-    45%  { opacity: 0.75; filter: blur(4px); }
-    100% { opacity: 1; transform: scaleY(1) translateY(0); filter: blur(0); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
-}
-@keyframes neonPulse {
-    0%   { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
-    30%  { box-shadow: 0 0 40px 12px rgba(59,130,246,0.45); }
-    100% { box-shadow: 0 0 0 0 rgba(59,130,246,0); }
+@keyframes notesPanelClose {
+    0%   { clip-path: inset(0 0 0% 0 round 0 0 10px 10px); opacity: 1; transform: scaleY(1); transform-origin: top center; }
+    100% { clip-path: inset(0 0 100% 0 round 0 0 10px 10px); opacity: 0; transform: scaleY(0.92); }
 }
 
-.subject-notes-list.is-closing {
-    animation: premiumPanelClose 0.38s cubic-bezier(0.4, 0, 1, 1) forwards;
-    pointer-events: none;
-}
-@keyframes premiumPanelClose {
-    0%   { opacity: 1; transform: scaleY(1) translateY(0); filter: blur(0); clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); }
-    100% { opacity: 0; transform: scaleY(0.72) translateY(-22px); filter: blur(10px); clip-path: polygon(0 0, 100% 0, 100% 0%, 0 0%); }
-}
+.subject-notes-list.is-open .note-row { animation: noteRowIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.subject-notes-list.is-open .note-row:nth-child(1)   { animation-delay: 0.05s; }
+.subject-notes-list.is-open .note-row:nth-child(2)   { animation-delay: 0.1s; }
+.subject-notes-list.is-open .note-row:nth-child(3)   { animation-delay: 0.14s; }
+.subject-notes-list.is-open .note-row:nth-child(4)   { animation-delay: 0.17s; }
+.subject-notes-list.is-open .note-row:nth-child(5)   { animation-delay: 0.19s; }
+.subject-notes-list.is-open .note-row:nth-child(n+6) { animation-delay: 0.21s; }
 
-/* ── Premium note row cascade ────────────────────────────── */
-.subject-notes-list.is-open .note-row {
-    animation: notePopIn 0.52s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+@keyframes noteRowIn {
+    0%   { opacity: 0; transform: translateX(-8px) scale(0.98); filter: blur(2px); }
+    100% { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); }
 }
-@keyframes notePopIn {
-    0%   { opacity: 0; transform: translateY(24px) scale(0.92) rotate(-4deg); filter: blur(8px); }
-    55%  { transform: translateY(-6px) scale(1.08) rotate(2deg); }
-    100% { opacity: 1; transform: translateY(0) scale(1) rotate(0deg); filter: blur(0); }
-}
-.subject-notes-list.is-open .note-row:nth-child(1)   { animation-delay: 40ms; }
-.subject-notes-list.is-open .note-row:nth-child(2)   { animation-delay: 95ms; }
-.subject-notes-list.is-open .note-row:nth-child(3)   { animation-delay: 155ms; }
-.subject-notes-list.is-open .note-row:nth-child(4)   { animation-delay: 210ms; }
-.subject-notes-list.is-open .note-row:nth-child(5)   { animation-delay: 270ms; }
-.subject-notes-list.is-open .note-row:nth-child(n+6) { animation-delay: 330ms; }
 
 .subject-card.subject-card-expanded .subject-notes-list { max-height: 70vh; overflow-y: auto; }
 .subject-notes-list.note-drop-over { background: rgba(59,130,246,0.07); }
 .notes-empty { font-size: 13px; color: #9ca3af; padding: 10px 6px; font-style: italic; text-align: center; }
 
-.note-row { border-radius: 7px; padding: 10px 12px; transition: transform 0.18s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.18s ease; }
+.note-row { border-radius: 7px; padding: 10px 12px; transition: transform 0.15s ease, box-shadow 0.15s ease; }
 body[data-theme="dark"]  .note-row { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); color: #e2e8f0; }
 body[data-theme="dark"]  .note-row:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.2); }
 body[data-theme="light"] .note-row { background: rgba(255,255,255,0.52); border: 1px solid rgba(255,255,255,0.85); color: #1f2937; }
@@ -563,30 +512,11 @@ body[data-theme] button.notes-btn.notes-btn-danger        { background: rgba(239
 body[data-theme] button.notes-btn.notes-btn-danger:hover  { background: rgba(239,68,68,0.22); border-color: rgba(248,113,113,0.5); color: #fca5a5; box-shadow: 0 2px 8px rgba(239,68,68,0.2); }
 
 /* ── Note editor modal ───────────────────────────────────── */
-.note-editor-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 99999;
-    display: flex; align-items: center; justify-content: center;
-    padding: 20px;
-    animation: overlayPopIn 0.22s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-}
-@keyframes overlayPopIn {
-    0%   { opacity: 0; backdrop-filter: blur(0px); }
-    100% { opacity: 1; backdrop-filter: blur(12px); }
-}
+.note-editor-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 20px; animation: overlayIn 0.15s ease; }
+@keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
 
-.note-editor-modal {
-    border-radius: 14px; padding: 24px;
-    width: 100%; max-width: 620px; max-height: 90vh;
-    overflow-y: auto; display: flex; flex-direction: column; gap: 14px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
-    animation: modalPop 0.48s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-@keyframes modalPop {
-    0%   { opacity: 0; transform: scale(0.88) translateY(32px); filter: blur(12px); }
-    100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
-}
+.note-editor-modal { border-radius: 14px; padding: 24px; width: 100%; max-width: 620px; max-height: 90vh; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 60px rgba(0,0,0,0.35); animation: modalIn 0.18s ease; }
+@keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: none; } }
 
 body[data-theme="dark"]  .note-editor-modal { background: rgba(8,13,30,0.82);    border: 1px solid rgba(255,255,255,0.15); color: #e2e8f0; }
 body[data-theme="light"] .note-editor-modal { background: rgba(255,255,255,0.78); border: 1px solid rgba(200,210,255,0.7);  color: #111827; }
@@ -608,23 +538,12 @@ body[data-theme="light"] .note-editor-modal textarea.editor-textarea { backgroun
 
 /* ── Lightbox ────────────────────────────────────────────── */
 .lightbox-overlay { cursor: zoom-out; }
-.lightbox-img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 25px 80px rgba(0,0,0,0.6); animation: modalPop 0.2s ease; }
+.lightbox-img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px; box-shadow: 0 25px 80px rgba(0,0,0,0.6); animation: modalIn 0.2s ease; }
 .lightbox-close { position: fixed; top: 20px; right: 24px; width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.2); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; padding: 0; margin: 0; transition: background 0.15s; z-index: 1000000; }
 .lightbox-close:hover { background: rgba(255,255,255,0.28); }
 
 /* ── Toast ───────────────────────────────────────────────── */
-.notes-toast {
-    position: fixed; bottom: 24px; right: 24px;
-    padding: 9px 16px; border-radius: 8px; font-size: 13px;
-    z-index: 999999; opacity: 0; transform: translateY(8px);
-    transition: opacity 0.3s, transform 0.3s; pointer-events: none;
-    animation: toastPop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-@keyframes toastPop {
-    0%   { opacity: 0; transform: translateY(28px) scale(0.92); }
-    70%  { transform: translateY(-8px) scale(1.05); }
-    100% { opacity: 1; transform: translateY(0) scale(1); }
-}
+.notes-toast { position: fixed; bottom: 24px; right: 24px; padding: 9px 16px; border-radius: 8px; font-size: 13px; z-index: 999999; opacity: 0; transform: translateY(8px); transition: opacity 0.3s, transform 0.3s; pointer-events: none; }
 body[data-theme="dark"]  .notes-toast { background: rgba(240,240,255,0.9); color: #111827; }
 body[data-theme="light"] .notes-toast { background: rgba(15,20,40,0.88);   color: #f9fafb; }
 .notes-toast.visible { opacity: 1; transform: none; }
