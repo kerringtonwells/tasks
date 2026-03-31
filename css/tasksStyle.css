@@ -268,12 +268,12 @@ body[data-theme="light"] .status-on-schedule { background: rgba(22,163,74,0.1); 
 
 /* ── Stopwatch ───────────────────────────────────────────── */
 .stopwatch { display: flex; flex-direction: column; align-items: center; }
-.time-display { font-size: 2.8rem; font-weight: 300; margin-bottom: 1rem; letter-spacing: 3px; font-variant-numeric: tabular-nums; transform: translateZ(0); will-change: contents; contain: strict; }
+.time-display { font-size: 2.8rem; font-weight: 300; margin-bottom: 1rem; letter-spacing: 3px; font-variant-numeric: tabular-nums; transform: translateZ(0); will-change: contents; }
 .time-display span { font-family: 'Courier New', Courier, monospace; }
 body[data-theme="dark"]  .time-display, body[data-theme="dark"]  .time-display span { color: #f1f5f9; }
 body[data-theme="light"] .time-display, body[data-theme="light"] .time-display span { color: #0f172a; text-shadow: 0 2px 8px rgba(99,130,220,0.25); }
 
-#inlineStopwatch { margin-bottom: 16px; padding: 12px 16px; border-radius: 12px; text-align: center; animation: premiumPageFadeIn 0.3s ease; contain: layout style; will-change: contents; }
+#inlineStopwatch { margin-bottom: 16px; padding: 12px 16px; border-radius: 12px; text-align: center; animation: premiumPageFadeIn 0.3s ease; contain: layout style; }
 body[data-theme="dark"]  #inlineStopwatch { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
 body[data-theme="light"] #inlineStopwatch { background: rgba(255,255,255,0.5);  border: 1px solid rgba(200,210,255,0.5); box-shadow: 0 2px 8px rgba(99,130,220,0.1); }
 #inlineStopwatch .time-display { font-size: 2rem; margin-bottom: 8px; }
