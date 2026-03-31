@@ -1,95 +1,109 @@
-let timer;
-let running = false;
-let startTime;
-let elapsedTime = 0;
-let wakeLock = null;
+/**
+ * stopwatch.js
+ * Uses requestAnimationFrame instead of setInterval(fn, 10) to prevent
+ * hammering the GPU on high-DPI/Retina screens. rAF syncs to the display
+ * refresh rate (~60fps) and only paints when the screen is ready.
+ */
 
-const startBtn = document.getElementById("startBtn");
-const pauseBtn = document.getElementById("pauseBtn");
-const resetBtn = document.getElementById("resetBtn");
-const timeDisplay = document.querySelector(".time-display");
-const hoursSpan = timeDisplay.querySelector(".hours");
-const minutesSpan = timeDisplay.querySelector(".minutes");
-const secondsSpan = timeDisplay.querySelector(".seconds");
-const millisecondsSpan = timeDisplay.querySelector(".milliseconds");
+let rafId      = null;   // requestAnimationFrame handle
+let running    = false;
+let startTime  = 0;      // performance.now() timestamp when started
+let elapsedTime = 0;     // accumulated ms before last pause
+let wakeLock   = null;
 
-const updateTime = () => {
-    elapsedTime = Date.now() - startTime;
-    displayTime(elapsedTime);
-};
+const startBtn         = document.getElementById('startBtn');
+const pauseBtn         = document.getElementById('pauseBtn');
+const resetBtn         = document.getElementById('resetBtn');
+const hoursSpan        = document.querySelector('.time-display .hours');
+const minutesSpan      = document.querySelector('.time-display .minutes');
+const secondsSpan      = document.querySelector('.time-display .seconds');
+const millisecondsSpan = document.querySelector('.time-display .milliseconds');
+
+// ── Only update DOM when value actually changes ───────────────────────────────
+let lastH = '', lastM = '', lastS = '', lastMs = '';
 
 const displayTime = (ms) => {
-    const totalSeconds = Math.floor(ms / 1000);
-    const totalMinutes = Math.floor(totalSeconds / 60);
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-    const seconds = totalSeconds % 60;
-    const milliseconds = ms % 1000;
+    const totalSeconds  = Math.floor(ms / 1000);
+    const totalMinutes  = Math.floor(totalSeconds / 60);
+    const hours         = Math.floor(totalMinutes / 60);
+    const minutes       = totalMinutes % 60;
+    const seconds       = totalSeconds % 60;
+    const milliseconds  = ms % 1000;
 
-    hoursSpan.textContent = hours.toString().padStart(2, "0");
-    minutesSpan.textContent = minutes.toString().padStart(2, "0");
-    secondsSpan.textContent = seconds.toString().padStart(2, "0");
-    millisecondsSpan.textContent = milliseconds.toString().padStart(3, "0");
+    const hStr  = hours.toString().padStart(2, '0');
+    const mStr  = minutes.toString().padStart(2, '0');
+    const sStr  = seconds.toString().padStart(2, '0');
+    const msStr = milliseconds.toString().padStart(3, '0');
+
+    // Only write to DOM if the value changed — avoids unnecessary repaints
+    if (hStr  !== lastH)  { hoursSpan.textContent        = hStr;  lastH  = hStr;  }
+    if (mStr  !== lastM)  { minutesSpan.textContent       = mStr;  lastM  = mStr;  }
+    if (sStr  !== lastS)  { secondsSpan.textContent       = sStr;  lastS  = sStr;  }
+    if (msStr !== lastMs) { millisecondsSpan.textContent  = msStr; lastMs = msStr; }
 };
 
+// ── rAF loop — runs at display refresh rate, not 100x/sec ────────────────────
+const tick = () => {
+    if (!running) return;
+    displayTime(elapsedTime + (performance.now() - startTime));
+    rafId = requestAnimationFrame(tick);
+};
+
+// ── Button state ──────────────────────────────────────────────────────────────
 const toggleButtons = (action) => {
     if (action === 'start') {
-        startBtn.classList.add("hidden");
-        pauseBtn.classList.remove("hidden");
-        resetBtn.classList.remove("hidden");
+        startBtn.classList.add('hidden');
+        pauseBtn.classList.remove('hidden');
+        resetBtn.classList.remove('hidden');
     } else if (action === 'pause') {
-        startBtn.classList.remove("hidden");
-        pauseBtn.classList.add("hidden");
+        startBtn.classList.remove('hidden');
+        pauseBtn.classList.add('hidden');
     } else if (action === 'reset') {
-        startBtn.classList.remove("hidden");
-        pauseBtn.classList.add("hidden");
-        resetBtn.classList.add("hidden");
+        startBtn.classList.remove('hidden');
+        pauseBtn.classList.add('hidden');
+        resetBtn.classList.add('hidden');
     }
 };
 
-startBtn.addEventListener("click", async () => {
-    if (!running) {
-        startTime = Date.now() - elapsedTime;
-        timer = setInterval(updateTime, 10);
-        running = true;
-        toggleButtons('start');
-        try {
-            if ('wakeLock' in navigator && !wakeLock) {
-                wakeLock = await navigator.wakeLock.request('screen');
-                console.log('Wake Lock is active');
-            }
-        } catch (e) {
-            console.error(`Failed to enable wake lock: ${e}`);
+// ── Controls ──────────────────────────────────────────────────────────────────
+startBtn.addEventListener('click', async () => {
+    if (running) return;
+    startTime = performance.now();
+    running   = true;
+    rafId     = requestAnimationFrame(tick);
+    toggleButtons('start');
+
+    try {
+        if ('wakeLock' in navigator && !wakeLock) {
+            wakeLock = await navigator.wakeLock.request('screen');
         }
-    }
+    } catch (e) { /* wake lock not critical */ }
 });
 
-pauseBtn.addEventListener("click", () => {
-    if (running) {
-        clearInterval(timer);
-        running = false;
-        toggleButtons('pause');
-        if (wakeLock) {
-            wakeLock.release().then(() => {
-                wakeLock = null;
-                console.log('Wake Lock was released');
-            });
-        }
-    }
-});
-
-resetBtn.addEventListener("click", () => {
-    clearInterval(timer);
-    elapsedTime = 0;
-    displayTime(0);
+pauseBtn.addEventListener('click', () => {
+    if (!running) return;
+    elapsedTime += performance.now() - startTime;
     running = false;
-    toggleButtons('reset');
+    cancelAnimationFrame(rafId);
+    toggleButtons('pause');
+
     if (wakeLock) {
-        wakeLock.release().then(() => {
-            wakeLock = null;
-            console.log('Wake Lock was released');
-        });
+        wakeLock.release().then(() => { wakeLock = null; });
     }
 });
 
-displayTime(elapsedTime);
+resetBtn.addEventListener('click', () => {
+    running     = false;
+    elapsedTime = 0;
+    cancelAnimationFrame(rafId);
+    displayTime(0);
+    lastH = lastM = lastS = lastMs = ''; // reset cache
+    toggleButtons('reset');
+
+    if (wakeLock) {
+        wakeLock.release().then(() => { wakeLock = null; });
+    }
+});
+
+// Init display
+displayTime(0);
