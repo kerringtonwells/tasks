@@ -437,7 +437,10 @@
     if (note.images&&note.images.length) {
       var wrap=el('div','note-row-images');
       note.images.forEach(function(src){
-        var img=el('img','note-row-img'); img.style.minWidth='60px'; img.style.minHeight='40px';
+        var img=el('img','note-row-img');
+        img.style.minWidth='60px'; img.style.minHeight='40px';
+        img.loading  = 'lazy';    // don't load until scrolled into view
+        img.decoding = 'async';   // decode off main thread — prevents long tasks
         if (src.indexOf('idb:')===0) {
           idbGet(src.slice(4)).then(function(d){ if(d){ img.src=d; img.addEventListener('click',function(e){ e.stopPropagation(); openLightbox(d); }); } });
         } else { img.src=src; img.addEventListener('click',function(e){ e.stopPropagation(); openLightbox(src); }); }
