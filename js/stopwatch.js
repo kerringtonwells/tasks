@@ -5,11 +5,11 @@
  * refresh rate (~60fps) and only paints when the screen is ready.
  */
 
-let rafId      = null;   // requestAnimationFrame handle
-let running    = false;
-let startTime  = 0;      // performance.now() timestamp when started
-let elapsedTime = 0;     // accumulated ms before last pause
-let wakeLock   = null;
+let rafId       = null;
+let running     = false;
+let startTime   = 0;      // Date.now() when last started
+let elapsedTime = 0;      // accumulated ms before last pause
+let wakeLock    = null;
 
 const startBtn         = document.getElementById('startBtn');
 const pauseBtn         = document.getElementById('pauseBtn');
@@ -23,6 +23,7 @@ const millisecondsSpan = document.querySelector('.time-display .milliseconds');
 let lastH = '', lastM = '', lastS = '', lastMs = '';
 
 const displayTime = (ms) => {
+    ms = Math.floor(ms);  // prevent float bleed-through
     const totalSeconds  = Math.floor(ms / 1000);
     const totalMinutes  = Math.floor(totalSeconds / 60);
     const hours         = Math.floor(totalMinutes / 60);
@@ -35,17 +36,15 @@ const displayTime = (ms) => {
     const sStr  = seconds.toString().padStart(2, '0');
     const msStr = milliseconds.toString().padStart(3, '0');
 
-    // Only write to DOM if the value changed — avoids unnecessary repaints
-    if (hStr  !== lastH)  { hoursSpan.textContent        = hStr;  lastH  = hStr;  }
-    if (mStr  !== lastM)  { minutesSpan.textContent       = mStr;  lastM  = mStr;  }
-    if (sStr  !== lastS)  { secondsSpan.textContent       = sStr;  lastS  = sStr;  }
-    if (msStr !== lastMs) { millisecondsSpan.textContent  = msStr; lastMs = msStr; }
+    if (hStr  !== lastH)  { hoursSpan.textContent       = hStr;  lastH  = hStr;  }
+    if (mStr  !== lastM)  { minutesSpan.textContent      = mStr;  lastM  = mStr;  }
+    if (sStr  !== lastS)  { secondsSpan.textContent      = sStr;  lastS  = sStr;  }
+    if (msStr !== lastMs) { millisecondsSpan.textContent = msStr; lastMs = msStr; }
 };
 
-// ── rAF loop — runs at display refresh rate, not 100x/sec ────────────────────
 const tick = () => {
     if (!running) return;
-    displayTime(elapsedTime + (performance.now() - startTime));
+    displayTime(elapsedTime + (Date.now() - startTime));
     rafId = requestAnimationFrame(tick);
 };
 
@@ -68,7 +67,7 @@ const toggleButtons = (action) => {
 // ── Controls ──────────────────────────────────────────────────────────────────
 startBtn.addEventListener('click', async () => {
     if (running) return;
-    startTime = performance.now();
+    startTime = Date.now();
     running   = true;
     rafId     = requestAnimationFrame(tick);
     toggleButtons('start');
@@ -82,7 +81,7 @@ startBtn.addEventListener('click', async () => {
 
 pauseBtn.addEventListener('click', () => {
     if (!running) return;
-    elapsedTime += performance.now() - startTime;
+    elapsedTime += Date.now() - startTime;
     running = false;
     cancelAnimationFrame(rafId);
     toggleButtons('pause');
