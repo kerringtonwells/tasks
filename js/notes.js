@@ -1197,8 +1197,13 @@
     document.addEventListener('firebase-share-open', function(e){
       var shareId = e.detail.shareId;
       var fs = getFS();
-      if (!fs || !fs.isReady) { openFirebaseSetupModal(function(){ openSharedView(shareId); }); }
-      else { openSharedView(shareId); }
+      if (!fs || !fs.isReady) {
+        // Shouldn't normally happen — firebase-sync.js auto-connects for share links
+        // But fall back gracefully just in case
+        setTimeout(function(){ openSharedView(shareId); }, 1000);
+      } else {
+        openSharedView(shareId);
+      }
     });
 
     startSync(); render();
