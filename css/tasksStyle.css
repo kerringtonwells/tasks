@@ -655,3 +655,96 @@ body[data-theme="light"] .notes-toast { background: rgba(15,20,40,0.88);   color
     button.notes-btn { padding: 2px 6px; font-size: 9px; }
     .note-row-text { font-size: 11px; }
 }
+
+/* ── Checklist items ─────────────────────────────────────────────────────── */
+.checklist-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 12px;
+    border-radius: 8px;
+    margin: 3px 0;
+    gap: 10px;
+    transition: transform 0.15s ease;
+}
+body[data-theme="dark"]  .checklist-item { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); }
+body[data-theme="light"] .checklist-item { background: rgba(255,255,255,0.52); border: 1px solid rgba(200,210,255,0.5); }
+body[data-theme="dark"]  .checklist-item:hover { transform: translateY(-1px); }
+body[data-theme="light"] .checklist-item:hover { transform: translateY(-1px); }
+
+.checklist-item-checked { opacity: 0.55; }
+
+.checklist-left {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.checklist-checkbox {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    accent-color: #3b82f6;
+    cursor: pointer;
+}
+
+.checklist-label {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+    word-break: break-word;
+    flex: 1;
+}
+.checklist-label-checked {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.checklist-stamp {
+    display: block;
+    font-size: 10px;
+    opacity: 0.45;
+    margin-top: 2px;
+    letter-spacing: 0.2px;
+    white-space: nowrap;
+}
+
+.checklist-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s;
+}
+.checklist-item:hover .checklist-actions { opacity: 1; pointer-events: auto; }
+.checklist-actions button { font-size: 11px; padding: 3px 9px; }
+
+/* Type badge in subject header */
+.subject-type-badge {
+    font-size: 13px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+/* Type select buttons in new subject modal */
+.type-select-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.06);
+    color: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+    font-family: inherit;
+}
+.type-select-btn:hover { transform: translateY(-1px); }
+.type-select-active {
+    background: rgba(59,130,246,0.35) !important;
+    border-color: rgba(99,160,255,0.6) !important;
+}
