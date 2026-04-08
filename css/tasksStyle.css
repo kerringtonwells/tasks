@@ -451,11 +451,11 @@ body[data-theme="dark"]  .subject-card-header:hover { background: rgba(255,255,2
 body[data-theme="light"] .subject-card-header:hover { background: rgba(255,255,255,0.82); }
 
 .subject-header-left { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 0; overflow: hidden; }
-.subject-header-right { display: flex; align-items: center; gap: 2px; flex-shrink: 0; opacity: 0; pointer-events: none; transition: opacity 0.15s; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); padding: 3px 5px; border-radius: 8px; z-index: 5; }
+.subject-header-right { display: flex; align-items: center; gap: 1px; flex-shrink: 0; opacity: 0; pointer-events: none; transition: opacity 0.15s; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 2px 4px; border-radius: 8px; z-index: 5; }
 body[data-theme="dark"]  .subject-header-right { background: rgba(30,35,60,0.9); }
 body[data-theme="light"] .subject-header-right { background: rgba(230,235,255,0.9); }
 .subject-card-header:hover .subject-header-right { opacity: 1; pointer-events: auto; }
-.subject-header-right button { padding: 2px 8px; font-size: 11px; border-radius: 10px; margin: 0 1px; font-weight: 600; line-height: 1.4; }
+.subject-header-right button { padding: 2px 6px; font-size: 10px; border-radius: 8px; margin: 0; font-weight: 600; line-height: 1.4; min-width: 22px; text-align: center; }
 
 .subject-grip { cursor: grab; font-size: 14px; flex-shrink: 0; opacity: 0.5; }
 .subject-chevron { font-size: 10px; flex-shrink: 0; width: 12px; display: inline-block; transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
@@ -809,3 +809,48 @@ body[data-theme="light"] .share-url-box { background: rgba(0,0,0,0.04);       bo
 
 /* checkedBy stamp color tweak */
 .checklist-stamp { color: inherit; }
+
+/* ── Team member chips in share modal ────────────────────────────────────── */
+.member-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 10px 4px 12px;
+    border-radius: 99px;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+body[data-theme="dark"]  .member-chip { background: rgba(59,130,246,0.2); border: 1px solid rgba(59,130,246,0.35); color: #93c5fd; }
+body[data-theme="light"] .member-chip { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25); color: #1d4ed8; }
+.member-chip button { color: inherit; }
+
+/* ── Firebase option buttons in settings modal ───────────────────────────── */
+.firebase-option-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 10px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    border: 1px solid transparent;
+    transition: transform 0.12s ease;
+}
+body[data-theme="dark"]  .firebase-option-btn { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.1); color: #e2e8f0; }
+body[data-theme="light"] .firebase-option-btn { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.08); color: #1a1a2e; }
+.firebase-option-btn:hover { transform: translateY(-1px); }
+.firebase-option-btn.danger-option { border-color: rgba(239,68,68,0.25); }
+body[data-theme="dark"]  .firebase-option-btn.danger-option { background: rgba(239,68,68,0.08); color: #fca5a5; }
+body[data-theme="light"] .firebase-option-btn.danger-option { background: rgba(239,68,68,0.05); color: #dc2626; }
+
+.fob-icon { font-size: 18px; flex-shrink: 0; width: 24px; text-align: center; }
+.fob-label { display: block; font-size: 14px; font-weight: 700; }
+.fob-desc  { display: block; font-size: 11px; opacity: 0.5; margin-top: 1px; }
+
+/* ── Always show subject header buttons on touch ─────────────────────────── */
+@media (hover: none) {
+    .subject-header-right { opacity: 1; pointer-events: auto; }
+}
