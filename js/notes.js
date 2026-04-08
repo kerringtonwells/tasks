@@ -528,10 +528,17 @@
       local.notes = Object.entries(fbData.items).map(function(pair){
         var id = pair[0], it = pair[1];
         var loc = localMap[id];
-        if (loc && loc.updatedAt >= it.updatedAt) return loc;
-        return { id:id, content:it.content||'', images:[], checked:it.checked||false,
-          checkedBy:it.checkedBy||null, checkedAt:it.checkedAt||null,
-          createdAt:it.createdAt||Date.now(), updatedAt:it.updatedAt||Date.now() };
+        // Firebase always wins — it is the source of truth for shared content
+        return {
+          id:        id,
+          content:   it.content   || (loc ? loc.content : ''),
+          images:    loc ? (loc.images || []) : [],
+          checked:   it.checked   || false,
+          checkedBy: it.checkedBy || null,
+          checkedAt: it.checkedAt || null,
+          createdAt: it.createdAt || Date.now(),
+          updatedAt: it.updatedAt || Date.now()
+        };
       });
       if (fbData.meta && fbData.meta.name) local.name = fbData.meta.name;
       save();
@@ -990,12 +997,13 @@
       if (isChecklist) openChecklistItemEditor(subject.id, null);
       else openEditor(subject.id);
     }));
-    // Share button
-    var shareB = btn(subject.shareId ? '🔗 Sharing' : '🔗 Share', function(e){
+    // Share button — icon only to save space
+    var shareB = btn('🔗', function(e){
       e.stopPropagation();
       if (subject.shareId) showShareModal(subject, subject.shareId);
       else shareSubject(subject);
     }, 'notes-btn' + (subject.shareId ? ' notes-btn-live' : ''));
+    shareB.title = subject.shareId ? 'Sharing — click to manage' : 'Share this ' + (isChecklist ? 'checklist' : 'note');
     right.appendChild(shareB);
     right.appendChild(btn('✎',function(e){
       e.stopPropagation();
@@ -1214,9 +1222,9 @@
     document.addEventListener('firebase-ready', function(){
       var b = document.getElementById('firebaseConnectBtn');
       if (b) { b.textContent = '🔥 Connected'; b.classList.add('firebase-connected'); }
-      // Reattach listeners for any shared subjects that are currently expanded
+      // Attach listeners for ALL shared subjects so sync works even when card is collapsed
       data.subjects.forEach(function(s){
-        if (s.shareId && s.id === expandedSubject) attachShareListener(s);
+        if (s.shareId) attachShareListener(s);
       });
     });
     document.addEventListener('firebase-share-open', function(e){
