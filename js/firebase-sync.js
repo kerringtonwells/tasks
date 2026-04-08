@@ -170,17 +170,14 @@ const FS = window.FirebaseSync = {
   },
 
   async updateItem(shareId, itemId, changes) {
-    if (!_db) { console.warn('[FS] updateItem() called but _db is null'); return; }
-    console.log('[FS] updateItem()', shareId, itemId, changes);
+    if (!_db) return;
     _writing.add(shareId);
     try {
       await _r.update(_r.ref(_db, `shared/${shareId}/items/${itemId}`), {
         ...changes,
         updatedAt: Date.now()
       });
-      console.log('[FS] updateItem() success');
     } catch(e) {
-      console.error('[FS] updateItem() FAILED:', e.message);
     }
     setTimeout(() => _writing.delete(shareId), 100);
   },
@@ -229,32 +226,25 @@ const FS = window.FirebaseSync = {
   // ─ Real-time listener ────────────────────────────────────────────────────────
 
   listen(shareId, callback) {
-    if (!_db) { console.warn('[FS] listen() called but _db is null — not initialized'); return; }
+    if (!_db) return;
     // Always unlisten first to avoid duplicates
     if (_active[shareId]) {
-      console.log('[FS] listen() — replacing existing listener for', shareId);
       _active[shareId]();
       delete _active[shareId];
     }
-    console.log('[FS] Attaching onValue listener for shareId:', shareId);
     const unsub = _r.onValue(_r.ref(_db, `shared/${shareId}`), snap => {
       const val = snap.val();
-      console.log('[FS] onValue fired for', shareId, '| _writing suppressed?', _writing.has(shareId), '| data:', val ? 'present' : 'null');
       // Only suppress if WE are actively writing right now (prevents echo)
       if (_writing.has(shareId)) {
-        console.log('[FS] Suppressing echo for', shareId);
         return;
       }
-      console.log('[FS] Passing data to callback for', shareId);
       callback(val);
     });
     _active[shareId] = unsub;
-    console.log('[FS] Listener attached. Active listeners:', Object.keys(_active));
   },
 
   unlisten(shareId) {
     if (_active[shareId]) {
-      console.log('[FS] Detaching listener for', shareId);
       _active[shareId]();
       delete _active[shareId];
     }
@@ -262,19 +252,16 @@ const FS = window.FirebaseSync = {
 
   async addUser(shareId, userName) {
     if (!_db || !userName) return;
-    console.log('[FS] addUser()', shareId, userName);
     await _r.set(_r.ref(_db, `shared/${shareId}/users/${userName}`), { addedAt: Date.now() });
   },
 
   async removeUser(shareId, userName) {
     if (!_db || !userName) return;
-    console.log('[FS] removeUser()', shareId, userName);
     await _r.remove(_r.ref(_db, `shared/${shareId}/users/${userName}`));
   },
 
   // Clear all active listeners — call this before re-attaching
   clearListeners() {
-    console.log('[FS] clearListeners() — clearing:', Object.keys(_active));
     Object.keys(_active).forEach(id => {
       if (_active[id]) _active[id]();
     });
@@ -286,22 +273,17 @@ const FS = window.FirebaseSync = {
 const shareId = new URLSearchParams(window.location.search).get('share');
 
 FS.init().then(async ok => {
-  console.log('[FS] init() result:', ok, '| shareId in URL:', shareId);
   // If not configured locally but a share link is present, use the public config
   if (!ok && shareId) {
-    console.log('[FS] No personal config — loading public SHARE_CONFIG for recipient');
     try {
       await loadSDK(SHARE_CONFIG);
       FS.isReady = true;
       ok = true;
-      console.log('[FS] SHARE_CONFIG loaded successfully');
     } catch(e) {
-      console.error('[FS] Could not load public config:', e);
     }
   }
 
   if (ok) {
-    console.log('[FS] Dispatching firebase-ready');
     document.dispatchEvent(new CustomEvent('firebase-ready'));
   }
 
