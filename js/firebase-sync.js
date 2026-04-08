@@ -1,0 +1,246 @@
+/**
+ * firebase-sync.js — Real-time sharing for Kwells Productivity Booster
+ *
+ * Add to index.html:
+ *   <script type="module" src="js/firebase-sync.js"></script>
+ *
+ * Exposes window.FirebaseSync used by notes.js
+ */
+
+const LS_CONFIG = 'kwells_firebase_config';
+const LS_NAME   = 'kwells_user_name';
+const LS_DEVICE = 'kwells_device_id';
+
+let _db      = null;
+let _r       = {};          // Firebase function refs {ref, set, get, onValue, update, remove}
+let _active  = {};          // shareId → unsubscribe fn
+let _writing = new Set();   // shareIds being written right now (suppress self-echo)
+
+// ── Device identity (anonymous but persistent) ────────────────────────────────
+function getDeviceId() {
+  let id = localStorage.getItem(LS_DEVICE);
+  if (!id) {
+    id = 'dev_' + Math.random().toString(36).slice(2, 11);
+    localStorage.setItem(LS_DEVICE, id);
+  }
+  return id;
+}
+
+// ── Config parser ─────────────────────────────────────────────────────────────
+// Accepts: full <script> paste, plain object literal, or JSON string
+function parseConfig(raw) {
+  raw = (raw || '').trim();
+
+  // Full script tag paste: const firebaseConfig = { ... };
+  const m = raw.match(/firebaseConfig\s*=\s*(\{[\s\S]*?\})\s*;/);
+  if (m) {
+    try { return new Function('return ' + m[1])(); } catch {}
+  }
+
+  // Plain object literal { apiKey: ... }
+  if (raw.startsWith('{')) {
+    try { return new Function('return ' + raw)(); } catch {}
+    try { return JSON.parse(raw); } catch {}
+  }
+
+  return null;
+}
+
+// ── Firebase SDK loader (dynamic import, no bundler needed) ───────────────────
+async function loadSDK(config) {
+  const V   = '11.1.0';
+  const CDN = `https://www.gstatic.com/firebasejs/${V}`;
+
+  const { initializeApp, getApps, getApp } = await import(`${CDN}/firebase-app.js`);
+  const { getDatabase, ref, set, get, onValue, update, remove } =
+        await import(`${CDN}/firebase-database.js`);
+
+  // Avoid re-initializing on hot reloads
+  const existing = getApps().find(a => a.name === 'kwells');
+  const app = existing || initializeApp(config, 'kwells');
+
+  _db = getDatabase(app);
+  _r  = { ref, set, get, onValue, update, remove };
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+const FS = window.FirebaseSync = {
+
+  isReady: false,
+
+  // ─ Config & identity ────────────────────────────────────────────────────────
+
+  isConfigured() {
+    return !!localStorage.getItem(LS_CONFIG);
+  },
+
+  async init() {
+    const raw = localStorage.getItem(LS_CONFIG);
+    if (!raw) return false;
+    try {
+      await loadSDK(JSON.parse(raw));
+      this.isReady = true;
+      return true;
+    } catch(e) {
+      console.warn('[FirebaseSync] init error:', e);
+      return false;
+    }
+  },
+
+  async setup(paste) {
+    const config = parseConfig(paste);
+    if (!config || !config.apiKey) {
+      return { ok: false, error: 'Could not read config — paste the full firebaseConfig block from Firebase.' };
+    }
+    if (!config.databaseURL) {
+      return { ok: false, error: 'No databaseURL found. Make sure Realtime Database is enabled in your Firebase project, then paste the config again.' };
+    }
+    try {
+      await loadSDK(config);
+      localStorage.setItem(LS_CONFIG, JSON.stringify(config));
+      this.isReady = true;
+      return { ok: true };
+    } catch(e) {
+      return { ok: false, error: e.message };
+    }
+  },
+
+  clearConfig() {
+    Object.keys(_active).forEach(id => this.unlisten(id));
+    localStorage.removeItem(LS_CONFIG);
+    this.isReady = false;
+    _db = null;
+    _r  = {};
+  },
+
+  getDisplayName()      { return localStorage.getItem(LS_NAME) || null; },
+  setDisplayName(name)  { localStorage.setItem(LS_NAME, (name || '').trim()); },
+  getDeviceId()         { return getDeviceId(); },
+
+  getShareUrl(shareId) {
+    const u = new URL(window.location.href);
+    u.search = '';
+    u.searchParams.set('share', shareId);
+    return u.toString();
+  },
+
+  // ─ Write operations ──────────────────────────────────────────────────────────
+
+  // Push entire subject to Firebase. Returns shareId.
+  async pushSubject(subject) {
+    if (!_db) return null;
+    const shareId = subject.shareId || ('s' + Math.random().toString(36).slice(2, 11));
+
+    const items = {};
+    (subject.notes || []).forEach(n => {
+      items[n.id] = {
+        content:   n.content   || '',
+        checked:   n.checked   || false,
+        checkedBy: n.checkedBy || null,
+        checkedAt: n.checkedAt || null,
+        createdAt: n.createdAt || Date.now(),
+        updatedAt: n.updatedAt || Date.now()
+      };
+    });
+
+    _writing.add(shareId);
+    await _r.set(_r.ref(_db, `shared/${shareId}`), {
+      meta: {
+        name:      subject.name,
+        type:      subject.type || 'notes',
+        ownerId:   getDeviceId(),
+        updatedAt: Date.now()
+      },
+      items
+    });
+    setTimeout(() => _writing.delete(shareId), 600);
+    return shareId;
+  },
+
+  async updateItem(shareId, itemId, changes) {
+    if (!_db) return;
+    _writing.add(shareId);
+    await _r.update(_r.ref(_db, `shared/${shareId}/items/${itemId}`), {
+      ...changes,
+      updatedAt: Date.now()
+    });
+    setTimeout(() => _writing.delete(shareId), 600);
+  },
+
+  async addItem(shareId, item) {
+    if (!_db) return;
+    _writing.add(shareId);
+    await _r.set(_r.ref(_db, `shared/${shareId}/items/${item.id}`), {
+      content:   item.content   || '',
+      checked:   item.checked   || false,
+      checkedBy: item.checkedBy || null,
+      checkedAt: item.checkedAt || null,
+      createdAt: item.createdAt || Date.now(),
+      updatedAt: item.updatedAt || Date.now()
+    });
+    setTimeout(() => _writing.delete(shareId), 600);
+  },
+
+  async removeItem(shareId, itemId) {
+    if (!_db) return;
+    _writing.add(shareId);
+    await _r.remove(_r.ref(_db, `shared/${shareId}/items/${itemId}`));
+    setTimeout(() => _writing.delete(shareId), 600);
+  },
+
+  async updateMeta(shareId, changes) {
+    if (!_db) return;
+    await _r.update(_r.ref(_db, `shared/${shareId}/meta`), {
+      ...changes,
+      updatedAt: Date.now()
+    });
+  },
+
+  async getShared(shareId) {
+    if (!_db) return null;
+    const snap = await _r.get(_r.ref(_db, `shared/${shareId}`));
+    return snap.val();
+  },
+
+  async deleteShared(shareId) {
+    if (!_db) return;
+    this.unlisten(shareId);
+    await _r.remove(_r.ref(_db, `shared/${shareId}`));
+  },
+
+  // ─ Real-time listener ────────────────────────────────────────────────────────
+
+  listen(shareId, callback) {
+    if (!_db || _active[shareId]) return;
+    const unsub = _r.onValue(_r.ref(_db, `shared/${shareId}`), snap => {
+      if (_writing.has(shareId)) return; // suppress echo of our own writes
+      callback(snap.val());
+    });
+    _active[shareId] = unsub;
+  },
+
+  unlisten(shareId) {
+    if (_active[shareId]) {
+      _active[shareId]();
+      delete _active[shareId];
+    }
+  }
+};
+
+// ── Auto-init on load ─────────────────────────────────────────────────────────
+FS.init().then(ok => {
+  if (ok) document.dispatchEvent(new CustomEvent('firebase-ready'));
+
+  // Handle ?share=xxx in URL — wait for notes.js to be ready
+  const shareId = new URLSearchParams(window.location.search).get('share');
+  if (shareId) {
+    const dispatch = () =>
+      document.dispatchEvent(new CustomEvent('firebase-share-open', { detail: { shareId } }));
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => setTimeout(dispatch, 300));
+    } else {
+      setTimeout(dispatch, 300);
+    }
+  }
+});
