@@ -16,6 +16,7 @@
   var dragSubjectId     = null;
   var internalClipboard = { images: [] };
   var idb               = null;
+  var FB_LISTEN_ACTIVE  = {}; // shareId → true while onValue listener is attached
 
   // ─── Tiny DOM helpers ────────────────────────────────────────────────────────
   function uid()       { return Math.random().toString(36).slice(2,9) + Date.now().toString(36); }
