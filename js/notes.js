@@ -311,7 +311,7 @@
     var row = el('div','editor-btn-row');
     var saveB = btn('Continue', function() {
       var name = inp.value.trim(); if (!name) { toast('Enter your name'); inp.focus(); return; }
-      fs.setDisplayName(name); ov.remove(); callback(name);
+      var fs = getFS(); if (fs) fs.setDisplayName(name); ov.remove(); callback(name);
     }, 'notes-btn notes-btn-primary');
     row.appendChild(saveB); row.appendChild(btn('Cancel', function(){ ov.remove(); }));
     modal.appendChild(title); modal.appendChild(sub); modal.appendChild(inp); modal.appendChild(row);
