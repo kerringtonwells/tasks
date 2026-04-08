@@ -1222,7 +1222,9 @@
     document.addEventListener('firebase-ready', function(){
       var b = document.getElementById('firebaseConnectBtn');
       if (b) { b.textContent = '🔥 Connected'; b.classList.add('firebase-connected'); }
-      // Reset flags and re-attach listeners for ALL shared subjects fresh
+      // Clear BOTH tracking objects then re-attach fresh listeners for all shared subjects
+      var fs = getFS();
+      if (fs) fs.clearListeners();
       FB_LISTEN_ACTIVE = {};
       data.subjects.forEach(function(s){
         if (s.shareId) attachShareListener(s);
