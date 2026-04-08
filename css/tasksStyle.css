@@ -665,6 +665,8 @@ body[data-theme="light"] .notes-toast { background: rgba(15,20,40,0.88);   color
     border-radius: 8px;
     margin: 3px 0;
     gap: 10px;
+    width: 100%;
+    box-sizing: border-box;
     transition: transform 0.15s ease;
 }
 body[data-theme="dark"]  .checklist-item { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); }
@@ -680,6 +682,7 @@ body[data-theme="light"] .checklist-item:hover { transform: translateY(-1px); }
     gap: 10px;
     flex: 1;
     min-width: 0;
+    overflow: hidden;
 }
 
 .checklist-checkbox {
@@ -696,7 +699,9 @@ body[data-theme="light"] .checklist-item:hover { transform: translateY(-1px); }
     font-weight: 600;
     line-height: 1.4;
     word-break: break-word;
+    overflow-wrap: anywhere;
     flex: 1;
+    min-width: 0;
 }
 .checklist-label-checked {
     text-decoration: line-through;
@@ -709,7 +714,8 @@ body[data-theme="light"] .checklist-item:hover { transform: translateY(-1px); }
     opacity: 0.45;
     margin-top: 2px;
     letter-spacing: 0.2px;
-    white-space: nowrap;
+    white-space: normal;
+    word-break: break-word;
 }
 
 .checklist-actions {
@@ -722,6 +728,10 @@ body[data-theme="light"] .checklist-item:hover { transform: translateY(-1px); }
 }
 .checklist-item:hover .checklist-actions { opacity: 1; pointer-events: auto; }
 .checklist-actions button { font-size: 11px; padding: 3px 9px; }
+/* Always show actions on touch devices */
+@media (hover: none) {
+    .checklist-actions { opacity: 1; pointer-events: auto; }
+}
 
 /* Type badge in subject header */
 .subject-type-badge {
@@ -748,3 +758,54 @@ body[data-theme="light"] .checklist-item:hover { transform: translateY(-1px); }
     background: rgba(59,130,246,0.35) !important;
     border-color: rgba(99,160,255,0.6) !important;
 }
+
+/* ── Firebase share UI ───────────────────────────────────────────────────── */
+.subject-live-badge {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #4ade80;
+    padding: 2px 7px;
+    border-radius: 10px;
+    border: 1px solid rgba(74,222,128,0.4);
+    background: rgba(74,222,128,0.12);
+    flex-shrink: 0;
+    animation: livePulse 2s ease-in-out infinite;
+}
+@keyframes livePulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.55; }
+}
+
+.notes-btn-live {
+    border-color: rgba(74,222,128,0.5) !important;
+    color: #4ade80 !important;
+}
+
+.firebase-connect-btn { font-size: 12px; padding: 5px 12px; }
+.firebase-connected   { color: #fb923c !important; border-color: rgba(251,146,60,0.4) !important; }
+
+/* Share URL box */
+.share-url-box {
+    font-size: 12px;
+    font-family: monospace;
+    padding: 10px 14px;
+    border-radius: 8px;
+    word-break: break-all;
+    cursor: pointer;
+    margin-bottom: 8px;
+    transition: transform 0.12s ease;
+}
+body[data-theme="dark"]  .share-url-box { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); color: #94a3b8; }
+body[data-theme="light"] .share-url-box { background: rgba(0,0,0,0.04);       border: 1px solid rgba(0,0,0,0.12);       color: #475569; }
+.share-url-box:hover { transform: translateY(-1px); }
+
+.share-hint {
+    font-size: 12px;
+    opacity: 0.55;
+    margin: 0 0 14px;
+    line-height: 1.5;
+}
+
+/* checkedBy stamp color tweak */
+.checklist-stamp { color: inherit; }
