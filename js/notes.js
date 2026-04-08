@@ -18,6 +18,24 @@
   var idb               = null;
   var FB_LISTEN_ACTIVE  = {}; // shareId → true while onValue listener is attached
 
+  // ─── Per-share identity helpers ──────────────────────────────────────────────
+  function getIdentityForShare(shareId) {
+    if (shareId) {
+      var stored = localStorage.getItem('kwells_who_' + shareId);
+      if (stored) return stored;
+    }
+    var fs = getFS();
+    return fs ? (fs.getDisplayName() || 'Unknown') : 'Unknown';
+  }
+
+  function setIdentityForShare(shareId, name) {
+    if (shareId && name) localStorage.setItem('kwells_who_' + shareId, name);
+  }
+
+  function clearIdentityForShare(shareId) {
+    if (shareId) localStorage.removeItem('kwells_who_' + shareId);
+  }
+
   // ─── Tiny DOM helpers ────────────────────────────────────────────────────────
   function uid()       { return Math.random().toString(36).slice(2,9) + Date.now().toString(36); }
   function now()       { return Date.now(); }
@@ -322,6 +340,96 @@
     inp.addEventListener('keydown', function(e){ if(e.key==='Enter') saveB.click(); });
   }
 
+  function showIdentityModal(shareId, users, callback) {
+    var userNames = Object.keys(users || {}).sort();
+    var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
+    modal.style.maxWidth = '400px';
+    var title = el('h3','editor-title'); title.textContent = '👋 Who are you?';
+    var sub = el('p'); sub.textContent = 'Pick your name so your changes are tracked correctly.';
+    sub.style.cssText = 'font-size:13px;opacity:0.6;margin:-4px 0 16px;line-height:1.5;';
+    modal.appendChild(title); modal.appendChild(sub);
+
+    if (userNames.length) {
+      var grid = el('div'); grid.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;';
+      userNames.forEach(function(name) {
+        var b = btn(name, function() {
+          setIdentityForShare(shareId, name); ov.remove(); callback(name);
+        }, 'notes-btn');
+        b.style.cssText = 'padding:9px 18px;font-size:14px;font-weight:700;';
+        grid.appendChild(b);
+      });
+      modal.appendChild(grid);
+      var orLine = el('p'); orLine.style.cssText = 'font-size:11px;opacity:0.4;margin:0 0 10px;text-align:center;';
+      orLine.textContent = '— or enter a different name —';
+      modal.appendChild(orLine);
+    }
+
+    var customRow = el('div'); customRow.style.cssText = 'display:flex;gap:8px;';
+    var customInp = el('input'); customInp.type='text'; customInp.placeholder='Your name…';
+    customInp.style.cssText = 'flex:1;padding:9px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:inherit;font-family:inherit;font-size:14px;outline:none;';
+    var useB = btn('Use', function() {
+      var n = customInp.value.trim(); if (!n) { customInp.focus(); return; }
+      setIdentityForShare(shareId, n); ov.remove(); callback(n);
+    }, 'notes-btn notes-btn-primary');
+    customRow.appendChild(customInp); customRow.appendChild(useB);
+    modal.appendChild(customRow);
+    ov.appendChild(modal);
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    document.body.appendChild(ov);
+    if (!userNames.length) customInp.focus();
+    customInp.addEventListener('keydown', function(e){ if(e.key==='Enter') useB.click(); });
+  }
+
+  function openJoinModal() {
+    var fs = getFS();
+    if (!fs || !fs.isReady) { openFirebaseSetupModal(function(){ openJoinModal(); }); return; }
+    var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
+    modal.style.maxWidth = '460px';
+    var title = el('h3','editor-title'); title.textContent = '🔗 Join a Shared List';
+    var sub = el('p'); sub.textContent = 'Paste a share link or share ID to connect to a shared notes or checklist.';
+    sub.style.cssText = 'font-size:13px;opacity:0.6;margin:-4px 0 14px;line-height:1.5;';
+    var inp = el('input'); inp.type='text'; inp.placeholder='Paste share URL or ID…';
+    inp.style.cssText = 'width:100%;padding:10px 12px;font-size:14px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:inherit;font-family:inherit;margin-bottom:12px;box-sizing:border-box;outline:none;';
+    var errEl = el('div'); errEl.style.cssText = 'color:#f87171;font-size:12px;margin-bottom:8px;display:none;padding:8px 10px;background:rgba(239,68,68,0.1);border-radius:6px;';
+    var btnRow = el('div','editor-btn-row');
+    var joinB = btn('Join', function() {
+      var raw = inp.value.trim();
+      if (!raw) { inp.focus(); return; }
+      // Extract shareId from URL or use as-is
+      var shareId = raw;
+      try {
+        var u = new URL(raw);
+        var param = u.searchParams.get('share');
+        if (param) shareId = param;
+      } catch(e) {}
+      shareId = shareId.replace(/[^a-z0-9]/gi,'');
+      if (!shareId) { errEl.textContent = 'Could not find a share ID in that input.'; errEl.style.display=''; return; }
+      joinB.textContent = 'Connecting…'; joinB.disabled = true;
+      fs.getShared(shareId).then(function(fbData) {
+        joinB.textContent = 'Join'; joinB.disabled = false;
+        if (!fbData || !fbData.meta) { errEl.textContent = 'No shared content found for that ID.'; errEl.style.display=''; return; }
+        ov.remove();
+        var subject = {
+          id: 'shared_' + shareId, name: fbData.meta.name, type: fbData.meta.type || 'notes',
+          shareId: shareId,
+          notes: Object.entries(fbData.items || {}).map(function(pair){
+            var id=pair[0], it=pair[1];
+            return { id:id, content:it.content||'', images:[], checked:it.checked||false,
+              checkedBy:it.checkedBy||null, checkedAt:it.checkedAt||null,
+              createdAt:it.createdAt||Date.now(), updatedAt:it.updatedAt||Date.now() };
+          })
+        };
+        showImportSharedModal(subject, shareId, fbData.users);
+      }).catch(function(e){ joinB.textContent='Join'; joinB.disabled=false; errEl.textContent='Error: '+e.message; errEl.style.display=''; });
+    }, 'notes-btn notes-btn-primary');
+    btnRow.appendChild(joinB); btnRow.appendChild(btn('Cancel', function(){ ov.remove(); }));
+    modal.appendChild(title); modal.appendChild(sub); modal.appendChild(inp); modal.appendChild(errEl); modal.appendChild(btnRow);
+    ov.appendChild(modal);
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    document.body.appendChild(ov); inp.focus();
+    inp.addEventListener('keydown', function(e){ if(e.key==='Enter') joinB.click(); });
+  }
+
   function openFirebaseSetupModal(onSuccess) {
     var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
     modal.style.maxWidth = '540px';
@@ -432,13 +540,64 @@
     var fs = getFS();
     var url = fs.getShareUrl(shareId);
     var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
-    modal.style.maxWidth = '480px';
+    modal.style.maxWidth = '500px';
     var title = el('h3','editor-title');
     title.textContent = '🔗 Sharing: "' + subject.name + '"';
-    var urlBox = el('div','share-url-box');
-    urlBox.textContent = url;
+    var urlBox = el('div','share-url-box'); urlBox.textContent = url; urlBox.title = 'Click to copy';
     var hint = el('p','share-hint');
-    hint.textContent = 'Anyone with this link can view and edit this ' + (subject.type==='checklist'?'checklist':'note') + ' in real time. Changes sync instantly.';
+    hint.textContent = 'Anyone with this link can view and edit this ' + (subject.type==='checklist'?'checklist':'note') + ' in real time.';
+
+    // ── Team Members section ───────────────────────────────────────────────────
+    var teamTitle = el('p'); teamTitle.style.cssText = 'font-size:12px;font-weight:700;opacity:0.5;letter-spacing:0.5px;margin:14px 0 8px;text-transform:uppercase;';
+    teamTitle.textContent = 'Team Members';
+    var membersList = el('div'); membersList.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:24px;';
+
+    function refreshMembers(usersObj) {
+      membersList.innerHTML = '';
+      var names = Object.keys(usersObj || {}).sort();
+      if (!names.length) {
+        var none = el('span'); none.textContent = 'No members yet — add names below';
+        none.style.cssText = 'font-size:12px;opacity:0.4;font-style:italic;';
+        membersList.appendChild(none); return;
+      }
+      names.forEach(function(name) {
+        var chip = el('div','member-chip');
+        var lbl = el('span'); lbl.textContent = name;
+        var rm = el('button'); rm.textContent = '×'; rm.title = 'Remove ' + name;
+        rm.style.cssText = 'border:none;background:none;cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 4px;color:inherit;opacity:0.5;';
+        rm.addEventListener('click', function() {
+          fs.removeUser(shareId, name).then(function() {
+            delete usersObj[name]; refreshMembers(usersObj);
+          }).catch(function(e){ toast('Error removing: ' + e.message); });
+        });
+        chip.appendChild(lbl); chip.appendChild(rm); membersList.appendChild(chip);
+      });
+    }
+
+    // Fetch current users from Firebase
+    var currentUsers = {};
+    fs.getShared(shareId).then(function(fbData) {
+      currentUsers = (fbData && fbData.users) ? fbData.users : {};
+      refreshMembers(currentUsers);
+    });
+
+    var addRow = el('div'); addRow.style.cssText = 'display:flex;gap:6px;margin-bottom:14px;';
+    var addInp = el('input'); addInp.type='text'; addInp.placeholder='Name (e.g. Jeff, Kevin)…';
+    addInp.style.cssText = 'flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:inherit;font-family:inherit;font-size:13px;outline:none;';
+    var addMemberB = btn('Add', function() {
+      var name = addInp.value.trim(); if (!name) { addInp.focus(); return; }
+      addMemberB.textContent = '…'; addMemberB.disabled = true;
+      fs.addUser(shareId, name).then(function() {
+        currentUsers[name] = { addedAt: Date.now() };
+        refreshMembers(currentUsers);
+        addInp.value = ''; addMemberB.textContent = 'Add'; addMemberB.disabled = false;
+        addInp.focus();
+      }).catch(function(e){ addMemberB.textContent='Add'; addMemberB.disabled=false; toast('Error: '+e.message); });
+    }, 'notes-btn notes-btn-primary');
+    addInp.addEventListener('keydown', function(e){ if(e.key==='Enter') addMemberB.click(); });
+    addRow.appendChild(addInp); addRow.appendChild(addMemberB);
+
+    // ── Bottom action buttons ──────────────────────────────────────────────────
     var btnRow = el('div','editor-btn-row');
     var copyB = btn('📋 Copy Link', function(){
       navigator.clipboard.writeText(url).then(function(){
@@ -447,7 +606,6 @@
       });
     }, 'notes-btn notes-btn-primary');
     urlBox.addEventListener('click', function(){ copyB.click(); });
-    urlBox.title = 'Click to copy';
     btnRow.appendChild(copyB);
     btnRow.appendChild(btn('Stop Sharing', function(){
       if (!confirm('Remove from cloud and stop sharing "' + subject.name + '"?')) return;
@@ -457,7 +615,10 @@
       });
     }, 'notes-btn notes-btn-danger'));
     btnRow.appendChild(btn('Close', function(){ ov.remove(); }));
-    modal.appendChild(title); modal.appendChild(urlBox); modal.appendChild(hint); modal.appendChild(btnRow);
+
+    modal.appendChild(title); modal.appendChild(urlBox); modal.appendChild(hint);
+    modal.appendChild(teamTitle); modal.appendChild(membersList); modal.appendChild(addRow);
+    modal.appendChild(btnRow);
     ov.appendChild(modal);
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
     document.body.appendChild(ov);
@@ -492,22 +653,35 @@
     });
   }
 
-  function showImportSharedModal(subject, shareId) {
+  function showImportSharedModal(subject, shareId, users) {
     var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
     var title = el('h3','editor-title'); title.textContent = '📥 Shared: ' + subject.name;
     var info = el('p'); info.style.cssText = 'font-size:13px;opacity:0.7;margin:0 0 16px;';
     info.textContent = 'Someone shared this ' + subject.type + ' with you. Add it to collaborate in real time — your changes will sync to everyone.';
     var btnRow = el('div','editor-btn-row');
     var addB = btn('Add to my app', function(){
-      data.subjects.unshift(subject);
-      expandedSubject = subject.id;
-      save(); render(); ov.remove();
-      history.replaceState(null,'',window.location.pathname);
-      toast('✓ Added: ' + subject.name);
-      attachShareListener(subject);
+      function finalize() {
+        data.subjects.unshift(subject);
+        expandedSubject = subject.id;
+        save(); render(); ov.remove();
+        history.replaceState(null,'',window.location.pathname);
+        toast('✓ Added: ' + subject.name);
+        attachShareListener(subject);
+      }
+      // If users list exists and no identity stored yet, prompt for identity first
+      var hasUsers = users && Object.keys(users).length > 0;
+      var hasIdentity = !!localStorage.getItem('kwells_who_' + shareId);
+      if (hasUsers && !hasIdentity) {
+        ov.remove();
+        showIdentityModal(shareId, users, function(){ finalize(); });
+      } else {
+        finalize();
+      }
     }, 'notes-btn notes-btn-primary');
     btnRow.appendChild(addB);
-    btnRow.appendChild(btn('Dismiss', function(){ ov.remove(); history.replaceState(null,'',window.location.pathname); }));
+    btnRow.appendChild(btn('Dismiss', function(){
+      ov.remove(); history.replaceState(null,'',window.location.pathname);
+    }));
     modal.appendChild(title); modal.appendChild(info); modal.appendChild(btnRow);
     ov.appendChild(modal);
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
@@ -810,7 +984,7 @@
       var fs = getFS();
       item.checked   = checkbox.checked;
       item.checkedAt = Date.now();
-      item.checkedBy = fs ? (fs.getDisplayName() || 'Unknown') : null;
+      item.checkedBy = subject.shareId ? getIdentityForShare(subject.shareId) : (fs ? (fs.getDisplayName() || 'Unknown') : 'Unknown');
       item.updatedAt = Date.now();
       row.classList.toggle('checklist-item-checked', item.checked);
       labelEl.classList.toggle('checklist-label-checked', item.checked);
