@@ -515,17 +515,23 @@
 
   function attachShareListener(subject) {
     var fs = getFS();
-    if (!fs || !fs.isReady || !subject.shareId) return;
-    if (FB_LISTEN_ACTIVE[subject.shareId]) return;
+    console.log('[Notes] attachShareListener()', subject.shareId, '| fs.isReady:', fs && fs.isReady, '| already active:', !!FB_LISTEN_ACTIVE[subject.shareId]);
+    if (!fs || !fs.isReady || !subject.shareId) {
+      console.warn('[Notes] attachShareListener() bailed — fs:', !!fs, 'isReady:', fs && fs.isReady, 'shareId:', subject.shareId);
+      return;
+    }
+    if (FB_LISTEN_ACTIVE[subject.shareId]) {
+      console.log('[Notes] attachShareListener() — already active, skipping');
+      return;
+    }
     FB_LISTEN_ACTIVE[subject.shareId] = true;
     fs.listen(subject.shareId, function(fbData) {
+      console.log('[Notes] Firebase callback fired for', subject.shareId, '| items:', fbData && fbData.items ? Object.keys(fbData.items).length : 0);
       if (!fbData || !fbData.items) return;
       var local = data.subjects.find(function(s){ return s.shareId === subject.shareId; });
-      if (!local) return;
-      // Build local map for image preservation
+      if (!local) { console.warn('[Notes] No local subject found for shareId', subject.shareId); return; }
       var localMap = {};
       local.notes.forEach(function(n){ localMap[n.id] = n; });
-      // Firebase is the source of truth — always wins
       local.notes = Object.entries(fbData.items).map(function(pair){
         var id = pair[0], it = pair[1];
         var loc = localMap[id];
@@ -542,7 +548,7 @@
       });
       if (fbData.meta && fbData.meta.name) local.name = fbData.meta.name;
       save();
-      // Always re-render — keeps count badge and expanded content fresh
+      console.log('[Notes] render() triggered by Firebase update for', subject.shareId);
       render();
     });
   }
@@ -810,12 +816,15 @@
       stampEl.textContent = fmtStamp(item);
       save();
       // Sync to Firebase if this subject is shared
+      console.log('[Notes] checkbox changed — shareId:', subject.shareId, '| fs.isReady:', fs && fs.isReady, '| checked:', item.checked);
       if (fs && fs.isReady && subject.shareId) {
         fs.updateItem(subject.shareId, item.id, {
           checked:   item.checked,
           checkedBy: item.checkedBy,
           checkedAt: item.checkedAt
-        }).catch(function(e){ console.warn('[Firebase] sync error:', e); });
+        }).catch(function(e){ console.error('[Notes] Firebase sync error:', e); });
+      } else {
+        console.warn('[Notes] NOT syncing to Firebase — fs:', !!fs, 'isReady:', fs && fs.isReady, 'shareId:', subject.shareId);
       }
     });
 
