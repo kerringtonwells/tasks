@@ -260,6 +260,18 @@ const FS = window.FirebaseSync = {
     }
   },
 
+  async addUser(shareId, userName) {
+    if (!_db || !userName) return;
+    console.log('[FS] addUser()', shareId, userName);
+    await _r.set(_r.ref(_db, `shared/${shareId}/users/${userName}`), { addedAt: Date.now() });
+  },
+
+  async removeUser(shareId, userName) {
+    if (!_db || !userName) return;
+    console.log('[FS] removeUser()', shareId, userName);
+    await _r.remove(_r.ref(_db, `shared/${shareId}/users/${userName}`));
+  },
+
   // Clear all active listeners — call this before re-attaching
   clearListeners() {
     console.log('[FS] clearListeners() — clearing:', Object.keys(_active));
