@@ -654,35 +654,88 @@
   }
 
   function showImportSharedModal(subject, shareId, users) {
+    var userNames = Object.keys(users || {}).sort();
+    var hasUsers  = userNames.length > 0;
+    var selectedIdentity = localStorage.getItem('kwells_who_' + shareId) || null;
+
     var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
+    modal.style.maxWidth = '460px';
     var title = el('h3','editor-title'); title.textContent = '📥 Shared: ' + subject.name;
-    var info = el('p'); info.style.cssText = 'font-size:13px;opacity:0.7;margin:0 0 16px;';
-    info.textContent = 'Someone shared this ' + subject.type + ' with you. Add it to collaborate in real time — your changes will sync to everyone.';
+
+    var info = el('p'); info.style.cssText = 'font-size:13px;opacity:0.6;margin:0 0 16px;line-height:1.5;';
+    info.textContent = 'Someone shared this ' + subject.type + ' with you. Add it to collaborate in real time — your changes sync to everyone instantly.';
+    modal.appendChild(title); modal.appendChild(info);
+
+    // ── Identity section (shown when team members exist) ─────────────────────
+    var identityErr = null;
+    if (hasUsers) {
+      var idSection = el('div'); idSection.style.cssText = 'margin-bottom:16px;padding:12px 14px;border-radius:10px;border:1px solid rgba(59,130,246,0.3);background:rgba(59,130,246,0.07);';
+      var idLabel = el('p'); idLabel.style.cssText = 'font-size:11px;font-weight:700;opacity:0.5;letter-spacing:0.5px;text-transform:uppercase;margin:0 0 10px;';
+      idLabel.textContent = '👋 Who are you?';
+
+      var idGrid = el('div'); idGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;';
+      userNames.forEach(function(name) {
+        var b = el('button','import-identity-btn');
+        b.textContent = name;
+        if (selectedIdentity === name) b.classList.add('import-identity-selected');
+        b.addEventListener('click', function() {
+          idGrid.querySelectorAll('.import-identity-btn').forEach(function(x){ x.classList.remove('import-identity-selected'); });
+          b.classList.add('import-identity-selected');
+          selectedIdentity = name;
+          customInp.value = '';
+          identityErr && (identityErr.style.display = 'none');
+        });
+        idGrid.appendChild(b);
+      });
+
+      var orLine = el('p'); orLine.style.cssText = 'font-size:11px;opacity:0.35;margin:0 0 6px;text-align:center;';
+      orLine.textContent = '— or type a name —';
+
+      var customInp = el('input'); customInp.type='text'; customInp.placeholder='Your name…';
+      customInp.style.cssText = 'width:100%;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:inherit;font-family:inherit;font-size:13px;outline:none;box-sizing:border-box;';
+      customInp.addEventListener('input', function() {
+        if (customInp.value.trim()) {
+          idGrid.querySelectorAll('.import-identity-btn').forEach(function(x){ x.classList.remove('import-identity-selected'); });
+          selectedIdentity = customInp.value.trim();
+        }
+      });
+
+      identityErr = el('div'); identityErr.style.cssText = 'color:#f87171;font-size:12px;margin-top:6px;display:none;';
+      identityErr.textContent = 'Please pick or enter your name before joining.';
+
+      idSection.appendChild(idLabel); idSection.appendChild(idGrid);
+      idSection.appendChild(orLine); idSection.appendChild(customInp);
+      idSection.appendChild(identityErr);
+      modal.appendChild(idSection);
+    }
+
+    // ── Action buttons ────────────────────────────────────────────────────────
     var btnRow = el('div','editor-btn-row');
-    var addB = btn('Add to my app', function(){
-      function finalize() {
-        data.subjects.unshift(subject);
-        expandedSubject = subject.id;
-        save(); render(); ov.remove();
-        history.replaceState(null,'',window.location.pathname);
-        toast('✓ Added: ' + subject.name);
-        attachShareListener(subject);
+    var addB = btn('Join', function(){
+      // Enforce identity selection when team members exist
+      if (hasUsers) {
+        var custom = modal.querySelector('.import-identity-btn + p ~ input') ||
+                     modal.querySelector('input[placeholder="Your name…"]');
+        if (custom && custom.value.trim()) selectedIdentity = custom.value.trim();
+        if (!selectedIdentity) {
+          if (identityErr) identityErr.style.display = '';
+          return;
+        }
+        setIdentityForShare(shareId, selectedIdentity);
       }
-      // If users list exists and no identity stored yet, prompt for identity first
-      var hasUsers = users && Object.keys(users).length > 0;
-      var hasIdentity = !!localStorage.getItem('kwells_who_' + shareId);
-      if (hasUsers && !hasIdentity) {
-        ov.remove();
-        showIdentityModal(shareId, users, function(){ finalize(); });
-      } else {
-        finalize();
-      }
+      data.subjects.unshift(subject);
+      expandedSubject = subject.id;
+      save(); render(); ov.remove();
+      history.replaceState(null,'',window.location.pathname);
+      toast('✓ Joined as ' + (selectedIdentity || 'collaborator') + ': ' + subject.name);
+      attachShareListener(subject);
     }, 'notes-btn notes-btn-primary');
+
     btnRow.appendChild(addB);
     btnRow.appendChild(btn('Dismiss', function(){
       ov.remove(); history.replaceState(null,'',window.location.pathname);
     }));
-    modal.appendChild(title); modal.appendChild(info); modal.appendChild(btnRow);
+    modal.appendChild(btnRow);
     ov.appendChild(modal);
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
     document.body.appendChild(ov);
