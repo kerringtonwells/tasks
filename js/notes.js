@@ -289,6 +289,231 @@
     ov.appendChild(x); ov.appendChild(img); document.body.appendChild(ov);
   }
 
+  // ─── Firebase UI helpers ──────────────────────────────────────────────────────
+
+  function getFS() { return window.FirebaseSync || null; }
+
+  function ensureDisplayName(callback) {
+    var fs = getFS(); if (!fs) return;
+    var name = fs.getDisplayName();
+    if (name) { callback(name); return; }
+    openDisplayNameModal(callback);
+  }
+
+  function openDisplayNameModal(callback) {
+    var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
+    var title = el('h3','editor-title'); title.textContent = '👋 What should we call you?';
+    var sub = el('p'); sub.style.cssText = 'font-size:13px;opacity:0.6;margin:-4px 0 14px;';
+    sub.textContent = 'Your name appears when you check items on shared lists.';
+    var inp = el('input'); inp.type='text'; inp.className='editor-name-input';
+    inp.placeholder = 'Your name or nickname…';
+    inp.style.cssText = 'width:100%;padding:10px 12px;font-size:15px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:inherit;font-family:inherit;margin-bottom:14px;box-sizing:border-box;outline:none;';
+    var row = el('div','editor-btn-row');
+    var saveB = btn('Continue', function() {
+      var name = inp.value.trim(); if (!name) { toast('Enter your name'); inp.focus(); return; }
+      fs.setDisplayName(name); ov.remove(); callback(name);
+    }, 'notes-btn notes-btn-primary');
+    row.appendChild(saveB); row.appendChild(btn('Cancel', function(){ ov.remove(); }));
+    modal.appendChild(title); modal.appendChild(sub); modal.appendChild(inp); modal.appendChild(row);
+    ov.appendChild(modal);
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    document.body.appendChild(ov); inp.focus();
+    inp.addEventListener('keydown', function(e){ if(e.key==='Enter') saveB.click(); });
+  }
+
+  function openFirebaseSetupModal(onSuccess) {
+    var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
+    modal.style.maxWidth = '520px';
+    var title = el('h3','editor-title'); title.textContent = '🔥 Connect Firebase';
+    var steps = el('div');
+    steps.innerHTML = '<p style="font-size:13px;opacity:0.7;margin:0 0 10px;">Paste your Firebase config below to enable real-time sharing.</p>'
+      + '<ol style="font-size:12px;opacity:0.55;margin:0 0 14px;padding-left:18px;line-height:2;">'
+      + '<li>Go to <strong>console.firebase.google.com</strong> → your project</li>'
+      + '<li>Click <strong>Project Settings</strong> → <strong>Add App</strong> → Web icon</li>'
+      + '<li>Register the app, then copy the <code style="background:rgba(255,255,255,0.1);padding:1px 4px;border-radius:3px;">firebaseConfig</code> block</li>'
+      + '<li>Paste it below and click Connect</li>'
+      + '</ol>';
+    var ta = el('textarea','editor-textarea');
+    ta.placeholder = 'Paste your firebaseConfig here…\n\nconst firebaseConfig = {\n  apiKey: "...",\n  databaseURL: "...",\n  ...\n};';
+    ta.style.minHeight = '150px'; ta.style.fontFamily = 'monospace'; ta.style.fontSize = '12px';
+    var errEl = el('div'); errEl.style.cssText = 'color:#f87171;font-size:12px;margin-bottom:8px;display:none;padding:8px 10px;background:rgba(239,68,68,0.1);border-radius:6px;';
+    var btnRow = el('div','editor-btn-row');
+    var saveB = btn('Connect', function() {
+      var fs = getFS();
+      if (!fs) { errEl.textContent='Firebase module not loaded yet. Check that firebase-sync.js is in your js/ folder.'; errEl.style.display=''; return; }
+      saveB.textContent = 'Connecting…'; saveB.disabled = true;
+      fs.setup(ta.value).then(function(result) {
+        saveB.textContent = 'Connect'; saveB.disabled = false;
+        if (result.ok) {
+          ov.remove(); toast('✓ Firebase connected!');
+          var fbBtn = document.getElementById('firebaseConnectBtn');
+          if (fbBtn) { fbBtn.textContent = '🔥 Connected'; fbBtn.classList.add('firebase-connected'); }
+          if (onSuccess) onSuccess();
+        } else {
+          errEl.textContent = result.error; errEl.style.display = '';
+        }
+      });
+    }, 'notes-btn notes-btn-primary');
+    btnRow.appendChild(saveB); btnRow.appendChild(btn('Cancel', function(){ ov.remove(); }));
+    modal.appendChild(title); modal.appendChild(steps); modal.appendChild(ta); modal.appendChild(errEl); modal.appendChild(btnRow);
+    ov.appendChild(modal);
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    document.body.appendChild(ov); ta.focus();
+  }
+
+  function showFirebaseOptionsModal() {
+    var fs = getFS();
+    var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
+    var title = el('h3','editor-title'); title.textContent = '🔥 Firebase Settings';
+    var curName = fs.getDisplayName() || 'Not set';
+    var nameInfo = el('p'); nameInfo.style.cssText = 'font-size:13px;opacity:0.7;margin:0 0 10px;';
+    nameInfo.textContent = 'Your display name: ' + curName;
+    var btnRow = el('div','editor-btn-row');
+    btnRow.appendChild(btn('Change Name', function(){
+      ov.remove(); openDisplayNameModal(function(n){ toast('Name updated to: ' + n); });
+    }, 'notes-btn'));
+    btnRow.appendChild(btn('Disconnect', function(){
+      if (!confirm('Disconnect Firebase? Shared subjects will stop syncing.')) return;
+      fs.clearConfig(); ov.remove();
+      var fbBtn = document.getElementById('firebaseConnectBtn');
+      if (fbBtn) { fbBtn.textContent = '🔥 Connect'; fbBtn.classList.remove('firebase-connected'); }
+      toast('Firebase disconnected');
+    }, 'notes-btn notes-btn-danger'));
+    btnRow.appendChild(btn('Close', function(){ ov.remove(); }));
+    modal.appendChild(title); modal.appendChild(nameInfo); modal.appendChild(btnRow);
+    ov.appendChild(modal);
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    document.body.appendChild(ov);
+  }
+
+  function shareSubject(subject) {
+    var fs = getFS();
+    if (!fs || !fs.isReady) { openFirebaseSetupModal(function(){ shareSubject(subject); }); return; }
+    ensureDisplayName(function(){ doShareSubject(subject); });
+  }
+
+  function doShareSubject(subject) {
+    var fs = getFS(); toast('Sharing…');
+    fs.pushSubject(subject).then(function(shareId) {
+      if (!shareId) { toast('Share failed — check your Firebase connection'); return; }
+      subject.shareId = shareId; save(); render();
+      showShareModal(subject, shareId);
+      attachShareListener(subject);
+    }).catch(function(e){ toast('Share failed: ' + e.message); });
+  }
+
+  function showShareModal(subject, shareId) {
+    var fs = getFS();
+    var url = fs.getShareUrl(shareId);
+    var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
+    modal.style.maxWidth = '480px';
+    var title = el('h3','editor-title');
+    title.textContent = '🔗 Sharing: "' + subject.name + '"';
+    var urlBox = el('div','share-url-box');
+    urlBox.textContent = url;
+    var hint = el('p','share-hint');
+    hint.textContent = 'Anyone with this link can view and edit this ' + (subject.type==='checklist'?'checklist':'note') + ' in real time. Changes sync instantly.';
+    var btnRow = el('div','editor-btn-row');
+    var copyB = btn('📋 Copy Link', function(){
+      navigator.clipboard.writeText(url).then(function(){
+        copyB.textContent = '✓ Copied!'; copyB.style.color = '#4ade80';
+        setTimeout(function(){ copyB.textContent = '📋 Copy Link'; copyB.style.color = ''; }, 2000);
+      });
+    }, 'notes-btn notes-btn-primary');
+    urlBox.addEventListener('click', function(){ copyB.click(); });
+    urlBox.title = 'Click to copy';
+    btnRow.appendChild(copyB);
+    btnRow.appendChild(btn('Stop Sharing', function(){
+      if (!confirm('Remove from cloud and stop sharing "' + subject.name + '"?')) return;
+      fs.deleteShared(shareId).then(function(){
+        subject.shareId = null; save(); render(); ov.remove();
+        delete FB_LISTEN_ACTIVE[shareId]; toast('Sharing stopped');
+      });
+    }, 'notes-btn notes-btn-danger'));
+    btnRow.appendChild(btn('Close', function(){ ov.remove(); }));
+    modal.appendChild(title); modal.appendChild(urlBox); modal.appendChild(hint); modal.appendChild(btnRow);
+    ov.appendChild(modal);
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    document.body.appendChild(ov);
+  }
+
+  function openSharedView(shareId) {
+    var fs = getFS();
+    if (!fs || !fs.isReady) { openFirebaseSetupModal(function(){ openSharedView(shareId); }); return; }
+    // Check if already imported
+    var already = data.subjects.find(function(s){ return s.shareId === shareId; });
+    if (already) {
+      expandedSubject = already.id; render();
+      history.replaceState(null,'',window.location.pathname); // clean URL
+      toast('✓ Showing: ' + already.name); return;
+    }
+    toast('Loading shared content…');
+    fs.getShared(shareId).then(function(fbData) {
+      if (!fbData || !fbData.meta) { toast('Shared content not found or has been removed.'); return; }
+      var subject = {
+        id:       'shared_' + shareId,
+        name:     fbData.meta.name,
+        type:     fbData.meta.type || 'notes',
+        shareId:  shareId,
+        notes:    Object.entries(fbData.items || {}).map(function(pair){
+          var id = pair[0], it = pair[1];
+          return { id:id, content:it.content||'', images:[], checked:it.checked||false,
+            checkedBy:it.checkedBy||null, checkedAt:it.checkedAt||null,
+            createdAt:it.createdAt||Date.now(), updatedAt:it.updatedAt||Date.now() };
+        })
+      };
+      showImportSharedModal(subject, shareId);
+    });
+  }
+
+  function showImportSharedModal(subject, shareId) {
+    var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
+    var title = el('h3','editor-title'); title.textContent = '📥 Shared: ' + subject.name;
+    var info = el('p'); info.style.cssText = 'font-size:13px;opacity:0.7;margin:0 0 16px;';
+    info.textContent = 'Someone shared this ' + subject.type + ' with you. Add it to collaborate in real time — your changes will sync to everyone.';
+    var btnRow = el('div','editor-btn-row');
+    var addB = btn('Add to my app', function(){
+      data.subjects.unshift(subject);
+      expandedSubject = subject.id;
+      save(); render(); ov.remove();
+      history.replaceState(null,'',window.location.pathname);
+      toast('✓ Added: ' + subject.name);
+      attachShareListener(subject);
+    }, 'notes-btn notes-btn-primary');
+    btnRow.appendChild(addB);
+    btnRow.appendChild(btn('Dismiss', function(){ ov.remove(); history.replaceState(null,'',window.location.pathname); }));
+    modal.appendChild(title); modal.appendChild(info); modal.appendChild(btnRow);
+    ov.appendChild(modal);
+    ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
+    document.body.appendChild(ov);
+  }
+
+  function attachShareListener(subject) {
+    var fs = getFS();
+    if (!fs || !fs.isReady || !subject.shareId) return;
+    if (FB_LISTEN_ACTIVE[subject.shareId]) return;
+    FB_LISTEN_ACTIVE[subject.shareId] = true;
+    fs.listen(subject.shareId, function(fbData) {
+      if (!fbData || !fbData.items) return;
+      var local = data.subjects.find(function(s){ return s.shareId === subject.shareId; });
+      if (!local) return;
+      // Merge: Firebase wins if updatedAt is newer than local
+      var localMap = {};
+      local.notes.forEach(function(n){ localMap[n.id] = n; });
+      local.notes = Object.entries(fbData.items).map(function(pair){
+        var id = pair[0], it = pair[1];
+        var loc = localMap[id];
+        if (loc && loc.updatedAt >= it.updatedAt) return loc;
+        return { id:id, content:it.content||'', images:[], checked:it.checked||false,
+          checkedBy:it.checkedBy||null, checkedAt:it.checkedAt||null,
+          createdAt:it.createdAt||Date.now(), updatedAt:it.updatedAt||Date.now() };
+      });
+      if (fbData.meta && fbData.meta.name) local.name = fbData.meta.name;
+      save();
+      if (expandedSubject === local.id) render();
+    });
+  }
+
   // ─── Editor Modal ─────────────────────────────────────────────────────────────
   function openEditor(subjectId, noteId, insertAtIndex, scrollToBottom) {
     var subject = data.subjects.find(function(s){ return s.id===subjectId; });
@@ -542,21 +767,34 @@
     checkbox.className = 'checklist-checkbox';
     checkbox.checked = !!item.checked;
     checkbox.addEventListener('change', function() {
+      var fs = getFS();
       item.checked   = checkbox.checked;
       item.checkedAt = Date.now();
+      item.checkedBy = fs ? (fs.getDisplayName() || 'Unknown') : null;
       item.updatedAt = Date.now();
       row.classList.toggle('checklist-item-checked', item.checked);
       labelEl.classList.toggle('checklist-label-checked', item.checked);
       stampEl.textContent = fmtStamp(item);
       save();
+      // Sync to Firebase if this subject is shared
+      if (fs && fs.isReady && subject.shareId) {
+        fs.updateItem(subject.shareId, item.id, {
+          checked:   item.checked,
+          checkedBy: item.checkedBy,
+          checkedAt: item.checkedAt
+        }).catch(function(e){ console.warn('[Firebase] sync error:', e); });
+      }
     });
 
     var labelEl = el('span', 'checklist-label' + (item.checked ? ' checklist-label-checked' : ''));
     labelEl.textContent = item.content;
 
     function fmtStamp(it) {
-      if (it.checkedAt) return (it.checked ? 'Checked: ' : 'Unchecked: ') + new Date(it.checkedAt).toLocaleString();
-      return 'Added: ' + new Date(it.createdAt).toLocaleString();
+      if (it.checkedAt) {
+        var who = it.checkedBy ? ' by ' + it.checkedBy : '';
+        return (it.checked ? 'Checked' : 'Unchecked') + who + ' · ' + new Date(it.checkedAt).toLocaleString();
+      }
+      return 'Added · ' + new Date(it.createdAt).toLocaleString();
     }
     var stampEl = el('span', 'checklist-stamp');
     stampEl.textContent = fmtStamp(item);
@@ -572,6 +810,10 @@
       delB.style.pointerEvents = 'none';
       var yesB = btn('Yes', function(e2) {
         e2.stopPropagation();
+        var fs = getFS();
+        if (fs && fs.isReady && subject.shareId) {
+          fs.removeItem(subject.shareId, item.id).catch(function(){});
+        }
         subject.notes = subject.notes.filter(function(n) { return n.id !== item.id; });
         save(); render();
       }, 'notes-btn notes-btn-danger');
@@ -608,10 +850,18 @@
     var saveB = btn('Save', function() {
       var content = ta.value.trim();
       if (!content) { toast('Item is empty'); return; }
+      var fs = getFS();
       if (existing) {
         existing.content = content; existing.updatedAt = now();
+        if (fs && fs.isReady && subject.shareId) {
+          fs.updateItem(subject.shareId, existing.id, { content: existing.content, updatedAt: existing.updatedAt }).catch(function(){});
+        }
       } else {
-        subject.notes.push({ id: uid(), content: content, images: [], checked: false, checkedAt: null, createdAt: now(), updatedAt: now() });
+        var newItem = { id: uid(), content: content, images: [], checked: false, checkedBy: null, checkedAt: null, createdAt: now(), updatedAt: now() };
+        subject.notes.push(newItem);
+        if (fs && fs.isReady && subject.shareId) {
+          fs.addItem(subject.shareId, newItem).catch(function(){});
+        }
       }
       save(); render(); ov.remove();
     }, 'notes-btn notes-btn-primary');
@@ -701,8 +951,13 @@
     typeBadge.textContent = isChecklist ? '✅' : '📝';
     typeBadge.title = isChecklist ? 'Checklist' : 'Notes';
 
+    // Live badge (shown when subject is shared)
+    var liveBadge = subject.shareId ? el('span', 'subject-live-badge') : null;
+    if (liveBadge) { liveBadge.textContent = '● LIVE'; liveBadge.title = 'Shared — syncing in real time'; }
+
     var left=el('div','subject-header-left');
     [grip,chev,typeBadge,nameEl,count].forEach(function(x){ left.appendChild(x); });
+    if (liveBadge) left.appendChild(liveBadge);
 
     var right=el('div','subject-header-right');
     right.appendChild(btn('＋',function(e){
@@ -710,6 +965,13 @@
       if (isChecklist) openChecklistItemEditor(subject.id, null);
       else openEditor(subject.id);
     }));
+    // Share button
+    var shareB = btn(subject.shareId ? '🔗 Sharing' : '🔗 Share', function(e){
+      e.stopPropagation();
+      if (subject.shareId) showShareModal(subject, subject.shareId);
+      else shareSubject(subject);
+    }, 'notes-btn' + (subject.shareId ? ' notes-btn-live' : ''));
+    right.appendChild(shareB);
     right.appendChild(btn('✎',function(e){
       e.stopPropagation();
       var n=prompt('New name:',subject.name);
@@ -733,11 +995,18 @@
         notesList.classList.add('is-closing');
         setTimeout(function(){
           expandedSubject = null;
+          // Detach Firebase listener when card collapses
+          if (subject.shareId) {
+            var fs = getFS(); if (fs) fs.unlisten(subject.shareId);
+            delete FB_LISTEN_ACTIVE[subject.shareId];
+          }
           render();
         }, 280);
       } else {
         expandedSubject = subject.id;
         render();
+        // Attach Firebase listener when card expands
+        if (subject.shareId) attachShareListener(subject);
       }
     });
 
@@ -891,6 +1160,18 @@
       var bar=document.createElement('div'); bar.className='notes-top-bar';
       [document.getElementById('searchBar'),document.getElementById('addSubjectBtn'),document.getElementById('exportButtonContainer'),document.getElementById('hideNotes')]
         .forEach(function(e){ if(e) bar.appendChild(e); });
+      // Firebase connect button
+      var fbBtn = document.createElement('button');
+      fbBtn.id = 'firebaseConnectBtn'; fbBtn.className = 'notes-btn firebase-connect-btn';
+      var fs = getFS();
+      if (fs && fs.isConfigured()) { fbBtn.textContent = '🔥 Connected'; fbBtn.classList.add('firebase-connected'); }
+      else { fbBtn.textContent = '🔥 Share'; }
+      fbBtn.addEventListener('click', function(){
+        var fs = getFS();
+        if (fs && fs.isReady) showFirebaseOptionsModal();
+        else openFirebaseSetupModal(null);
+      });
+      bar.appendChild(fbBtn);
       var meter=document.createElement('div'); meter.id='notes-storage-meter';
       meter.style.cssText='font-size:11px;font-weight:600;white-space:nowrap;padding:3px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);margin-left:auto;flex-shrink:0;display:inline-block';
       bar.appendChild(meter); ns.insertBefore(bar,ns.firstChild);
@@ -903,6 +1184,22 @@
     var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
     if(show){ show.style.display='inline-block'; show.addEventListener('click',showNotes); }
     if(hide){ hide.style.display='none';         hide.addEventListener('click',hideNotes); }
+
+    // Firebase event listeners
+    document.addEventListener('firebase-ready', function(){
+      var b = document.getElementById('firebaseConnectBtn');
+      if (b) { b.textContent = '🔥 Connected'; b.classList.add('firebase-connected'); }
+      // Reattach listeners for any shared subjects that are currently expanded
+      data.subjects.forEach(function(s){
+        if (s.shareId && s.id === expandedSubject) attachShareListener(s);
+      });
+    });
+    document.addEventListener('firebase-share-open', function(e){
+      var shareId = e.detail.shareId;
+      var fs = getFS();
+      if (!fs || !fs.isReady) { openFirebaseSetupModal(function(){ openSharedView(shareId); }); }
+      else { openSharedView(shareId); }
+    });
 
     startSync(); render();
   }
