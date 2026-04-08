@@ -155,9 +155,9 @@
   function parseSubjects(raw) {
     var p = JSON.parse(raw), subjects = Array.isArray(p) ? p : (p.subjects||[]);
     return { subjects: subjects.map(function(s){
-      return { id: s.id||uid(), name: s.name||'Untitled', notes: (s.notes||[]).map(function(n){
-        if (typeof n==='string') return {id:uid(),content:decodeURIComponent(n),images:[],createdAt:now(),updatedAt:now()};
-        return {id:n.id||uid(),content:n.content||'',images:Array.isArray(n.images)?n.images:[],createdAt:n.createdAt||now(),updatedAt:n.updatedAt||now()};
+      return { id: s.id||uid(), name: s.name||'Untitled', type: s.type||'notes', notes: (s.notes||[]).map(function(n){
+        if (typeof n==='string') return {id:uid(),content:decodeURIComponent(n),images:[],checked:false,checkedAt:null,createdAt:now(),updatedAt:now()};
+        return {id:n.id||uid(),content:n.content||'',images:Array.isArray(n.images)?n.images:[],checked:!!n.checked,checkedAt:n.checkedAt||null,createdAt:n.createdAt||now(),updatedAt:n.updatedAt||now()};
       })};
     })};
   }
@@ -532,6 +532,149 @@
     return row;
   }
 
+  // ─── Checklist Item ───────────────────────────────────────────────────────────
+  function buildChecklistItem(item, subject) {
+    var row = el('div', 'checklist-item' + (item.checked ? ' checklist-item-checked' : ''));
+    row.dataset.id = item.id;
+
+    var checkbox = el('input');
+    checkbox.type = 'checkbox';
+    checkbox.className = 'checklist-checkbox';
+    checkbox.checked = !!item.checked;
+    checkbox.addEventListener('change', function() {
+      item.checked   = checkbox.checked;
+      item.checkedAt = Date.now();
+      item.updatedAt = Date.now();
+      row.classList.toggle('checklist-item-checked', item.checked);
+      labelEl.classList.toggle('checklist-label-checked', item.checked);
+      stampEl.textContent = fmtStamp(item);
+      save();
+    });
+
+    var labelEl = el('span', 'checklist-label' + (item.checked ? ' checklist-label-checked' : ''));
+    labelEl.textContent = item.content;
+
+    function fmtStamp(it) {
+      if (it.checkedAt) return (it.checked ? 'Checked: ' : 'Unchecked: ') + new Date(it.checkedAt).toLocaleString();
+      return 'Added: ' + new Date(it.createdAt).toLocaleString();
+    }
+    var stampEl = el('span', 'checklist-stamp');
+    stampEl.textContent = fmtStamp(item);
+
+    var actions = el('div', 'checklist-actions');
+    actions.appendChild(btn('Edit', function(e) {
+      e.stopPropagation();
+      openChecklistItemEditor(subject.id, item.id);
+    }));
+    var delB = btn('Delete', function(e) {
+      e.stopPropagation();
+      delB.textContent = 'Sure?';
+      delB.style.pointerEvents = 'none';
+      var yesB = btn('Yes', function(e2) {
+        e2.stopPropagation();
+        subject.notes = subject.notes.filter(function(n) { return n.id !== item.id; });
+        save(); render();
+      }, 'notes-btn notes-btn-danger');
+      var noB = btn('No', function(e2) {
+        e2.stopPropagation();
+        delB.textContent = 'Delete'; delB.style.pointerEvents = '';
+        actions.removeChild(yesB); actions.removeChild(noB);
+      }, 'notes-btn');
+      actions.insertBefore(noB, delB.nextSibling);
+      actions.insertBefore(yesB, noB);
+    }); delB.classList.add('notes-btn-danger'); actions.appendChild(delB);
+
+    var left = el('div', 'checklist-left');
+    left.appendChild(checkbox); left.appendChild(labelEl); left.appendChild(stampEl);
+    row.appendChild(left); row.appendChild(actions);
+    return row;
+  }
+
+  function openChecklistItemEditor(subjectId, itemId) {
+    var subject = data.subjects.find(function(s) { return s.id === subjectId; });
+    if (!subject) return;
+    var existing = itemId ? subject.notes.find(function(n) { return n.id === itemId; }) : null;
+
+    var ov = el('div', 'note-editor-overlay'), modal = el('div', 'note-editor-modal');
+    var title = el('h3', 'editor-title');
+    title.textContent = existing ? 'Edit item — ' + subject.name : 'Add to "' + subject.name + '"';
+
+    var ta = el('textarea', 'editor-textarea');
+    ta.value = existing ? existing.content : '';
+    ta.placeholder = 'Item text…';
+    ta.style.minHeight = '80px';
+
+    var btnRow = el('div', 'editor-btn-row');
+    var saveB = btn('Save', function() {
+      var content = ta.value.trim();
+      if (!content) { toast('Item is empty'); return; }
+      if (existing) {
+        existing.content = content; existing.updatedAt = now();
+      } else {
+        subject.notes.push({ id: uid(), content: content, images: [], checked: false, checkedAt: null, createdAt: now(), updatedAt: now() });
+      }
+      save(); render(); ov.remove();
+    }, 'notes-btn notes-btn-primary');
+    btnRow.appendChild(saveB);
+    btnRow.appendChild(btn('Cancel', function() { ov.remove(); }));
+
+    modal.appendChild(title); modal.appendChild(ta); modal.appendChild(btnRow);
+    ov.appendChild(modal);
+    ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
+    ta.focus();
+    ta.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveB.click(); } });
+  }
+
+  // ─── New Subject Modal (notes or checklist) ───────────────────────────────────
+  function openNewSubjectModal() {
+    var ov = el('div', 'note-editor-overlay'), modal = el('div', 'note-editor-modal');
+    var title = el('h3', 'editor-title'); title.textContent = 'New subject';
+
+    var nameInput = el('input'); nameInput.className = 'editor-name-input';
+    nameInput.placeholder = 'Subject name…'; nameInput.type = 'text';
+    nameInput.style.cssText = 'width:100%;padding:10px 12px;font-size:15px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:inherit;font-family:inherit;margin-bottom:12px;box-sizing:border-box;outline:none;';
+
+    var typeRow = el('div', 'editor-type-row');
+    var typeLabel = el('span'); typeLabel.textContent = 'Type:';
+    typeLabel.style.cssText = 'font-size:13px;opacity:0.7;margin-right:10px;';
+
+    function mkTypeBtn(lbl, val, icon) {
+      var b = el('button', 'type-select-btn');
+      b.dataset.val = val;
+      b.innerHTML = icon + ' ' + lbl;
+      b.addEventListener('click', function() {
+        typeRow.querySelectorAll('.type-select-btn').forEach(function(x) { x.classList.remove('type-select-active'); });
+        b.classList.add('type-select-active');
+      });
+      return b;
+    }
+    var btnNotes     = mkTypeBtn('Notes', 'notes', '📝');
+    var btnChecklist = mkTypeBtn('Checklist', 'checklist', '✅');
+    btnNotes.classList.add('type-select-active');
+    typeRow.appendChild(typeLabel); typeRow.appendChild(btnNotes); typeRow.appendChild(btnChecklist);
+    typeRow.style.cssText = 'display:flex;align-items:center;gap:8px;margin-bottom:16px;';
+
+    var btnRow = el('div', 'editor-btn-row');
+    var createB = btn('Create', function() {
+      var name = nameInput.value.trim();
+      if (!name) { toast('Enter a name'); nameInput.focus(); return; }
+      var active = typeRow.querySelector('.type-select-active');
+      var type = active ? active.dataset.val : 'notes';
+      data.subjects.push({ id: uid(), name: name, type: type, notes: [] });
+      save(); render(); ov.remove();
+    }, 'notes-btn notes-btn-primary');
+    btnRow.appendChild(createB);
+    btnRow.appendChild(btn('Cancel', function() { ov.remove(); }));
+
+    modal.appendChild(title); modal.appendChild(nameInput); modal.appendChild(typeRow); modal.appendChild(btnRow);
+    ov.appendChild(modal);
+    ov.addEventListener('click', function(e) { if (e.target === ov) ov.remove(); });
+    document.body.appendChild(ov);
+    nameInput.focus();
+    nameInput.addEventListener('keydown', function(e) { if (e.key === 'Enter') createB.click(); });
+  }
+
   // ─── Subject Card ─────────────────────────────────────────────────────────────
   function buildSubjectCard(subject) {
     var isOpen = expandedSubject===subject.id;
@@ -542,15 +685,31 @@
     var chev=el('span','subject-chevron'); chev.textContent='▶';
     var nameEl=el('span','subject-name'); nameEl.textContent=subject.name;
     nameEl.style.fontWeight='700'; nameEl.style.flex='1';
+    var isChecklist = subject.type === 'checklist';
     var count=el('span','subject-count');
-    count.textContent=subject.notes.length+' note'+(subject.notes.length!==1?'s':'');
-    if (subject.notes.length === 0) count.classList.add('subject-count-empty');
+    var totalItems = subject.notes.length;
+    var checkedItems = isChecklist ? subject.notes.filter(function(n){ return n.checked; }).length : 0;
+    if (isChecklist) {
+      count.textContent = checkedItems + '/' + totalItems + ' done';
+    } else {
+      count.textContent = totalItems + ' note' + (totalItems !== 1 ? 's' : '');
+    }
+    if (totalItems === 0) count.classList.add('subject-count-empty');
+
+    // Type badge
+    var typeBadge = el('span', 'subject-type-badge subject-type-' + (isChecklist ? 'checklist' : 'notes'));
+    typeBadge.textContent = isChecklist ? '✅' : '📝';
+    typeBadge.title = isChecklist ? 'Checklist' : 'Notes';
 
     var left=el('div','subject-header-left');
-    [grip,chev,nameEl,count].forEach(function(x){ left.appendChild(x); });
+    [grip,chev,typeBadge,nameEl,count].forEach(function(x){ left.appendChild(x); });
 
     var right=el('div','subject-header-right');
-    right.appendChild(btn('＋',function(e){ e.stopPropagation(); openEditor(subject.id); }));
+    right.appendChild(btn('＋',function(e){
+      e.stopPropagation();
+      if (isChecklist) openChecklistItemEditor(subject.id, null);
+      else openEditor(subject.id);
+    }));
     right.appendChild(btn('✎',function(e){
       e.stopPropagation();
       var n=prompt('New name:',subject.name);
@@ -585,8 +744,20 @@
     var notesList=el('div','subject-notes-list');
     notesList.style.display = isOpen ? 'flex' : 'none';
     if (isOpen) notesList.classList.add('is-open');
-    subject.notes.forEach(function(n){ notesList.appendChild(buildNoteRow(n,subject.id)); });
-    if (!subject.notes.length){ var empty=el('div','notes-empty'); empty.textContent='No notes yet — click ＋ to add one.'; notesList.appendChild(empty); }
+    if (isChecklist) {
+      // Sort: unchecked first, checked last
+      var sorted = subject.notes.slice().sort(function(a,b){
+        if (a.checked === b.checked) return 0;
+        return a.checked ? 1 : -1;
+      });
+      sorted.forEach(function(n){ notesList.appendChild(buildChecklistItem(n, subject)); });
+      if (!subject.notes.length) {
+        var empty=el('div','notes-empty'); empty.textContent='Empty list — click ＋ to add items.'; notesList.appendChild(empty);
+      }
+    } else {
+      subject.notes.forEach(function(n){ notesList.appendChild(buildNoteRow(n,subject.id)); });
+      if (!subject.notes.length){ var empty=el('div','notes-empty'); empty.textContent='No notes yet — click ＋ to add one.'; notesList.appendChild(empty); }
+    }
 
     notesList.addEventListener('dragover',function(e){ if(!dragNotePayload)return; e.preventDefault(); notesList.classList.add('note-drop-over'); });
     notesList.addEventListener('dragleave',function(){ notesList.classList.remove('note-drop-over'); });
@@ -701,9 +872,7 @@
     load();
 
     var addBtn=document.getElementById('addSubjectBtn');
-    if (addBtn) addBtn.addEventListener('click',function(){
-      var n=prompt('Subject name:'); if(n&&n.trim()){ data.subjects.push({id:uid(),name:n.trim(),notes:[]}); save(); render(); }
-    });
+    if (addBtn) addBtn.addEventListener('click', openNewSubjectModal);
 
     var sb=document.getElementById('searchBar'); if(sb) sb.addEventListener('input',render);
 
