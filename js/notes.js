@@ -29,6 +29,7 @@
   }
 
   function setIdentityForShare(shareId, name) {
+    console.log('[Identity] setIdentityForShare — shareId:', shareId, '| name:', name);
     if (shareId && name) localStorage.setItem('kwells_who_' + shareId, name);
   }
 
@@ -409,6 +410,8 @@
         joinB.textContent = 'Join'; joinB.disabled = false;
         if (!fbData || !fbData.meta) { errEl.textContent = 'No shared content found for that ID.'; errEl.style.display=''; return; }
         ov.remove();
+        console.log('[Identity] openSharedView fbData:', JSON.stringify(fbData).slice(0,300));
+        console.log('[Identity] fbData.users:', fbData.users);
         var subject = {
           id: 'shared_' + shareId, name: fbData.meta.name, type: fbData.meta.type || 'notes',
           shareId: shareId,
@@ -657,6 +660,7 @@
     var userNames = Object.keys(users || {}).sort();
     var hasUsers  = userNames.length > 0;
     var selectedIdentity = localStorage.getItem('kwells_who_' + shareId) || null;
+    console.log('[Identity] showImportSharedModal — shareId:', shareId, '| users:', users, '| userNames:', userNames, '| hasUsers:', hasUsers, '| storedIdentity:', selectedIdentity);
 
     var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
     modal.style.maxWidth = '460px';
@@ -717,7 +721,9 @@
         var custom = modal.querySelector('.import-identity-btn + p ~ input') ||
                      modal.querySelector('input[placeholder="Your name…"]');
         if (custom && custom.value.trim()) selectedIdentity = custom.value.trim();
+        console.log('[Identity] Join clicked — selectedIdentity:', selectedIdentity, '| hasUsers:', hasUsers);
         if (!selectedIdentity) {
+          console.warn('[Identity] No identity selected — blocking join');
           if (identityErr) identityErr.style.display = '';
           return;
         }
@@ -743,21 +749,16 @@
 
   function attachShareListener(subject) {
     var fs = getFS();
-    console.log('[Notes] attachShareListener()', subject.shareId, '| fs.isReady:', fs && fs.isReady, '| already active:', !!FB_LISTEN_ACTIVE[subject.shareId]);
     if (!fs || !fs.isReady || !subject.shareId) {
-      console.warn('[Notes] attachShareListener() bailed — fs:', !!fs, 'isReady:', fs && fs.isReady, 'shareId:', subject.shareId);
       return;
     }
     if (FB_LISTEN_ACTIVE[subject.shareId]) {
-      console.log('[Notes] attachShareListener() — already active, skipping');
       return;
     }
     FB_LISTEN_ACTIVE[subject.shareId] = true;
     fs.listen(subject.shareId, function(fbData) {
-      console.log('[Notes] Firebase callback fired for', subject.shareId, '| items:', fbData && fbData.items ? Object.keys(fbData.items).length : 0);
       if (!fbData || !fbData.items) return;
       var local = data.subjects.find(function(s){ return s.shareId === subject.shareId; });
-      if (!local) { console.warn('[Notes] No local subject found for shareId', subject.shareId); return; }
       var localMap = {};
       local.notes.forEach(function(n){ localMap[n.id] = n; });
       local.notes = Object.entries(fbData.items).map(function(pair){
@@ -776,7 +777,6 @@
       });
       if (fbData.meta && fbData.meta.name) local.name = fbData.meta.name;
       save();
-      console.log('[Notes] render() triggered by Firebase update for', subject.shareId);
       render();
     });
   }
@@ -1044,15 +1044,12 @@
       stampEl.textContent = fmtStamp(item);
       save();
       // Sync to Firebase if this subject is shared
-      console.log('[Notes] checkbox changed — shareId:', subject.shareId, '| fs.isReady:', fs && fs.isReady, '| checked:', item.checked);
       if (fs && fs.isReady && subject.shareId) {
         fs.updateItem(subject.shareId, item.id, {
           checked:   item.checked,
           checkedBy: item.checkedBy,
           checkedAt: item.checkedAt
-        }).catch(function(e){ console.error('[Notes] Firebase sync error:', e); });
-      } else {
-        console.warn('[Notes] NOT syncing to Firebase — fs:', !!fs, 'isReady:', fs && fs.isReady, 'shareId:', subject.shareId);
+        }).catch(function(e){ console.error('[Firebase] sync error:', e); });
       }
     });
 
