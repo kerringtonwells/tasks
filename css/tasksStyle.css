@@ -854,3 +854,24 @@ body[data-theme="light"] .firebase-option-btn.danger-option { background: rgba(2
 @media (hover: none) {
     .subject-header-right { opacity: 1; pointer-events: auto; }
 }
+
+/* ── Identity selection buttons inside import modal ─────────────────────── */
+.import-identity-btn {
+    padding: 8px 16px;
+    border-radius: 99px;
+    border: 2px solid transparent;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: inherit;
+    transition: transform 0.12s ease;
+}
+body[data-theme="dark"]  .import-identity-btn { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); color: #e2e8f0; }
+body[data-theme="light"] .import-identity-btn { background: rgba(0,0,0,0.04); border-color: rgba(0,0,0,0.12); color: #1a1a2e; }
+.import-identity-btn:hover { transform: translateY(-1px); }
+.import-identity-selected {
+    background: rgba(59,130,246,0.25) !important;
+    border-color: #3b82f6 !important;
+    color: #93c5fd !important;
+}
+body[data-theme="light"] .import-identity-selected { color: #1d4ed8 !important; }
