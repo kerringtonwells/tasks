@@ -11,6 +11,18 @@ const LS_CONFIG = 'kwells_firebase_config';
 const LS_NAME   = 'kwells_user_name';
 const LS_DEVICE = 'kwells_device_id';
 
+// ── Public config — used automatically for share link recipients ──────────────
+// This is NOT a secret. Firebase security comes from Rules, not hiding this config.
+const SHARE_CONFIG = {
+  apiKey:            "AIzaSyDakHZdg0_Am_02MA0dvowIiE_5ZN2GfnY",
+  authDomain:        "checklist-57adc.firebaseapp.com",
+  databaseURL:       "https://checklist-57adc-default-rtdb.firebaseio.com",
+  projectId:         "checklist-57adc",
+  storageBucket:     "checklist-57adc.firebasestorage.app",
+  messagingSenderId: "954648453505",
+  appId:             "1:954648453505:web:bba04829084576c99dc880"
+};
+
 let _db      = null;
 let _r       = {};          // Firebase function refs {ref, set, get, onValue, update, remove}
 let _active  = {};          // shareId → unsubscribe fn
@@ -228,11 +240,22 @@ const FS = window.FirebaseSync = {
 };
 
 // ── Auto-init on load ─────────────────────────────────────────────────────────
-FS.init().then(ok => {
+const shareId = new URLSearchParams(window.location.search).get('share');
+
+FS.init().then(async ok => {
+  // If not configured locally but a share link is present, use the public config
+  if (!ok && shareId) {
+    try {
+      await loadSDK(SHARE_CONFIG);
+      FS.isReady = true;
+      ok = true;
+    } catch(e) {
+      console.warn('[FirebaseSync] Could not load public config:', e);
+    }
+  }
+
   if (ok) document.dispatchEvent(new CustomEvent('firebase-ready'));
 
-  // Handle ?share=xxx in URL — wait for notes.js to be ready
-  const shareId = new URLSearchParams(window.location.search).get('share');
   if (shareId) {
     const dispatch = () =>
       document.dispatchEvent(new CustomEvent('firebase-share-open', { detail: { shareId } }));
