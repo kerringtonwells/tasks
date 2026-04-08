@@ -87,20 +87,6 @@
     <script defer src="js/links.js"></script>
     <script defer src="js/stopwatch.js"></script>
     <script defer src="js/notes.js"></script>
-
-    <script defer>
-        document.addEventListener('DOMContentLoaded', function() {
-            var btn = document.getElementById('stopwatchToggle');
-            var sw  = document.getElementById('inlineStopwatch');
-            if (btn && sw) {
-                btn.addEventListener('click', function() {
-                    var visible = sw.style.display !== 'none';
-                    sw.style.display = visible ? 'none' : 'block';
-                    btn.classList.toggle('active-icon', !visible);
-                });
-            }
-        });
-    </script>
     <script type="module" src="js/firebase-sync.js"></script>
 </body>
 </html>
