@@ -323,24 +323,37 @@
 
   function openFirebaseSetupModal(onSuccess) {
     var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
-    modal.style.maxWidth = '520px';
+    modal.style.maxWidth = '540px';
     var title = el('h3','editor-title'); title.textContent = '🔥 Connect Firebase';
-    var steps = el('div');
-    steps.innerHTML = '<p style="font-size:13px;opacity:0.7;margin:0 0 10px;">Paste your Firebase config below to enable real-time sharing.</p>'
-      + '<ol style="font-size:12px;opacity:0.55;margin:0 0 14px;padding-left:18px;line-height:2;">'
-      + '<li>Go to <strong>console.firebase.google.com</strong> → your project</li>'
-      + '<li>Click <strong>Project Settings</strong> → <strong>Add App</strong> → Web icon</li>'
-      + '<li>Register the app, then copy the <code style="background:rgba(255,255,255,0.1);padding:1px 4px;border-radius:3px;">firebaseConfig</code> block</li>'
-      + '<li>Paste it below and click Connect</li>'
-      + '</ol>';
+
+    var RULES = '{\n  "rules": {\n    "shared": {\n      "$shareId": {\n        ".read": true,\n        ".write": true\n      }\n    }\n  }\n}';
+
+    var guide = el('div');
+    guide.innerHTML = [
+      '<p style="font-size:13px;font-weight:600;margin:0 0 10px;">First time? Complete these 3 steps:</p>',
+      '<div style="font-size:12px;line-height:1.9;margin-bottom:14px;">',
+        '<div style="margin-bottom:6px;"><span style="background:rgba(59,130,246,0.3);border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;margin-right:7px;">1</span>',
+          '<strong>Create a Firebase project</strong> at <code style="background:rgba(255,255,255,0.1);padding:1px 5px;border-radius:3px;">console.firebase.google.com</code></div>',
+        '<div style="margin-bottom:6px;"><span style="background:rgba(59,130,246,0.3);border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;margin-right:7px;">2</span>',
+          'Enable <strong>Realtime Database</strong> → open the <strong>Rules</strong> tab → paste and publish:</div>',
+        '<div style="display:flex;gap:6px;align-items:flex-start;margin:0 0 8px 25px;">',
+          '<pre id="rulesBox" style="flex:1;font-size:11px;background:rgba(0,0,0,0.3);padding:8px 10px;border-radius:6px;margin:0;overflow-x:auto;color:#94a3b8;">' + RULES + '</pre>',
+          '<button id="copyRulesBtn" style="flex-shrink:0;padding:5px 10px;font-size:11px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:inherit;cursor:pointer;font-family:inherit;">Copy</button>',
+        '</div>',
+        '<div><span style="background:rgba(59,130,246,0.3);border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;margin-right:7px;">3</span>',
+          'In <strong>Project Settings → Add App → Web</strong>, copy the config block and paste it below:</div>',
+      '</div>'
+    ].join('');
+
     var ta = el('textarea','editor-textarea');
     ta.placeholder = 'Paste your firebaseConfig here…\n\nconst firebaseConfig = {\n  apiKey: "...",\n  databaseURL: "...",\n  ...\n};';
-    ta.style.minHeight = '150px'; ta.style.fontFamily = 'monospace'; ta.style.fontSize = '12px';
+    ta.style.minHeight = '130px'; ta.style.fontFamily = 'monospace'; ta.style.fontSize = '12px';
+
     var errEl = el('div'); errEl.style.cssText = 'color:#f87171;font-size:12px;margin-bottom:8px;display:none;padding:8px 10px;background:rgba(239,68,68,0.1);border-radius:6px;';
     var btnRow = el('div','editor-btn-row');
     var saveB = btn('Connect', function() {
       var fs = getFS();
-      if (!fs) { errEl.textContent='Firebase module not loaded yet. Check that firebase-sync.js is in your js/ folder.'; errEl.style.display=''; return; }
+      if (!fs) { errEl.textContent='Firebase module not loaded. Check that firebase-sync.js is in your js/ folder.'; errEl.style.display=''; return; }
       saveB.textContent = 'Connecting…'; saveB.disabled = true;
       fs.setup(ta.value).then(function(result) {
         saveB.textContent = 'Connect'; saveB.disabled = false;
@@ -355,10 +368,22 @@
       });
     }, 'notes-btn notes-btn-primary');
     btnRow.appendChild(saveB); btnRow.appendChild(btn('Cancel', function(){ ov.remove(); }));
-    modal.appendChild(title); modal.appendChild(steps); modal.appendChild(ta); modal.appendChild(errEl); modal.appendChild(btnRow);
+
+    modal.appendChild(title); modal.appendChild(guide); modal.appendChild(ta); modal.appendChild(errEl); modal.appendChild(btnRow);
     ov.appendChild(modal);
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
     document.body.appendChild(ov); ta.focus();
+
+    // Wire up copy rules button
+    var copyRulesBtn = document.getElementById('copyRulesBtn');
+    if (copyRulesBtn) {
+      copyRulesBtn.addEventListener('click', function() {
+        navigator.clipboard.writeText(RULES).then(function() {
+          copyRulesBtn.textContent = '✓ Copied!'; copyRulesBtn.style.color = '#4ade80';
+          setTimeout(function(){ copyRulesBtn.textContent = 'Copy'; copyRulesBtn.style.color = ''; }, 2000);
+        });
+      });
+    }
   }
 
   function showFirebaseOptionsModal() {
