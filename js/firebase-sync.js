@@ -165,7 +165,7 @@ const FS = window.FirebaseSync = {
       },
       items
     });
-    setTimeout(() => _writing.delete(shareId), 600);
+    setTimeout(() => _writing.delete(shareId), 100);
     return shareId;
   },
 
@@ -176,7 +176,7 @@ const FS = window.FirebaseSync = {
       ...changes,
       updatedAt: Date.now()
     });
-    setTimeout(() => _writing.delete(shareId), 600);
+    setTimeout(() => _writing.delete(shareId), 100);
   },
 
   async addItem(shareId, item) {
@@ -190,14 +190,14 @@ const FS = window.FirebaseSync = {
       createdAt: item.createdAt || Date.now(),
       updatedAt: item.updatedAt || Date.now()
     });
-    setTimeout(() => _writing.delete(shareId), 600);
+    setTimeout(() => _writing.delete(shareId), 100);
   },
 
   async removeItem(shareId, itemId) {
     if (!_db) return;
     _writing.add(shareId);
     await _r.remove(_r.ref(_db, `shared/${shareId}/items/${itemId}`));
-    setTimeout(() => _writing.delete(shareId), 600);
+    setTimeout(() => _writing.delete(shareId), 100);
   },
 
   async updateMeta(shareId, changes) {
@@ -223,9 +223,15 @@ const FS = window.FirebaseSync = {
   // ─ Real-time listener ────────────────────────────────────────────────────────
 
   listen(shareId, callback) {
-    if (!_db || _active[shareId]) return;
+    if (!_db) return;
+    // Always unlisten first to avoid duplicates
+    if (_active[shareId]) {
+      _active[shareId]();
+      delete _active[shareId];
+    }
     const unsub = _r.onValue(_r.ref(_db, `shared/${shareId}`), snap => {
-      if (_writing.has(shareId)) return; // suppress echo of our own writes
+      // Only suppress if WE are actively writing right now (prevents echo)
+      if (_writing.has(shareId)) return;
       callback(snap.val());
     });
     _active[shareId] = unsub;
@@ -236,6 +242,14 @@ const FS = window.FirebaseSync = {
       _active[shareId]();
       delete _active[shareId];
     }
+  },
+
+  // Clear all active listeners — call this before re-attaching
+  clearListeners() {
+    Object.keys(_active).forEach(id => {
+      if (_active[id]) _active[id]();
+    });
+    _active = {};
   }
 };
 
