@@ -522,17 +522,17 @@
       if (!fbData || !fbData.items) return;
       var local = data.subjects.find(function(s){ return s.shareId === subject.shareId; });
       if (!local) return;
-      // Merge: Firebase wins if updatedAt is newer than local
+      // Build local map for image preservation
       var localMap = {};
       local.notes.forEach(function(n){ localMap[n.id] = n; });
+      // Firebase is the source of truth — always wins
       local.notes = Object.entries(fbData.items).map(function(pair){
         var id = pair[0], it = pair[1];
         var loc = localMap[id];
-        // Firebase always wins — it is the source of truth for shared content
         return {
           id:        id,
-          content:   it.content   || (loc ? loc.content : ''),
-          images:    loc ? (loc.images || []) : [],
+          content:   it.content   || (loc ? loc.content   : ''),
+          images:    loc          ? (loc.images       || []) : [],
           checked:   it.checked   || false,
           checkedBy: it.checkedBy || null,
           checkedAt: it.checkedAt || null,
@@ -542,7 +542,8 @@
       });
       if (fbData.meta && fbData.meta.name) local.name = fbData.meta.name;
       save();
-      if (expandedSubject === local.id) render();
+      // Always re-render — keeps count badge and expanded content fresh
+      render();
     });
   }
 
@@ -1023,16 +1024,15 @@
     header.addEventListener('click',function(e){
       if (e.target.closest('button')||e.target.closest('.subject-grip')) return;
       if (expandedSubject === subject.id) {
-        // Play close animation then collapse
+        // Detach listener FIRST to stop Firebase triggering renders during animation
+        if (subject.shareId) {
+          var fs = getFS(); if (fs) fs.unlisten(subject.shareId);
+          delete FB_LISTEN_ACTIVE[subject.shareId];
+        }
         notesList.classList.remove('is-open');
         notesList.classList.add('is-closing');
         setTimeout(function(){
           expandedSubject = null;
-          // Detach Firebase listener when card collapses
-          if (subject.shareId) {
-            var fs = getFS(); if (fs) fs.unlisten(subject.shareId);
-            delete FB_LISTEN_ACTIVE[subject.shareId];
-          }
           render();
         }, 280);
       } else {
@@ -1222,7 +1222,8 @@
     document.addEventListener('firebase-ready', function(){
       var b = document.getElementById('firebaseConnectBtn');
       if (b) { b.textContent = '🔥 Connected'; b.classList.add('firebase-connected'); }
-      // Attach listeners for ALL shared subjects so sync works even when card is collapsed
+      // Reset flags and re-attach listeners for ALL shared subjects fresh
+      FB_LISTEN_ACTIVE = {};
       data.subjects.forEach(function(s){
         if (s.shareId) attachShareListener(s);
       });
