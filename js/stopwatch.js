@@ -303,3 +303,17 @@ resetBtn.addEventListener('click', () => {
 });
 
 displayTime(0, true);
+
+// ── Stopwatch panel toggle (⏱ button in controls row) ────────────────────────
+// Wired here rather than in an inline script to guarantee correct timing
+// when firebase-sync.js module is present (modules affect DOMContentLoaded order).
+(function() {
+    const toggleBtn = document.getElementById('stopwatchToggle');
+    const panel     = document.getElementById('inlineStopwatch');
+    if (!toggleBtn || !panel) return;
+    toggleBtn.addEventListener('click', function() {
+        const visible = panel.style.display !== 'none';
+        panel.style.display = visible ? 'none' : 'block';
+        toggleBtn.classList.toggle('active-icon', !visible);
+    });
+})();
