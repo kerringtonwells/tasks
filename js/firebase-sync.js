@@ -141,7 +141,8 @@ const FS = window.FirebaseSync = {
   // Push entire subject to Firebase. Returns shareId.
   async pushSubject(subject) {
     if (!_db) return null;
-    const shareId = subject.shareId || ('s' + Math.random().toString(36).slice(2, 11));
+    // Deterministic shareId from subject.id — always the same URL for this subject
+    const shareId = subject.shareId || subject.id;
 
     const items = {};
     (subject.notes || []).forEach(n => {
@@ -156,15 +157,14 @@ const FS = window.FirebaseSync = {
     });
 
     _writing.add(shareId);
-    await _r.set(_r.ref(_db, `shared/${shareId}`), {
-      meta: {
-        name:      subject.name,
-        type:      subject.type || 'notes',
-        ownerId:   getDeviceId(),
-        updatedAt: Date.now()
-      },
-      items
+    // Write meta and items separately — this preserves any existing users list
+    await _r.set(_r.ref(_db, `shared/${shareId}/meta`), {
+      name:      subject.name,
+      type:      subject.type || 'notes',
+      ownerId:   getDeviceId(),
+      updatedAt: Date.now()
     });
+    await _r.set(_r.ref(_db, `shared/${shareId}/items`), items);
     setTimeout(() => _writing.delete(shareId), 100);
     return shareId;
   },
