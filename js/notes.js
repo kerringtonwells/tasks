@@ -1048,6 +1048,7 @@
           checked:   item.checked,
           checkedBy: item.checkedBy,
           checkedAt: item.checkedAt
+        }).catch(function(){});
       }
     });
 
