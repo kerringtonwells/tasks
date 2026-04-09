@@ -565,12 +565,14 @@
 
   function doShareSubject(subject) {
     var fs = getFS(); toast('Sharing…');
+    // Use subject.id as shareId — deterministic, same URL every time
+    subject.shareId = subject.id;
     fs.pushSubject(subject).then(function(shareId) {
       if (!shareId) { toast('Share failed — check your Firebase connection'); return; }
       subject.shareId = shareId; save(); render();
       showShareModal(subject, shareId);
       attachShareListener(subject);
-    }).catch(function(e){ toast('Share failed: ' + e.message); });
+    }).catch(function(e){ subject.shareId = null; toast('Share failed: ' + e.message); });
   }
 
   function showShareModal(subject, shareId) {
