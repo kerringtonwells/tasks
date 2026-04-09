@@ -184,7 +184,6 @@
 
   function load() {
     var raw = localStorage.getItem(LS_KEY) || localStorage.getItem(LEGACY_KEY);
-    if (raw) { try { data = parseSubjects(raw); } catch(e) { console.error('Load error',e); } }
     lastSavedTs = parseInt(localStorage.getItem(TS_KEY)||'0',10);
     var promises=[], needsSave=false;
     data.subjects.forEach(function(s){ s.notes.forEach(function(n){
@@ -1049,7 +1048,6 @@
           checked:   item.checked,
           checkedBy: item.checkedBy,
           checkedAt: item.checkedAt
-        }).catch(function(e){ console.error('[Firebase] sync error:', e); });
       }
     });
 
