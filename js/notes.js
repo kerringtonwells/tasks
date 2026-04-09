@@ -222,12 +222,43 @@
   function startSync() {
     window.addEventListener('storage', function(e){
       if (e.key===LS_KEY && e.newValue) {
-        try { var inc=parseSubjects(e.newValue); data.subjects=mergeIn(data.subjects,inc.subjects); render(); toast('Synced'); } catch(e){}
+        try {
+          var inc=parseSubjects(e.newValue);
+          data.subjects=mergeIn(data.subjects,inc.subjects);
+          // Unlisten any Firebase listeners whose subject is no longer shared
+          var fs = getFS();
+          Object.keys(FB_LISTEN_ACTIVE).forEach(function(shareId) {
+            var stillShared = data.subjects.some(function(s){ return s.shareId === shareId; });
+            if (!stillShared) {
+              if (fs) fs.unlisten(shareId);
+              delete FB_LISTEN_ACTIVE[shareId];
+            }
+          });
+          render(); toast('Synced');
+        } catch(e){}
       }
     });
     setInterval(function(){
       var ts=parseInt(localStorage.getItem(TS_KEY)||'0',10);
-      if (ts>lastSavedTs) { var r=localStorage.getItem(LS_KEY); if(r){ try{var inc=parseSubjects(r); data.subjects=mergeIn(data.subjects,inc.subjects); render(); lastSavedTs=ts; }catch(e){} } }
+      if (ts>lastSavedTs) {
+        var r=localStorage.getItem(LS_KEY);
+        if(r){
+          try{
+            var inc=parseSubjects(r);
+            data.subjects=mergeIn(data.subjects,inc.subjects);
+            // Same cleanup on poll
+            var fs = getFS();
+            Object.keys(FB_LISTEN_ACTIVE).forEach(function(shareId) {
+              var stillShared = data.subjects.some(function(s){ return s.shareId === shareId; });
+              if (!stillShared) {
+                if (fs) fs.unlisten(shareId);
+                delete FB_LISTEN_ACTIVE[shareId];
+              }
+            });
+            render(); lastSavedTs=ts;
+          }catch(e){}
+        }
+      }
     }, 15000);
   }
 
