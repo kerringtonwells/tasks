@@ -175,10 +175,12 @@
   function parseSubjects(raw) {
     var p = JSON.parse(raw), subjects = Array.isArray(p) ? p : (p.subjects||[]);
     return { subjects: subjects.map(function(s){
-      return { id: s.id||uid(), name: s.name||'Untitled', type: s.type||'notes', notes: (s.notes||[]).map(function(n){
-        if (typeof n==='string') return {id:uid(),content:decodeURIComponent(n),images:[],checked:false,checkedAt:null,createdAt:now(),updatedAt:now()};
-        return {id:n.id||uid(),content:n.content||'',images:Array.isArray(n.images)?n.images:[],checked:!!n.checked,checkedAt:n.checkedAt||null,createdAt:n.createdAt||now(),updatedAt:n.updatedAt||now()};
-      })};
+      return { id: s.id||uid(), name: s.name||'Untitled', type: s.type||'notes',
+        shareId: s.shareId || null,
+        notes: (s.notes||[]).map(function(n){
+          if (typeof n==='string') return {id:uid(),content:decodeURIComponent(n),images:[],checked:false,checkedBy:null,checkedAt:null,createdAt:now(),updatedAt:now()};
+          return {id:n.id||uid(),content:n.content||'',images:Array.isArray(n.images)?n.images:[],checked:!!n.checked,checkedBy:n.checkedBy||null,checkedAt:n.checkedAt||null,createdAt:n.createdAt||now(),updatedAt:n.updatedAt||now()};
+        })};
     })};
   }
 
@@ -396,7 +398,6 @@
     var joinB = btn('Join', function() {
       var raw = inp.value.trim();
       if (!raw) { inp.focus(); return; }
-      // Extract shareId from URL or use as-is
       var shareId = raw;
       try {
         var u = new URL(raw);
@@ -410,7 +411,7 @@
         joinB.textContent = 'Join'; joinB.disabled = false;
         if (!fbData || !fbData.meta) { errEl.textContent = 'No shared content found for that ID.'; errEl.style.display=''; return; }
         ov.remove();
-        console.log('[Identity] openSharedView fbData:', JSON.stringify(fbData).slice(0,300));
+        console.log('[Identity] openJoinModal fbData:', JSON.stringify(fbData).slice(0,300));
         console.log('[Identity] fbData.users:', fbData.users);
         var subject = {
           id: 'shared_' + shareId, name: fbData.meta.name, type: fbData.meta.type || 'notes',
@@ -486,7 +487,6 @@
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
     document.body.appendChild(ov); ta.focus();
 
-    // Wire up copy rules button
     var copyRulesBtn = document.getElementById('copyRulesBtn');
     if (copyRulesBtn) {
       copyRulesBtn.addEventListener('click', function() {
@@ -509,11 +509,14 @@
     btnRow.appendChild(btn('Change Name', function(){
       ov.remove(); openDisplayNameModal(function(n){ toast('Name updated to: ' + n); });
     }, 'notes-btn'));
+    btnRow.appendChild(btn('Join a Shared List', function(){
+      ov.remove(); openJoinModal();
+    }, 'notes-btn'));
     btnRow.appendChild(btn('Disconnect', function(){
       if (!confirm('Disconnect Firebase? Shared subjects will stop syncing.')) return;
       fs.clearConfig(); ov.remove();
       var fbBtn = document.getElementById('firebaseConnectBtn');
-      if (fbBtn) { fbBtn.textContent = '🔥 Connect'; fbBtn.classList.remove('firebase-connected'); }
+      if (fbBtn) { fbBtn.textContent = '🔥 Share'; fbBtn.classList.remove('firebase-connected'); }
       toast('Firebase disconnected');
     }, 'notes-btn notes-btn-danger'));
     btnRow.appendChild(btn('Close', function(){ ov.remove(); }));
@@ -550,7 +553,6 @@
     var hint = el('p','share-hint');
     hint.textContent = 'Anyone with this link can view and edit this ' + (subject.type==='checklist'?'checklist':'note') + ' in real time.';
 
-    // ── Team Members section ───────────────────────────────────────────────────
     var teamTitle = el('p'); teamTitle.style.cssText = 'font-size:12px;font-weight:700;opacity:0.5;letter-spacing:0.5px;margin:14px 0 8px;text-transform:uppercase;';
     teamTitle.textContent = 'Team Members';
     var membersList = el('div'); membersList.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:24px;';
@@ -577,7 +579,6 @@
       });
     }
 
-    // Fetch current users from Firebase
     var currentUsers = {};
     fs.getShared(shareId).then(function(fbData) {
       currentUsers = (fbData && fbData.users) ? fbData.users : {};
@@ -600,7 +601,6 @@
     addInp.addEventListener('keydown', function(e){ if(e.key==='Enter') addMemberB.click(); });
     addRow.appendChild(addInp); addRow.appendChild(addMemberB);
 
-    // ── Bottom action buttons ──────────────────────────────────────────────────
     var btnRow = el('div','editor-btn-row');
     var copyB = btn('📋 Copy Link', function(){
       navigator.clipboard.writeText(url).then(function(){
@@ -630,16 +630,17 @@
   function openSharedView(shareId) {
     var fs = getFS();
     if (!fs || !fs.isReady) { openFirebaseSetupModal(function(){ openSharedView(shareId); }); return; }
-    // Check if already imported
     var already = data.subjects.find(function(s){ return s.shareId === shareId; });
     if (already) {
       expandedSubject = already.id; render();
-      history.replaceState(null,'',window.location.pathname); // clean URL
+      history.replaceState(null,'',window.location.pathname);
       toast('✓ Showing: ' + already.name); return;
     }
     toast('Loading shared content…');
     fs.getShared(shareId).then(function(fbData) {
       if (!fbData || !fbData.meta) { toast('Shared content not found or has been removed.'); return; }
+      console.log('[Identity] openSharedView fbData:', JSON.stringify(fbData).slice(0,300));
+      console.log('[Identity] fbData.users:', fbData.users);
       var subject = {
         id:       'shared_' + shareId,
         name:     fbData.meta.name,
@@ -652,7 +653,7 @@
             createdAt:it.createdAt||Date.now(), updatedAt:it.updatedAt||Date.now() };
         })
       };
-      showImportSharedModal(subject, shareId);
+      showImportSharedModal(subject, shareId, fbData.users);
     });
   }
 
@@ -670,7 +671,6 @@
     info.textContent = 'Someone shared this ' + subject.type + ' with you. Add it to collaborate in real time — your changes sync to everyone instantly.';
     modal.appendChild(title); modal.appendChild(info);
 
-    // ── Identity section (shown when team members exist) ─────────────────────
     var identityErr = null;
     if (hasUsers) {
       var idSection = el('div'); idSection.style.cssText = 'margin-bottom:16px;padding:12px 14px;border-radius:10px;border:1px solid rgba(59,130,246,0.3);background:rgba(59,130,246,0.07);';
@@ -713,13 +713,10 @@
       modal.appendChild(idSection);
     }
 
-    // ── Action buttons ────────────────────────────────────────────────────────
     var btnRow = el('div','editor-btn-row');
     var addB = btn('Join', function(){
-      // Enforce identity selection when team members exist
       if (hasUsers) {
-        var custom = modal.querySelector('.import-identity-btn + p ~ input') ||
-                     modal.querySelector('input[placeholder="Your name…"]');
+        var custom = modal.querySelector('input[placeholder="Your name…"]');
         if (custom && custom.value.trim()) selectedIdentity = custom.value.trim();
         console.log('[Identity] Join clicked — selectedIdentity:', selectedIdentity, '| hasUsers:', hasUsers);
         if (!selectedIdentity) {
@@ -749,16 +746,13 @@
 
   function attachShareListener(subject) {
     var fs = getFS();
-    if (!fs || !fs.isReady || !subject.shareId) {
-      return;
-    }
-    if (FB_LISTEN_ACTIVE[subject.shareId]) {
-      return;
-    }
+    if (!fs || !fs.isReady || !subject.shareId) return;
+    if (FB_LISTEN_ACTIVE[subject.shareId]) return;
     FB_LISTEN_ACTIVE[subject.shareId] = true;
     fs.listen(subject.shareId, function(fbData) {
       if (!fbData || !fbData.items) return;
       var local = data.subjects.find(function(s){ return s.shareId === subject.shareId; });
+      if (!local) return;
       var localMap = {};
       local.notes.forEach(function(n){ localMap[n.id] = n; });
       local.notes = Object.entries(fbData.items).map(function(pair){
@@ -931,8 +925,8 @@
       note.images.forEach(function(src){
         var img=el('img','note-row-img');
         img.style.minWidth='60px'; img.style.minHeight='40px';
-        img.loading  = 'lazy';    // don't load until scrolled into view
-        img.decoding = 'async';   // decode off main thread — prevents long tasks
+        img.loading  = 'lazy';
+        img.decoding = 'async';
         if (src.indexOf('idb:')===0) {
           idbGet(src.slice(4)).then(function(d){ if(d){ img.src=d; img.addEventListener('click',function(e){ e.stopPropagation(); openLightbox(d); }); } });
         } else { img.src=src; img.addEventListener('click',function(e){ e.stopPropagation(); openLightbox(src); }); }
@@ -943,7 +937,6 @@
     var txt=el('div','note-row-text'); txt.innerHTML=esc(note.content).replace(/\n/g,'<br>');
     content.appendChild(txt);
 
-    // Last modified timestamp
     var modEl = el('div', 'note-last-modified');
     var modDate = note.updatedAt ? new Date(note.updatedAt).toLocaleString() : '';
     modEl.textContent = modDate ? 'Modified: ' + modDate : '';
@@ -1043,13 +1036,12 @@
       labelEl.classList.toggle('checklist-label-checked', item.checked);
       stampEl.textContent = fmtStamp(item);
       save();
-      // Sync to Firebase if this subject is shared
       if (fs && fs.isReady && subject.shareId) {
         fs.updateItem(subject.shareId, item.id, {
           checked:   item.checked,
           checkedBy: item.checkedBy,
           checkedAt: item.checkedAt
-        }).catch(function(e){ console.error('[Firebase] sync error:', e); });
+        }).catch(function(){});
       }
     });
 
@@ -1143,7 +1135,7 @@
     ta.addEventListener('keydown', function(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveB.click(); } });
   }
 
-  // ─── New Subject Modal (notes or checklist) ───────────────────────────────────
+  // ─── New Subject Modal ────────────────────────────────────────────────────────
   function openNewSubjectModal() {
     var ov = el('div', 'note-editor-overlay'), modal = el('div', 'note-editor-modal');
     var title = el('h3', 'editor-title'); title.textContent = 'New subject';
@@ -1213,12 +1205,10 @@
     }
     if (totalItems === 0) count.classList.add('subject-count-empty');
 
-    // Type badge
     var typeBadge = el('span', 'subject-type-badge subject-type-' + (isChecklist ? 'checklist' : 'notes'));
     typeBadge.textContent = isChecklist ? '✅' : '📝';
     typeBadge.title = isChecklist ? 'Checklist' : 'Notes';
 
-    // Live badge (shown when subject is shared)
     var liveBadge = subject.shareId ? el('span', 'subject-live-badge') : null;
     if (liveBadge) { liveBadge.textContent = '● LIVE'; liveBadge.title = 'Shared — syncing in real time'; }
 
@@ -1232,7 +1222,6 @@
       if (isChecklist) openChecklistItemEditor(subject.id, null);
       else openEditor(subject.id);
     }));
-    // Share button — icon only to save space
     var shareB = btn('🔗', function(e){
       e.stopPropagation();
       if (subject.shareId) showShareModal(subject, subject.shareId);
@@ -1258,7 +1247,6 @@
     header.addEventListener('click',function(e){
       if (e.target.closest('button')||e.target.closest('.subject-grip')) return;
       if (expandedSubject === subject.id) {
-        // Detach listener FIRST to stop Firebase triggering renders during animation
         if (subject.shareId) {
           var fs = getFS(); if (fs) fs.unlisten(subject.shareId);
           delete FB_LISTEN_ACTIVE[subject.shareId];
@@ -1272,7 +1260,6 @@
       } else {
         expandedSubject = subject.id;
         render();
-        // Attach Firebase listener when card expands
         if (subject.shareId) attachShareListener(subject);
       }
     });
@@ -1281,7 +1268,6 @@
     notesList.style.display = isOpen ? 'flex' : 'none';
     if (isOpen) notesList.classList.add('is-open');
     if (isChecklist) {
-      // Sort: unchecked first, checked last
       var sorted = subject.notes.slice().sort(function(a,b){
         if (a.checked === b.checked) return 0;
         return a.checked ? 1 : -1;
@@ -1354,11 +1340,8 @@
   function showNotes() {
     var mc = document.getElementById('mainContent');
     if (mc) mc.style.display = 'none';
-
-    // Hide title + memory game link while notes are open
     var mainContainer = document.getElementById('mainContainer');
     if (mainContainer) mainContainer.classList.add('notes-active');
-
     var ns = document.querySelector('.notes-section');
     if (ns) {
       ns.style.opacity = '0';
@@ -1382,11 +1365,8 @@
         ns.style.display = 'none';
         ns.style.opacity = '';
         ns.style.transition = '';
-
-        // Restore title + memory game link
         var mainContainer = document.getElementById('mainContainer');
         if (mainContainer) mainContainer.classList.remove('notes-active');
-
         var mc = document.getElementById('mainContent');
         if (mc) mc.style.display = 'block';
         var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
@@ -1395,7 +1375,6 @@
     } else {
       var mainContainer = document.getElementById('mainContainer');
       if (mainContainer) mainContainer.classList.remove('notes-active');
-
       var mc = document.getElementById('mainContent');
       if (mc) mc.style.display = 'block';
       var show=document.getElementById('showNotes'), hide=document.getElementById('hideNotes');
@@ -1427,7 +1406,6 @@
       var bar=document.createElement('div'); bar.className='notes-top-bar';
       [document.getElementById('searchBar'),document.getElementById('addSubjectBtn'),document.getElementById('exportButtonContainer'),document.getElementById('hideNotes')]
         .forEach(function(e){ if(e) bar.appendChild(e); });
-      // Firebase connect button
       var fbBtn = document.createElement('button');
       fbBtn.id = 'firebaseConnectBtn'; fbBtn.className = 'notes-btn firebase-connect-btn';
       var fs = getFS();
@@ -1452,11 +1430,9 @@
     if(show){ show.style.display='inline-block'; show.addEventListener('click',showNotes); }
     if(hide){ hide.style.display='none';         hide.addEventListener('click',hideNotes); }
 
-    // Firebase event listeners
     document.addEventListener('firebase-ready', function(){
       var b = document.getElementById('firebaseConnectBtn');
       if (b) { b.textContent = '🔥 Connected'; b.classList.add('firebase-connected'); }
-      // Clear BOTH tracking objects then re-attach fresh listeners for all shared subjects
       var fs = getFS();
       if (fs) fs.clearListeners();
       FB_LISTEN_ACTIVE = {};
@@ -1468,8 +1444,6 @@
       var shareId = e.detail.shareId;
       var fs = getFS();
       if (!fs || !fs.isReady) {
-        // Shouldn't normally happen — firebase-sync.js auto-connects for share links
-        // But fall back gracefully just in case
         setTimeout(function(){ openSharedView(shareId); }, 1000);
       } else {
         openSharedView(shareId);
