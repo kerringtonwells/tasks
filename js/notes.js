@@ -717,46 +717,60 @@
 
   function showImportSharedModal(subject, shareId, users) {
     var fs = getFS();
-    var isOwner = fs && fs.isConfigured();
-    // Recipients never see the users list — they just type their name
+    var approvedNames = Object.keys(users || {}).map(function(n){ return n.toLowerCase(); });
+    var hasApprovedList = approvedNames.length > 0;
     var selectedIdentity = localStorage.getItem('kwells_who_' + shareId) || null;
-    console.log('[Identity] showImportSharedModal — shareId:', shareId, '| isOwner:', isOwner, '| hasUsers:', users && Object.keys(users||{}).length > 0, '| storedIdentity:', selectedIdentity);
+    console.log('[Identity] showImportSharedModal — shareId:', shareId, '| approvedNames:', approvedNames, '| storedIdentity:', selectedIdentity);
 
     var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
     modal.style.maxWidth = '420px';
     var title = el('h3','editor-title'); title.textContent = '📥 Shared: ' + subject.name;
 
     var info = el('p'); info.style.cssText = 'font-size:13px;opacity:0.6;margin:0 0 16px;line-height:1.5;';
-    info.textContent = 'Someone shared this ' + subject.type + ' with you. Add it to collaborate in real time — your changes sync to everyone instantly.';
+    info.textContent = 'Someone shared this ' + subject.type + ' with you. Enter your name to collaborate in real time.';
     modal.appendChild(title); modal.appendChild(info);
 
-    // Name section — simple input, no user list exposed to recipients
     var nameSection = el('div'); nameSection.style.cssText = 'margin-bottom:16px;padding:12px 14px;border-radius:10px;border:1px solid rgba(59,130,246,0.3);background:rgba(59,130,246,0.07);';
     var nameLabel = el('p'); nameLabel.style.cssText = 'font-size:11px;font-weight:700;opacity:0.5;letter-spacing:0.5px;text-transform:uppercase;margin:0 0 10px;';
     nameLabel.textContent = '👋 Your name';
     var nameInp = el('input'); nameInp.type='text'; nameInp.placeholder='Enter your name…';
     if (selectedIdentity) nameInp.value = selectedIdentity;
     nameInp.style.cssText = 'width:100%;padding:9px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:inherit;font-family:inherit;font-size:14px;outline:none;box-sizing:border-box;';
-    nameInp.addEventListener('input', function(){ selectedIdentity = nameInp.value.trim(); });
-    var nameErr = el('div'); nameErr.style.cssText = 'color:#f87171;font-size:12px;margin-top:6px;display:none;';
-    nameErr.textContent = 'Please enter your name before joining.';
+    var nameErr = el('div'); nameErr.style.cssText = 'color:#f87171;font-size:12px;margin-top:8px;display:none;padding:8px 10px;background:rgba(239,68,68,0.1);border-radius:6px;';
     nameSection.appendChild(nameLabel); nameSection.appendChild(nameInp); nameSection.appendChild(nameErr);
     modal.appendChild(nameSection);
 
     var btnRow = el('div','editor-btn-row');
     var addB = btn('Join', function(){
       var name = nameInp.value.trim();
-      console.log('[Identity] Join clicked — name:', name);
-      if (!name) { nameErr.style.display = ''; nameInp.focus(); return; }
-      setIdentityForShare(shareId, name);
+      console.log('[Identity] Join clicked — name:', name, '| hasApprovedList:', hasApprovedList);
+      if (!name) {
+        nameErr.textContent = 'Please enter your name.';
+        nameErr.style.display = ''; nameInp.focus(); return;
+      }
+      // If an approved list exists, name must match (case-insensitive)
+      if (hasApprovedList && approvedNames.indexOf(name.toLowerCase()) === -1) {
+        nameErr.textContent = 'That name isn\'t on the access list. Contact the owner to be added.';
+        nameErr.style.display = '';
+        console.warn('[Identity] Rejected — name not in approved list:', name);
+        return;
+      }
+      // Find the exact-cased name from the list to use for display
+      var approvedName = name;
+      if (hasApprovedList) {
+        var idx = approvedNames.indexOf(name.toLowerCase());
+        approvedName = Object.keys(users)[idx] || name;
+      }
+      setIdentityForShare(shareId, approvedName);
       data.subjects.unshift(subject);
       expandedSubject = subject.id;
       save(); render(); ov.remove();
       history.replaceState(null,'',window.location.pathname);
-      toast('✓ Joined as ' + name + ': ' + subject.name);
+      toast('✓ Joined as ' + approvedName + ': ' + subject.name);
       attachShareListener(subject);
     }, 'notes-btn notes-btn-primary');
 
+    nameInp.addEventListener('input', function(){ nameErr.style.display = 'none'; });
     btnRow.appendChild(addB);
     btnRow.appendChild(btn('Dismiss', function(){
       ov.remove(); history.replaceState(null,'',window.location.pathname);
