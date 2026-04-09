@@ -644,14 +644,21 @@
     urlBox.addEventListener('click', function(){ copyB.click(); });
     btnRow.appendChild(copyB);
     btnRow.appendChild(btn('Stop Sharing', function(){
-      if (!confirm('Remove from cloud and stop sharing "' + subject.name + '"?')) return;
+      if (!confirm('Stop sharing "' + subject.name + '"? Your team members will be preserved for next time.')) return;
+      fs.unlisten(shareId);
+      delete FB_LISTEN_ACTIVE[shareId];
+      subject.shareId = null; save(); render(); ov.remove();
+      toast('Sharing stopped — team members preserved');
+    }, 'notes-btn notes-btn-danger'));
+    btnRow.appendChild(btn('Delete from Cloud', function(){
+      if (!confirm('Permanently delete "' + subject.name + '" from the cloud? This removes all team members and cannot be undone.')) return;
       fs.unlisten(shareId);
       delete FB_LISTEN_ACTIVE[shareId];
       fs.deleteShared(shareId).then(function(){
         subject.shareId = null; save(); render(); ov.remove();
-        toast('Sharing stopped');
+        toast('Deleted from cloud');
       });
-    }, 'notes-btn notes-btn-danger'));
+    }, 'notes-btn'));
     btnRow.appendChild(btn('Close', function(){ ov.remove(); }));
 
     modal.appendChild(title); modal.appendChild(urlBox); modal.appendChild(hint);
