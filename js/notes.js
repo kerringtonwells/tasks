@@ -612,9 +612,11 @@
     btnRow.appendChild(copyB);
     btnRow.appendChild(btn('Stop Sharing', function(){
       if (!confirm('Remove from cloud and stop sharing "' + subject.name + '"?')) return;
+      fs.unlisten(shareId);
+      delete FB_LISTEN_ACTIVE[shareId];
       fs.deleteShared(shareId).then(function(){
         subject.shareId = null; save(); render(); ov.remove();
-        delete FB_LISTEN_ACTIVE[shareId]; toast('Sharing stopped');
+        toast('Sharing stopped');
       });
     }, 'notes-btn notes-btn-danger'));
     btnRow.appendChild(btn('Close', function(){ ov.remove(); }));
@@ -748,11 +750,12 @@
     var fs = getFS();
     if (!fs || !fs.isReady || !subject.shareId) return;
     if (FB_LISTEN_ACTIVE[subject.shareId]) return;
-    FB_LISTEN_ACTIVE[subject.shareId] = true;
-    fs.listen(subject.shareId, function(fbData) {
+    var capturedShareId = subject.shareId; // capture now — subject.shareId may change later
+    FB_LISTEN_ACTIVE[capturedShareId] = true;
+    fs.listen(capturedShareId, function(fbData) {
       if (!fbData || !fbData.items) return;
-      var local = data.subjects.find(function(s){ return s.shareId === subject.shareId; });
-      if (!local) return;
+      var local = data.subjects.find(function(s){ return s.shareId === capturedShareId; });
+      if (!local) return; // subject was disconnected — stop processing
       var localMap = {};
       local.notes.forEach(function(n){ localMap[n.id] = n; });
       local.notes = Object.entries(fbData.items).map(function(pair){
