@@ -577,62 +577,17 @@
 
   function showShareModal(subject, shareId) {
     var fs = getFS();
+    var isOwner = fs && fs.isConfigured();
     var url = fs.getShareUrl(shareId);
     var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
     modal.style.maxWidth = '500px';
     var title = el('h3','editor-title');
-    title.textContent = '🔗 Sharing: "' + subject.name + '"';
+    title.textContent = '🔗 ' + (isOwner ? 'Sharing: "' + subject.name + '"' : 'Connected: "' + subject.name + '"');
     var urlBox = el('div','share-url-box'); urlBox.textContent = url; urlBox.title = 'Click to copy';
     var hint = el('p','share-hint');
-    hint.textContent = 'Anyone with this link can view and edit this ' + (subject.type==='checklist'?'checklist':'note') + ' in real time.';
-
-    var teamTitle = el('p'); teamTitle.style.cssText = 'font-size:12px;font-weight:700;opacity:0.5;letter-spacing:0.5px;margin:14px 0 8px;text-transform:uppercase;';
-    teamTitle.textContent = 'Team Members';
-    var membersList = el('div'); membersList.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:24px;';
-
-    function refreshMembers(usersObj) {
-      membersList.innerHTML = '';
-      var names = Object.keys(usersObj || {}).sort();
-      if (!names.length) {
-        var none = el('span'); none.textContent = 'No members yet — add names below';
-        none.style.cssText = 'font-size:12px;opacity:0.4;font-style:italic;';
-        membersList.appendChild(none); return;
-      }
-      names.forEach(function(name) {
-        var chip = el('div','member-chip');
-        var lbl = el('span'); lbl.textContent = name;
-        var rm = el('button'); rm.textContent = '×'; rm.title = 'Remove ' + name;
-        rm.style.cssText = 'border:none;background:none;cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 4px;color:inherit;opacity:0.5;';
-        rm.addEventListener('click', function() {
-          fs.removeUser(shareId, name).then(function() {
-            delete usersObj[name]; refreshMembers(usersObj);
-          }).catch(function(e){ toast('Error removing: ' + e.message); });
-        });
-        chip.appendChild(lbl); chip.appendChild(rm); membersList.appendChild(chip);
-      });
-    }
-
-    var currentUsers = {};
-    fs.getShared(shareId).then(function(fbData) {
-      currentUsers = (fbData && fbData.users) ? fbData.users : {};
-      refreshMembers(currentUsers);
-    });
-
-    var addRow = el('div'); addRow.style.cssText = 'display:flex;gap:6px;margin-bottom:14px;';
-    var addInp = el('input'); addInp.type='text'; addInp.placeholder='Name (e.g. Jeff, Kevin)…';
-    addInp.style.cssText = 'flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:inherit;font-family:inherit;font-size:13px;outline:none;';
-    var addMemberB = btn('Add', function() {
-      var name = addInp.value.trim(); if (!name) { addInp.focus(); return; }
-      addMemberB.textContent = '…'; addMemberB.disabled = true;
-      fs.addUser(shareId, name).then(function() {
-        currentUsers[name] = { addedAt: Date.now() };
-        refreshMembers(currentUsers);
-        addInp.value = ''; addMemberB.textContent = 'Add'; addMemberB.disabled = false;
-        addInp.focus();
-      }).catch(function(e){ addMemberB.textContent='Add'; addMemberB.disabled=false; toast('Error: '+e.message); });
-    }, 'notes-btn notes-btn-primary');
-    addInp.addEventListener('keydown', function(e){ if(e.key==='Enter') addMemberB.click(); });
-    addRow.appendChild(addInp); addRow.appendChild(addMemberB);
+    hint.textContent = isOwner
+      ? 'Anyone with this link can view and edit this ' + (subject.type==='checklist'?'checklist':'note') + ' in real time.'
+      : 'You are connected to this ' + (subject.type==='checklist'?'checklist':'note') + ' in real time.';
 
     var btnRow = el('div','editor-btn-row');
     var copyB = btn('📋 Copy Link', function(){
@@ -643,27 +598,88 @@
     }, 'notes-btn notes-btn-primary');
     urlBox.addEventListener('click', function(){ copyB.click(); });
     btnRow.appendChild(copyB);
-    btnRow.appendChild(btn('Stop Sharing', function(){
-      if (!confirm('Stop sharing "' + subject.name + '"? Your team members will be preserved for next time.')) return;
-      fs.unlisten(shareId);
-      delete FB_LISTEN_ACTIVE[shareId];
-      subject.shareId = null; save(); render(); ov.remove();
-      toast('Sharing stopped — team members preserved');
-    }, 'notes-btn notes-btn-danger'));
-    btnRow.appendChild(btn('Delete from Cloud', function(){
-      if (!confirm('Permanently delete "' + subject.name + '" from the cloud? This removes all team members and cannot be undone.')) return;
-      fs.unlisten(shareId);
-      delete FB_LISTEN_ACTIVE[shareId];
-      fs.deleteShared(shareId).then(function(){
-        subject.shareId = null; save(); render(); ov.remove();
-        toast('Deleted from cloud');
-      });
-    }, 'notes-btn'));
-    btnRow.appendChild(btn('Close', function(){ ov.remove(); }));
 
-    modal.appendChild(title); modal.appendChild(urlBox); modal.appendChild(hint);
-    modal.appendChild(teamTitle); modal.appendChild(membersList); modal.appendChild(addRow);
-    modal.appendChild(btnRow);
+    if (isOwner) {
+      // ── Owner: full team management ──────────────────────────────────────────
+      var teamTitle = el('p'); teamTitle.style.cssText = 'font-size:12px;font-weight:700;opacity:0.5;letter-spacing:0.5px;margin:14px 0 8px;text-transform:uppercase;';
+      teamTitle.textContent = 'Team Members';
+      var membersList = el('div'); membersList.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;min-height:24px;';
+
+      function refreshMembers(usersObj) {
+        membersList.innerHTML = '';
+        var names = Object.keys(usersObj || {}).sort();
+        if (!names.length) {
+          var none = el('span'); none.textContent = 'No members yet — add names below';
+          none.style.cssText = 'font-size:12px;opacity:0.4;font-style:italic;';
+          membersList.appendChild(none); return;
+        }
+        names.forEach(function(name) {
+          var chip = el('div','member-chip');
+          var lbl = el('span'); lbl.textContent = name;
+          var rm = el('button'); rm.textContent = '×'; rm.title = 'Remove ' + name;
+          rm.style.cssText = 'border:none;background:none;cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 4px;color:inherit;opacity:0.5;';
+          rm.addEventListener('click', function() {
+            fs.removeUser(shareId, name).then(function() {
+              delete usersObj[name]; refreshMembers(usersObj);
+            }).catch(function(e){ toast('Error removing: ' + e.message); });
+          });
+          chip.appendChild(lbl); chip.appendChild(rm); membersList.appendChild(chip);
+        });
+      }
+
+      var currentUsers = {};
+      fs.getShared(shareId).then(function(fbData) {
+        currentUsers = (fbData && fbData.users) ? fbData.users : {};
+        refreshMembers(currentUsers);
+      });
+
+      var addRow = el('div'); addRow.style.cssText = 'display:flex;gap:6px;margin-bottom:14px;';
+      var addInp = el('input'); addInp.type='text'; addInp.placeholder='Name (e.g. Jeff, Kevin)…';
+      addInp.style.cssText = 'flex:1;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:inherit;font-family:inherit;font-size:13px;outline:none;';
+      var addMemberB = btn('Add', function() {
+        var name = addInp.value.trim(); if (!name) { addInp.focus(); return; }
+        addMemberB.textContent = '…'; addMemberB.disabled = true;
+        fs.addUser(shareId, name).then(function() {
+          currentUsers[name] = { addedAt: Date.now() };
+          refreshMembers(currentUsers);
+          addInp.value = ''; addMemberB.textContent = 'Add'; addMemberB.disabled = false;
+          addInp.focus();
+        }).catch(function(e){ addMemberB.textContent='Add'; addMemberB.disabled=false; toast('Error: '+e.message); });
+      }, 'notes-btn notes-btn-primary');
+      addInp.addEventListener('keydown', function(e){ if(e.key==='Enter') addMemberB.click(); });
+      addRow.appendChild(addInp); addRow.appendChild(addMemberB);
+
+      btnRow.appendChild(btn('Stop Sharing', function(){
+        if (!confirm('Stop sharing "' + subject.name + '"? Your team members will be preserved for next time.')) return;
+        fs.unlisten(shareId);
+        delete FB_LISTEN_ACTIVE[shareId];
+        subject.shareId = null; save(); render(); ov.remove();
+        toast('Sharing stopped — team members preserved');
+      }, 'notes-btn notes-btn-danger'));
+
+      modal.appendChild(title); modal.appendChild(urlBox); modal.appendChild(hint);
+      modal.appendChild(teamTitle); modal.appendChild(membersList); modal.appendChild(addRow);
+      modal.appendChild(btnRow);
+    } else {
+      // ── Recipient: simple disconnect only ────────────────────────────────────
+      var myName = getIdentityForShare(shareId);
+      var nameInfo = el('p'); nameInfo.style.cssText = 'font-size:13px;opacity:0.6;margin:8px 0 16px;';
+      nameInfo.textContent = 'Connected as: ' + myName;
+
+      btnRow.appendChild(btn('Disconnect', function(){
+        if (!confirm('Disconnect from "' + subject.name + '"? You can rejoin with the same link.')) return;
+        var fsInst = getFS(); if (fsInst) fsInst.unlisten(shareId);
+        delete FB_LISTEN_ACTIVE[shareId];
+        data.subjects = data.subjects.filter(function(s){ return s.id !== subject.id; });
+        save(); render(); ov.remove();
+        toast('Disconnected from ' + subject.name);
+      }, 'notes-btn notes-btn-danger'));
+
+      modal.appendChild(title); modal.appendChild(urlBox); modal.appendChild(hint);
+      modal.appendChild(nameInfo); modal.appendChild(btnRow);
+    }
+
+    btnRow.appendChild(btn('Close', function(){ ov.remove(); }));
     ov.appendChild(modal);
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
     document.body.appendChild(ov);
@@ -700,79 +716,44 @@
   }
 
   function showImportSharedModal(subject, shareId, users) {
-    var userNames = Object.keys(users || {}).sort();
-    var hasUsers  = userNames.length > 0;
+    var fs = getFS();
+    var isOwner = fs && fs.isConfigured();
+    // Recipients never see the users list — they just type their name
     var selectedIdentity = localStorage.getItem('kwells_who_' + shareId) || null;
-    console.log('[Identity] showImportSharedModal — shareId:', shareId, '| users:', users, '| userNames:', userNames, '| hasUsers:', hasUsers, '| storedIdentity:', selectedIdentity);
+    console.log('[Identity] showImportSharedModal — shareId:', shareId, '| isOwner:', isOwner, '| hasUsers:', users && Object.keys(users||{}).length > 0, '| storedIdentity:', selectedIdentity);
 
     var ov = el('div','note-editor-overlay'), modal = el('div','note-editor-modal');
-    modal.style.maxWidth = '460px';
+    modal.style.maxWidth = '420px';
     var title = el('h3','editor-title'); title.textContent = '📥 Shared: ' + subject.name;
 
     var info = el('p'); info.style.cssText = 'font-size:13px;opacity:0.6;margin:0 0 16px;line-height:1.5;';
     info.textContent = 'Someone shared this ' + subject.type + ' with you. Add it to collaborate in real time — your changes sync to everyone instantly.';
     modal.appendChild(title); modal.appendChild(info);
 
-    var identityErr = null;
-    if (hasUsers) {
-      var idSection = el('div'); idSection.style.cssText = 'margin-bottom:16px;padding:12px 14px;border-radius:10px;border:1px solid rgba(59,130,246,0.3);background:rgba(59,130,246,0.07);';
-      var idLabel = el('p'); idLabel.style.cssText = 'font-size:11px;font-weight:700;opacity:0.5;letter-spacing:0.5px;text-transform:uppercase;margin:0 0 10px;';
-      idLabel.textContent = '👋 Who are you?';
-
-      var idGrid = el('div'); idGrid.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;';
-      userNames.forEach(function(name) {
-        var b = el('button','import-identity-btn');
-        b.textContent = name;
-        if (selectedIdentity === name) b.classList.add('import-identity-selected');
-        b.addEventListener('click', function() {
-          idGrid.querySelectorAll('.import-identity-btn').forEach(function(x){ x.classList.remove('import-identity-selected'); });
-          b.classList.add('import-identity-selected');
-          selectedIdentity = name;
-          customInp.value = '';
-          identityErr && (identityErr.style.display = 'none');
-        });
-        idGrid.appendChild(b);
-      });
-
-      var orLine = el('p'); orLine.style.cssText = 'font-size:11px;opacity:0.35;margin:0 0 6px;text-align:center;';
-      orLine.textContent = '— or type a name —';
-
-      var customInp = el('input'); customInp.type='text'; customInp.placeholder='Your name…';
-      customInp.style.cssText = 'width:100%;padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:inherit;font-family:inherit;font-size:13px;outline:none;box-sizing:border-box;';
-      customInp.addEventListener('input', function() {
-        if (customInp.value.trim()) {
-          idGrid.querySelectorAll('.import-identity-btn').forEach(function(x){ x.classList.remove('import-identity-selected'); });
-          selectedIdentity = customInp.value.trim();
-        }
-      });
-
-      identityErr = el('div'); identityErr.style.cssText = 'color:#f87171;font-size:12px;margin-top:6px;display:none;';
-      identityErr.textContent = 'Please pick or enter your name before joining.';
-
-      idSection.appendChild(idLabel); idSection.appendChild(idGrid);
-      idSection.appendChild(orLine); idSection.appendChild(customInp);
-      idSection.appendChild(identityErr);
-      modal.appendChild(idSection);
-    }
+    // Name section — simple input, no user list exposed to recipients
+    var nameSection = el('div'); nameSection.style.cssText = 'margin-bottom:16px;padding:12px 14px;border-radius:10px;border:1px solid rgba(59,130,246,0.3);background:rgba(59,130,246,0.07);';
+    var nameLabel = el('p'); nameLabel.style.cssText = 'font-size:11px;font-weight:700;opacity:0.5;letter-spacing:0.5px;text-transform:uppercase;margin:0 0 10px;';
+    nameLabel.textContent = '👋 Your name';
+    var nameInp = el('input'); nameInp.type='text'; nameInp.placeholder='Enter your name…';
+    if (selectedIdentity) nameInp.value = selectedIdentity;
+    nameInp.style.cssText = 'width:100%;padding:9px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.18);background:rgba(255,255,255,0.08);color:inherit;font-family:inherit;font-size:14px;outline:none;box-sizing:border-box;';
+    nameInp.addEventListener('input', function(){ selectedIdentity = nameInp.value.trim(); });
+    var nameErr = el('div'); nameErr.style.cssText = 'color:#f87171;font-size:12px;margin-top:6px;display:none;';
+    nameErr.textContent = 'Please enter your name before joining.';
+    nameSection.appendChild(nameLabel); nameSection.appendChild(nameInp); nameSection.appendChild(nameErr);
+    modal.appendChild(nameSection);
 
     var btnRow = el('div','editor-btn-row');
     var addB = btn('Join', function(){
-      if (hasUsers) {
-        var custom = modal.querySelector('input[placeholder="Your name…"]');
-        if (custom && custom.value.trim()) selectedIdentity = custom.value.trim();
-        console.log('[Identity] Join clicked — selectedIdentity:', selectedIdentity, '| hasUsers:', hasUsers);
-        if (!selectedIdentity) {
-          console.warn('[Identity] No identity selected — blocking join');
-          if (identityErr) identityErr.style.display = '';
-          return;
-        }
-        setIdentityForShare(shareId, selectedIdentity);
-      }
+      var name = nameInp.value.trim();
+      console.log('[Identity] Join clicked — name:', name);
+      if (!name) { nameErr.style.display = ''; nameInp.focus(); return; }
+      setIdentityForShare(shareId, name);
       data.subjects.unshift(subject);
       expandedSubject = subject.id;
       save(); render(); ov.remove();
       history.replaceState(null,'',window.location.pathname);
-      toast('✓ Joined as ' + (selectedIdentity || 'collaborator') + ': ' + subject.name);
+      toast('✓ Joined as ' + name + ': ' + subject.name);
       attachShareListener(subject);
     }, 'notes-btn notes-btn-primary');
 
@@ -784,6 +765,8 @@
     ov.appendChild(modal);
     ov.addEventListener('click', function(e){ if(e.target===ov) ov.remove(); });
     document.body.appendChild(ov);
+    nameInp.focus();
+    nameInp.addEventListener('keydown', function(e){ if(e.key==='Enter') addB.click(); });
   }
 
   function attachShareListener(subject) {
