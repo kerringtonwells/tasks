@@ -703,7 +703,7 @@
       if(from&&to&&idx!==-1){ var note=from.notes.splice(idx,1)[0]; to.notes.push(note); save(); render(); toast('Moved to "'+to.name+'"'); }
     });
     grip.addEventListener('mousedown',function(){ card.draggable=true; });
-    card.addEventListener('dragstart',function(e){ if(!card.draggable)return; dragSubjectId=subject.id; dragSubjectFromFolder=subject.folderId||null; dragNotePayload=null; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain','subject:'+subject.id); setTimeout(function(){ card.classList.add('subject-dragging'); var ns=document.querySelector('.notes-section'); if(ns&&subject.folderId) ns.classList.add('dragging-from-folder'); },0); });
+    card.addEventListener('dragstart',function(e){ if(!card.draggable)return; dragSubjectId=subject.id; dragSubjectFromFolder=subject.folderId||null; dragNotePayload=null; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain','subject:'+subject.id); var ns=document.querySelector('.notes-section'); if(ns&&subject.folderId) ns.classList.add('dragging-from-folder'); setTimeout(function(){ card.classList.add('subject-dragging'); },0); });
     card.addEventListener('dragend',function(){ card.classList.remove('subject-dragging'); card.draggable=false; dragSubjectId=null; dragSubjectFromFolder=null; var ns=document.querySelector('.notes-section'); if(ns) ns.classList.remove('dragging-from-folder'); });
     card.addEventListener('dragover',function(e){ if(!dragSubjectId||dragSubjectId===subject.id)return; e.preventDefault(); card.classList.add('subject-drag-over'); });
     card.addEventListener('dragleave',function(){ card.classList.remove('subject-drag-over'); });
