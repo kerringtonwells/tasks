@@ -703,7 +703,7 @@
       if(from&&to&&idx!==-1){ var note=from.notes.splice(idx,1)[0]; to.notes.push(note); save(); render(); toast('Moved to "'+to.name+'"'); }
     });
     grip.addEventListener('mousedown',function(){ card.draggable=true; });
-    card.addEventListener('dragstart',function(e){ if(!card.draggable)return; dragSubjectId=subject.id; dragSubjectFromFolder=subject.folderId||null; dragNotePayload=null; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain','subject:'+subject.id); var ns=document.querySelector('.notes-section'); if(ns&&subject.folderId) ns.classList.add('dragging-from-folder'); setTimeout(function(){ card.classList.add('subject-dragging'); },0); });
+    card.addEventListener('dragstart',function(e){ if(!card.draggable)return; dragSubjectId=subject.id; dragSubjectFromFolder=subject.folderId||null; dragNotePayload=null; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain','subject:'+subject.id); setTimeout(function(){ card.classList.add('subject-dragging'); if(subject.folderId){ var ns=document.querySelector('.notes-section'); if(ns) ns.classList.add('dragging-from-folder'); } },0); });
     card.addEventListener('dragend',function(){ card.classList.remove('subject-dragging'); card.draggable=false; dragSubjectId=null; dragSubjectFromFolder=null; var ns=document.querySelector('.notes-section'); if(ns) ns.classList.remove('dragging-from-folder'); });
     card.addEventListener('dragover',function(e){ if(!dragSubjectId||dragSubjectId===subject.id)return; e.preventDefault(); card.classList.add('subject-drag-over'); });
     card.addEventListener('dragleave',function(){ card.classList.remove('subject-drag-over'); });
@@ -838,30 +838,6 @@
     }) : data.folders;
     filteredFolders.forEach(function(f){ list.appendChild(buildFolderCard(f)); });
     // Then ungrouped subjects
-    // Eject zone — fixed strip at bottom, shown only when dragging from a folder
-    var ejectZone = document.getElementById('folder-eject-zone');
-    if (!ejectZone) {
-      ejectZone = el('div', 'folder-eject-zone'); ejectZone.id = 'folder-eject-zone';
-      ejectZone.textContent = '📤 Drop here to move out of folder';
-      ejectZone.addEventListener('dragover', function(e){
-        if (!dragSubjectId || !dragSubjectFromFolder) return;
-        e.preventDefault(); ejectZone.classList.add('folder-eject-active');
-      });
-      ejectZone.addEventListener('dragleave', function(){ ejectZone.classList.remove('folder-eject-active'); });
-      ejectZone.addEventListener('drop', function(e){
-        ejectZone.classList.remove('folder-eject-active');
-        if (!dragSubjectId || !dragSubjectFromFolder) return;
-        e.preventDefault();
-        var subject = data.subjects.find(function(s){ return s.id === dragSubjectId; });
-        if (!subject) return;
-        data.folders.forEach(function(f){ f.subjectIds = f.subjectIds.filter(function(id){ return id !== subject.id; }); });
-        subject.folderId = null; dragSubjectFromFolder = null;
-        save(); render(); toast('Moved out of folder');
-      });
-      var ns = document.querySelector('.notes-section');
-      if (ns) ns.appendChild(ejectZone);
-    }
-
     // Allow dropping subjects onto the subjectList background to remove from folder
     list.addEventListener('dragover', function(e){
       if (!dragSubjectId) return;
@@ -954,6 +930,27 @@
       if(!fs||!fs.isReady){ setTimeout(function(){ openSharedView(shareId); },1000); } else{ openSharedView(shareId); }
     });
     startSync(); render();
+
+    // Eject zone — always in DOM, shown via CSS class when dragging from folder
+    var ejectZone = el('div', 'folder-eject-zone'); ejectZone.id = 'folder-eject-zone';
+    ejectZone.textContent = '📤 Drop here to move out of folder';
+    ejectZone.addEventListener('dragover', function(e){
+      if (!dragSubjectId || !dragSubjectFromFolder) return;
+      e.preventDefault(); ejectZone.classList.add('folder-eject-active');
+    });
+    ejectZone.addEventListener('dragleave', function(){ ejectZone.classList.remove('folder-eject-active'); });
+    ejectZone.addEventListener('drop', function(e){
+      ejectZone.classList.remove('folder-eject-active');
+      if (!dragSubjectId || !dragSubjectFromFolder) return;
+      e.preventDefault();
+      var s = data.subjects.find(function(s){ return s.id === dragSubjectId; });
+      if (!s) return;
+      data.folders.forEach(function(f){ f.subjectIds = f.subjectIds.filter(function(id){ return id !== s.id; }); });
+      s.folderId = null; dragSubjectFromFolder = null;
+      save(); render(); toast('Moved out of folder');
+    });
+    var ns2 = document.querySelector('.notes-section');
+    if (ns2) ns2.appendChild(ejectZone);
   }
 
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
