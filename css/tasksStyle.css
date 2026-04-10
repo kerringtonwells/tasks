@@ -875,3 +875,75 @@ body[data-theme="light"] .import-identity-btn { background: rgba(0,0,0,0.04); bo
     color: #93c5fd !important;
 }
 body[data-theme="light"] .import-identity-selected { color: #1d4ed8 !important; }
+
+/* ── File attachments in editor ─────────────────────────────────────────── */
+.editor-file-strip { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.editor-file-chip {
+    display: inline-flex; align-items: center; padding: 5px 10px;
+    border-radius: 99px; font-size: 12px; font-weight: 600;
+}
+body[data-theme="dark"]  .editor-file-chip { background: rgba(59,130,246,0.2); color: #93c5fd; border: 1px solid rgba(59,130,246,0.35); }
+body[data-theme="light"] .editor-file-chip { background: rgba(59,130,246,0.1); color: #1d4ed8; border: 1px solid rgba(59,130,246,0.25); }
+
+/* ── File links in note rows ─────────────────────────────────────────────── */
+.note-row-file-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 8px; font-size: 13px;
+    font-weight: 600; text-decoration: none; margin: 4px 2px;
+}
+body[data-theme="dark"]  .note-row-file-link { background: rgba(255,255,255,0.08); color: #93c5fd; border: 1px solid rgba(255,255,255,0.15); }
+body[data-theme="light"] .note-row-file-link { background: rgba(0,0,0,0.04); color: #2563eb; border: 1px solid rgba(0,0,0,0.1); }
+.note-row-file-link:hover { opacity: 0.8; }
+
+/* ── Folder cards ─────────────────────────────────────────────────────────── */
+.folder-card {
+    border-radius: 12px;
+    margin-bottom: 8px;
+    overflow: visible;
+    transition: box-shadow 0.15s ease;
+}
+body[data-theme="dark"]  .folder-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); }
+body[data-theme="light"] .folder-card { background: rgba(255,255,255,0.6);  border: 1px solid rgba(200,210,255,0.4); }
+
+.folder-card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 12px; cursor: pointer; border-radius: 12px;
+    position: relative; user-select: none;
+}
+body[data-theme="dark"]  .folder-card-header:hover { background: rgba(255,255,255,0.04); }
+body[data-theme="light"] .folder-card-header:hover { background: rgba(0,0,0,0.02); }
+
+.folder-card-expanded > .folder-card-header { border-radius: 12px 12px 0 0; }
+.folder-card-expanded > .folder-card-header .subject-chevron { transform: rotate(90deg); }
+
+.folder-icon { font-size: 16px; margin-right: 4px; flex-shrink: 0; }
+
+.folder-contents {
+    padding: 8px 8px 8px 16px;
+    border-radius: 0 0 12px 12px;
+}
+body[data-theme="dark"]  .folder-contents { background: rgba(0,0,0,0.15); border-top: 1px solid rgba(255,255,255,0.06); }
+body[data-theme="light"] .folder-contents { background: rgba(0,0,0,0.02); border-top: 1px solid rgba(0,0,0,0.06); }
+
+.folder-contents.is-open {
+    animation: premiumPanelOpen 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+.folder-contents.is-closing {
+    animation: premiumPanelClose 0.28s cubic-bezier(0.4, 0, 1, 1) forwards;
+    pointer-events: none;
+}
+
+.folder-empty {
+    font-size: 12px; opacity: 0.4; font-style: italic;
+    text-align: center; padding: 16px 0;
+}
+
+.folder-drag-over {
+    outline: 2px dashed #3b82f6 !important;
+    outline-offset: 3px;
+    background: rgba(59,130,246,0.06) !important;
+}
+
+/* Subjects inside folders get slight indent and smaller margin */
+.folder-contents .subject-card { margin-bottom: 6px; }
+.folder-contents .subject-card:last-child { margin-bottom: 0; }
