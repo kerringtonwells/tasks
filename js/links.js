@@ -11,22 +11,82 @@ const loadLinksList = () => {
 };
 
 const saveLinksList = (linksListElement) => {
-    const linkItems = Array.from(linksListElement.querySelectorAll('li')).map(li => ({
-        text: li.querySelector('a').textContent,
-        url: li.querySelector('a').href
-    }));
+    const linkItems = Array.from(linksListElement.querySelectorAll('li')).map(li => {
+        const a = li.querySelector('a');
+        const item = { text: a.textContent.replace('📂 ', '').trim(), url: a.href };
+        if (li.dataset.handleId) item.handleId = li.dataset.handleId;
+        return item;
+    });
     localStorage.setItem('linksList', JSON.stringify(linkItems));
 };
+
+// ── FileSystem Handle Storage (IndexedDB) ────────────────────────────────────
+const FSA_DB = 'kwells_fsa', FSA_STORE = 'handles';
+let fsaDb = null;
+
+const openFsaDB = () => {
+    if (fsaDb) return Promise.resolve(fsaDb);
+    return new Promise((res, rej) => {
+        const req = indexedDB.open(FSA_DB, 1);
+        req.onupgradeneeded = e => e.target.result.createObjectStore(FSA_STORE);
+        req.onsuccess = e => { fsaDb = e.target.result; res(fsaDb); };
+        req.onerror   = e => rej(e.target.error);
+    });
+};
+const saveHandle = (id, handle) => openFsaDB().then(db => new Promise((res, rej) => {
+    const req = db.transaction(FSA_STORE, 'readwrite').objectStore(FSA_STORE).put(handle, id);
+    req.onsuccess = () => res(); req.onerror = e => rej(e.target.error);
+}));
+const getHandle = (id) => openFsaDB().then(db => new Promise((res, rej) => {
+    const req = db.transaction(FSA_STORE, 'readonly').objectStore(FSA_STORE).get(id);
+    req.onsuccess = () => res(req.result); req.onerror = e => rej(e.target.error);
+}));
+const deleteHandle = (id) => openFsaDB().then(db => new Promise((res, rej) => {
+    const req = db.transaction(FSA_STORE, 'readwrite').objectStore(FSA_STORE).delete(id);
+    req.onsuccess = () => res(); req.onerror = e => rej(e.target.error);
+}));
+
+const openLocalFile = async (handleId, nameForDisplay) => {
+    const handle = await getHandle(handleId);
+    if (!handle) { alert('File handle not found. Please re-add this file.'); return; }
+    // Re-request permission each time (browser requires it)
+    const perm = await handle.requestPermission({ mode: 'read' });
+    if (perm !== 'granted') { alert('Permission denied — could not open file.'); return; }
+    const file = await handle.getFile();
+    const url = URL.createObjectURL(file);
+    const tab = window.open(url, '_blank');
+    // Revoke after a short delay so the tab has time to load
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+};
+
+
 
 const addLink = (linkData, linksListElement) => {
     const li = document.createElement('li');
     li.className = 'no-bullet link-item';
+    if (linkData.handleId) li.dataset.handleId = linkData.handleId;
 
     const a = document.createElement('a');
-    a.href = linkData.url;
-    a.target = '_blank';
-    a.textContent = linkData.text;
     a.className = 'link-text';
+
+    if (linkData.handleId) {
+        // Local file via File System Access API
+        a.href = '#';
+        a.title = 'Click to open ' + linkData.text;
+        const icon = document.createElement('span');
+        icon.textContent = '📂 ';
+        icon.style.fontSize = '13px';
+        a.appendChild(icon);
+        a.appendChild(document.createTextNode(linkData.text));
+        a.addEventListener('click', (e) => {
+            e.preventDefault();
+            openLocalFile(linkData.handleId, linkData.text);
+        });
+    } else {
+        a.href = linkData.url;
+        a.target = '_blank';
+        a.textContent = linkData.text;
+    }
 
     const actions = document.createElement('div');
     actions.className = 'link-actions';
@@ -66,6 +126,7 @@ const addLink = (linkData, linksListElement) => {
     deleteBtn.addEventListener('click', (e) => {
         e.preventDefault();
         if (confirm(`Delete "${linkData.text}"?`)) {
+            if (linkData.handleId) deleteHandle(linkData.handleId);
             linksListElement.removeChild(li);
             saveLinksList(linksListElement);
         }
@@ -135,11 +196,37 @@ const openAddLinkModal = () => {
         overlay.remove();
     });
 
+    // Local file picker button
+    const divider = document.createElement('div');
+    divider.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:16px;';
+    const line1 = document.createElement('div'); line1.style.cssText = 'flex:1;height:1px;background:rgba(255,255,255,0.1);';
+    const orTxt = document.createElement('span'); orTxt.textContent = 'or'; orTxt.style.cssText = 'font-size:11px;opacity:0.4;';
+    const line2 = document.createElement('div'); line2.style.cssText = 'flex:1;height:1px;background:rgba(255,255,255,0.1);';
+    divider.appendChild(line1); divider.appendChild(orTxt); divider.appendChild(line2);
+
+    const pickFileBtn = document.createElement('button');
+    pickFileBtn.textContent = '📂  Pick a Local File';
+    pickFileBtn.style.cssText = 'width:100%;padding:10px;border-radius:8px;border:1px dashed rgba(255,255,255,0.2);background:rgba(255,255,255,0.04);color:inherit;font-family:inherit;font-size:14px;cursor:pointer;margin-bottom:20px;';
+    pickFileBtn.addEventListener('click', async () => {
+        if (!window.showOpenFilePicker) { alert('Your browser does not support the File System Access API. Use Chrome or Edge.'); return; }
+        try {
+            const [fileHandle] = await window.showOpenFilePicker();
+            const name = nameInp.value.trim() || fileHandle.name;
+            const handleId = 'fsa_' + Date.now();
+            await saveHandle(handleId, fileHandle);
+            const linksListElement = document.getElementById('linksList');
+            addLink({ text: name, url: '#', handleId }, linksListElement);
+            saveLinksList(linksListElement);
+            overlay.remove();
+        } catch(e) { if (e.name !== 'AbortError') alert('Could not open file: ' + e.message); }
+    });
+
     btnRow.appendChild(cancelBtn);
     btnRow.appendChild(addBtn);
     modal.appendChild(title);
     modal.appendChild(nameLabel); modal.appendChild(nameInp);
     modal.appendChild(urlLabel);  modal.appendChild(urlInp);
+    modal.appendChild(divider);   modal.appendChild(pickFileBtn);
     modal.appendChild(btnRow);
     overlay.appendChild(modal);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
