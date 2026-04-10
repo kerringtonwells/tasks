@@ -945,3 +945,30 @@ body[data-theme="light"] .folder-contents { background: rgba(0,0,0,0.02); border
     text-align: center; padding: 16px 0;
     grid-column: 1 / -1;
 }
+
+/* ── Folder eject zone ───────────────────────────────────────────────────── */
+.folder-eject-zone {
+    display: none;
+    width: calc(100% - 32px);
+    margin: 12px 16px 0;
+    text-align: center;
+    padding: 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0.5;
+    border: 2px dashed currentColor;
+    cursor: pointer;
+    transition: opacity 0.15s, background 0.15s;
+    box-sizing: border-box;
+}
+#subjectList.dragging-from-folder ~ .folder-eject-zone,
+.notes-section.dragging-from-folder .folder-eject-zone {
+    display: block;
+}
+.folder-eject-zone.folder-eject-active {
+    opacity: 1;
+    background: rgba(74,222,128,0.08);
+    border-color: #4ade80;
+    color: #4ade80;
+}
