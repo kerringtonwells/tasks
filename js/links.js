@@ -136,17 +136,52 @@ const openFolderModal = async (dirHandle) => {
 
         entries.forEach(entry => {
             const row = document.createElement('div');
-            row.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 8px;border-radius:10px;cursor:pointer;font-size:11px;text-align:center;word-break:break-word;transition:background 0.1s;';
+            row.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:start;gap:6px;padding:8px;border-radius:10px;cursor:pointer;font-size:11px;text-align:center;word-break:break-word;transition:background 0.1s;';
             row.addEventListener('mouseenter', () => row.style.background = 'rgba(255,255,255,0.08)');
             row.addEventListener('mouseleave', () => row.style.background = '');
 
-            const icon = document.createElement('div');
-            icon.style.cssText = 'font-size:32px;line-height:1;';
-            icon.textContent = entry.kind === 'directory' ? '📁' : getFileIcon(entry.name);
+            const thumbWrap = document.createElement('div');
+            thumbWrap.style.cssText = 'width:80px;height:56px;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.05);flex-shrink:0;position:relative;';
+
+            if (entry.kind === 'directory') {
+                const icon = document.createElement('div');
+                icon.style.cssText = 'font-size:36px;line-height:1;';
+                icon.textContent = '📁';
+                thumbWrap.appendChild(icon);
+            } else if (isVideoFile(entry.name)) {
+                // Show spinner while loading thumbnail
+                const spinner = document.createElement('div');
+                spinner.textContent = '⏳'; spinner.style.fontSize = '20px';
+                thumbWrap.appendChild(spinner);
+                // Generate thumbnail async
+                entry.getFile().then(file => generateVideoThumbnail(file)).then(dataUrl => {
+                    thumbWrap.innerHTML = '';
+                    if (dataUrl) {
+                        const img = document.createElement('img');
+                        img.src = dataUrl;
+                        img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+                        // Play icon overlay
+                        const play = document.createElement('div');
+                        play.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:18px;text-shadow:0 1px 4px rgba(0,0,0,0.8);';
+                        play.textContent = '▶';
+                        thumbWrap.appendChild(img); thumbWrap.appendChild(play);
+                    } else {
+                        const icon = document.createElement('div');
+                        icon.style.fontSize = '32px'; icon.textContent = '🎬';
+                        thumbWrap.appendChild(icon);
+                    }
+                });
+            } else {
+                const icon = document.createElement('div');
+                icon.style.cssText = 'font-size:32px;line-height:1;';
+                icon.textContent = getFileIcon(entry.name);
+                thumbWrap.appendChild(icon);
+            }
+
             const name = document.createElement('div');
-            name.style.cssText = 'max-width:90px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;opacity:0.85;';
+            name.style.cssText = 'max-width:90px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;opacity:0.85;line-height:1.3;';
             name.textContent = entry.name;
-            row.appendChild(icon); row.appendChild(name);
+            row.appendChild(thumbWrap); row.appendChild(name);
 
             row.addEventListener('click', async () => {
                 if (entry.kind === 'directory') {
@@ -168,7 +203,7 @@ const openFolderModal = async (dirHandle) => {
 const getFileIcon = (name) => {
     const ext = name.split('.').pop().toLowerCase();
     if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return '🖼';
-    if (['mp4','mov','avi','mkv','webm'].includes(ext)) return '🎬';
+    if (['mp4','mov','avi','mkv','webm','m4v'].includes(ext)) return '🎬';
     if (['mp3','wav','aac','flac','m4a'].includes(ext)) return '🎵';
     if (ext === 'pdf') return '📄';
     if (['doc','docx'].includes(ext)) return '📝';
@@ -176,6 +211,36 @@ const getFileIcon = (name) => {
     if (['zip','rar','7z','tar','gz'].includes(ext)) return '🗜';
     if (['js','ts','py','html','css','json','sh'].includes(ext)) return '💻';
     return '📄';
+};
+
+const isVideoFile = (name) => {
+    const ext = name.split('.').pop().toLowerCase();
+    return ['mp4','mov','webm','m4v','mkv','avi'].includes(ext);
+};
+
+const generateVideoThumbnail = (file) => {
+    return new Promise((res) => {
+        const url = URL.createObjectURL(file);
+        const video = document.createElement('video');
+        video.src = url; video.muted = true; video.playsInline = true;
+        video.style.display = 'none'; video.crossOrigin = 'anonymous';
+        document.body.appendChild(video);
+        const cleanup = () => { URL.revokeObjectURL(url); video.remove(); };
+        video.addEventListener('loadedmetadata', () => {
+            video.currentTime = Math.min(1, video.duration * 0.1);
+        });
+        video.addEventListener('seeked', () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 160; canvas.height = Math.round(160 * video.videoHeight / video.videoWidth);
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                cleanup(); res(canvas.toDataURL('image/jpeg', 0.7));
+            } catch(e) { cleanup(); res(null); }
+        });
+        video.addEventListener('error', () => { cleanup(); res(null); });
+        setTimeout(() => { cleanup(); res(null); }, 5000); // timeout fallback
+        video.load();
+    });
 };
 
 
