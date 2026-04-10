@@ -2,7 +2,12 @@ const loadLinksList = () => {
     const savedLinksList = JSON.parse(localStorage.getItem('linksList')) || [];
     const linksListElement = document.getElementById('linksList');
     savedLinksList.sort((a, b) => a.text.toLowerCase().localeCompare(b.text.toLowerCase()));
-    savedLinksList.forEach(link => addLink(link, linksListElement));
+    savedLinksList.forEach(link => {
+        // Strip any leading icon emoji that got saved in a previous version
+        link.text = link.text.replace(/^[\u{1F300}-\u{1FFFF}🔗📁📄✅]\s*/u, '').trim();
+        addLink(link, linksListElement);
+    });
+    saveLinksList(linksListElement); // re-save with clean text
 };
 
 const saveLinksList = (linksListElement) => {
