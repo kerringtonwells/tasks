@@ -898,9 +898,12 @@ body[data-theme="light"] .note-row-file-link { background: rgba(0,0,0,0.04); col
 /* ── Folder cards ─────────────────────────────────────────────────────────── */
 .folder-card {
     border-radius: 12px;
-    margin-bottom: 8px;
     overflow: visible;
     transition: box-shadow 0.15s ease;
+}
+/* Expanded folder spans all grid columns */
+.folder-card-expanded {
+    grid-column: 1 / -1;
 }
 body[data-theme="dark"]  .folder-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); }
 body[data-theme="light"] .folder-card { background: rgba(255,255,255,0.6);  border: 1px solid rgba(200,210,255,0.4); }
@@ -919,8 +922,11 @@ body[data-theme="light"] .folder-card-header:hover { background: rgba(0,0,0,0.02
 .folder-icon { font-size: 16px; margin-right: 4px; flex-shrink: 0; }
 
 .folder-contents {
-    padding: 8px 8px 8px 16px;
+    padding: 10px;
     border-radius: 0 0 12px 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
 }
 body[data-theme="dark"]  .folder-contents { background: rgba(0,0,0,0.15); border-top: 1px solid rgba(255,255,255,0.06); }
 body[data-theme="light"] .folder-contents { background: rgba(0,0,0,0.02); border-top: 1px solid rgba(0,0,0,0.06); }
@@ -936,14 +942,5 @@ body[data-theme="light"] .folder-contents { background: rgba(0,0,0,0.02); border
 .folder-empty {
     font-size: 12px; opacity: 0.4; font-style: italic;
     text-align: center; padding: 16px 0;
+    grid-column: 1 / -1;
 }
-
-.folder-drag-over {
-    outline: 2px dashed #3b82f6 !important;
-    outline-offset: 3px;
-    background: rgba(59,130,246,0.06) !important;
-}
-
-/* Subjects inside folders get slight indent and smaller margin */
-.folder-contents .subject-card { margin-bottom: 6px; }
-.folder-contents .subject-card:last-child { margin-bottom: 0; }
