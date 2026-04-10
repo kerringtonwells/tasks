@@ -48,15 +48,131 @@ const deleteHandle = (id) => openFsaDB().then(db => new Promise((res, rej) => {
 
 const openLocalFile = async (handleId, nameForDisplay) => {
     const handle = await getHandle(handleId);
-    if (!handle) { alert('File handle not found. Please re-add this file.'); return; }
-    // Re-request permission each time (browser requires it)
+    if (!handle) { alert('Handle not found. Please re-add this file or folder.'); return; }
     const perm = await handle.requestPermission({ mode: 'read' });
-    if (perm !== 'granted') { alert('Permission denied — could not open file.'); return; }
-    const file = await handle.getFile();
-    const url = URL.createObjectURL(file);
-    const tab = window.open(url, '_blank');
-    // Revoke after a short delay so the tab has time to load
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    if (perm !== 'granted') { alert('Permission denied.'); return; }
+
+    if (handle.kind === 'directory') {
+        // Show a simple file browser modal for the folder
+        openFolderModal(handle);
+    } else {
+        const file = await handle.getFile();
+        const url = URL.createObjectURL(file);
+        window.open(url, '_blank');
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+    }
+};
+
+const openFolderModal = async (dirHandle) => {
+    const old = document.getElementById('folderBrowserModal');
+    if (old) old.remove();
+
+    const overlay = document.createElement('div');
+    overlay.id = 'folderBrowserModal';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+
+    const modal = document.createElement('div');
+    modal.style.cssText = 'background:#1e2130;border-radius:14px;padding:0;width:90%;max-width:540px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.6);font-family:inherit;color:#e2e8f0;overflow:hidden;';
+
+    // Header with breadcrumb
+    const header = document.createElement('div');
+    header.style.cssText = 'padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;';
+    const breadcrumb = document.createElement('div');
+    breadcrumb.style.cssText = 'font-size:14px;font-weight:700;display:flex;align-items:center;gap:6px;';
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.style.cssText = 'border:none;background:none;color:inherit;font-size:16px;cursor:pointer;opacity:0.5;padding:4px;';
+    closeBtn.addEventListener('click', () => overlay.remove());
+    header.appendChild(breadcrumb); header.appendChild(closeBtn);
+
+    // File list
+    const fileList = document.createElement('div');
+    fileList.style.cssText = 'overflow-y:auto;flex:1;padding:10px;';
+
+    modal.appendChild(header); modal.appendChild(fileList);
+    overlay.appendChild(modal);
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+
+    // Navigate into a directory handle
+    const navigate = async (handle, path) => {
+        fileList.innerHTML = '<div style="padding:20px;text-align:center;opacity:0.4;font-size:13px;">Loading…</div>';
+        breadcrumb.innerHTML = '';
+
+        // Breadcrumb
+        const folderIcon = document.createElement('span'); folderIcon.textContent = '📁';
+        const folderName = document.createElement('span'); folderName.textContent = handle.name;
+        breadcrumb.appendChild(folderIcon); breadcrumb.appendChild(folderName);
+
+        // Back button if not root
+        if (path.length > 0) {
+            const backBtn = document.createElement('button');
+            backBtn.textContent = '← Back';
+            backBtn.style.cssText = 'border:none;background:rgba(255,255,255,0.06);color:inherit;font-family:inherit;font-size:12px;padding:4px 10px;border-radius:6px;cursor:pointer;margin-left:8px;';
+            backBtn.addEventListener('click', () => {
+                const parent = path[path.length - 1];
+                navigate(parent.handle, path.slice(0, -1));
+            });
+            header.insertBefore(backBtn, header.firstChild);
+            // remove old back btn if any
+            header.querySelectorAll('button:not([data-close])').forEach((b,i) => { if(i>0) b.remove(); });
+        } else {
+            header.querySelectorAll('button:not([data-close])').forEach(b => b.remove());
+        }
+
+        // Read entries
+        fileList.innerHTML = '';
+        const entries = [];
+        for await (const entry of handle.values()) entries.push(entry);
+        entries.sort((a, b) => {
+            if (a.kind !== b.kind) return a.kind === 'directory' ? -1 : 1;
+            return a.name.toLowerCase().localeCompare(b.name.toLowerCase());
+        });
+
+        if (!entries.length) {
+            fileList.innerHTML = '<div style="padding:20px;text-align:center;opacity:0.35;font-size:13px;font-style:italic;">Empty folder</div>';
+            return;
+        }
+
+        entries.forEach(entry => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;transition:background 0.1s;';
+            row.addEventListener('mouseenter', () => row.style.background = 'rgba(255,255,255,0.06)');
+            row.addEventListener('mouseleave', () => row.style.background = '');
+
+            const icon = document.createElement('span');
+            icon.textContent = entry.kind === 'directory' ? '📁' : getFileIcon(entry.name);
+            const name = document.createElement('span'); name.textContent = entry.name;
+            row.appendChild(icon); row.appendChild(name);
+
+            row.addEventListener('click', async () => {
+                if (entry.kind === 'directory') {
+                    navigate(entry, [...path, { handle, name: handle.name }]);
+                } else {
+                    const file = await entry.getFile();
+                    const url = URL.createObjectURL(file);
+                    window.open(url, '_blank');
+                    setTimeout(() => URL.revokeObjectURL(url), 10000);
+                }
+            });
+            fileList.appendChild(row);
+        });
+    };
+
+    navigate(dirHandle, []);
+};
+
+const getFileIcon = (name) => {
+    const ext = name.split('.').pop().toLowerCase();
+    if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) return '🖼';
+    if (['mp4','mov','avi','mkv','webm'].includes(ext)) return '🎬';
+    if (['mp3','wav','aac','flac','m4a'].includes(ext)) return '🎵';
+    if (ext === 'pdf') return '📄';
+    if (['doc','docx'].includes(ext)) return '📝';
+    if (['xls','xlsx'].includes(ext)) return '📊';
+    if (['zip','rar','7z','tar','gz'].includes(ext)) return '🗜';
+    if (['js','ts','py','html','css','json','sh'].includes(ext)) return '💻';
+    return '📄';
 };
 
 
@@ -74,8 +190,10 @@ const addLink = (linkData, linksListElement) => {
         a.href = '#';
         a.title = 'Click to open ' + linkData.text;
         const icon = document.createElement('span');
-        icon.textContent = '📂 ';
+        icon.textContent = '📂 ';  // updated on load if we know kind
         icon.style.fontSize = '13px';
+        // Check handle kind async and update icon
+        getHandle(linkData.handleId).then(h => { if (h) icon.textContent = h.kind === 'directory' ? '📁 ' : '📂 '; });
         a.appendChild(icon);
         a.appendChild(document.createTextNode(linkData.text));
         a.addEventListener('click', (e) => {
@@ -204,11 +322,14 @@ const openAddLinkModal = () => {
     const line2 = document.createElement('div'); line2.style.cssText = 'flex:1;height:1px;background:rgba(255,255,255,0.1);';
     divider.appendChild(line1); divider.appendChild(orTxt); divider.appendChild(line2);
 
+    const pickRow = document.createElement('div');
+    pickRow.style.cssText = 'display:flex;gap:8px;margin-bottom:20px;';
+
     const pickFileBtn = document.createElement('button');
-    pickFileBtn.textContent = '📂  Pick a Local File';
-    pickFileBtn.style.cssText = 'width:100%;padding:10px;border-radius:8px;border:1px dashed rgba(255,255,255,0.2);background:rgba(255,255,255,0.04);color:inherit;font-family:inherit;font-size:14px;cursor:pointer;margin-bottom:20px;';
+    pickFileBtn.textContent = '📄  Pick File';
+    pickFileBtn.style.cssText = 'flex:1;padding:10px;border-radius:8px;border:1px dashed rgba(255,255,255,0.2);background:rgba(255,255,255,0.04);color:inherit;font-family:inherit;font-size:13px;cursor:pointer;';
     pickFileBtn.addEventListener('click', async () => {
-        if (!window.showOpenFilePicker) { alert('Your browser does not support the File System Access API. Use Chrome or Edge.'); return; }
+        if (!window.showOpenFilePicker) { alert('Use Chrome or Edge for local file access.'); return; }
         try {
             const [fileHandle] = await window.showOpenFilePicker();
             const name = nameInp.value.trim() || fileHandle.name;
@@ -221,12 +342,31 @@ const openAddLinkModal = () => {
         } catch(e) { if (e.name !== 'AbortError') alert('Could not open file: ' + e.message); }
     });
 
+    const pickFolderBtn = document.createElement('button');
+    pickFolderBtn.textContent = '📁  Pick Folder';
+    pickFolderBtn.style.cssText = pickFileBtn.style.cssText;
+    pickFolderBtn.addEventListener('click', async () => {
+        if (!window.showDirectoryPicker) { alert('Use Chrome or Edge for local folder access.'); return; }
+        try {
+            const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+            const name = nameInp.value.trim() || dirHandle.name;
+            const handleId = 'fsa_' + Date.now();
+            await saveHandle(handleId, dirHandle);
+            const linksListElement = document.getElementById('linksList');
+            addLink({ text: name, url: '#', handleId }, linksListElement);
+            saveLinksList(linksListElement);
+            overlay.remove();
+        } catch(e) { if (e.name !== 'AbortError') alert('Could not open folder: ' + e.message); }
+    });
+
+    pickRow.appendChild(pickFileBtn); pickRow.appendChild(pickFolderBtn);
+
     btnRow.appendChild(cancelBtn);
     btnRow.appendChild(addBtn);
     modal.appendChild(title);
     modal.appendChild(nameLabel); modal.appendChild(nameInp);
     modal.appendChild(urlLabel);  modal.appendChild(urlInp);
-    modal.appendChild(divider);   modal.appendChild(pickFileBtn);
+    modal.appendChild(divider);   modal.appendChild(pickRow);
     modal.appendChild(btnRow);
     overlay.appendChild(modal);
     overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
