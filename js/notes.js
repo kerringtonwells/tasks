@@ -764,7 +764,7 @@
 
     // Contents
     var contents = el('div', 'folder-contents');
-    contents.style.display = isOpen ? 'block' : 'none';
+    contents.style.display = isOpen ? 'grid' : 'none';
     if (isOpen) contents.classList.add('is-open');
 
     if (isOpen) {
