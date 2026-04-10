@@ -726,6 +726,10 @@
 
   // ── Folder Card ──────────────────────────────────────────────────────────────
   function buildFolderCard(folder) {
+    // Clean up stale subjectIds — subjects may have been deleted
+    folder.subjectIds = folder.subjectIds.filter(function(sid){
+      return data.subjects.some(function(s){ return s.id === sid; });
+    });
     var isOpen = expandedFolder === folder.id;
     var card = el('div', 'folder-card' + (isOpen ? ' folder-card-expanded' : ''));
     card.dataset.id = folder.id;
