@@ -325,18 +325,19 @@
     if(cb) cb.addEventListener('click',function(){ navigator.clipboard.writeText(RULES).then(function(){ cb.textContent='✓ Copied!'; setTimeout(function(){ cb.textContent='Copy'; },2000); }); });
   }
   function showFirebaseOptionsModal() {
-    var fs=getFS(), m=makeModal('400px'), title=el('h3','editor-title'); title.textContent='🔥 Firebase Settings';
-    var info=el('p'); info.style.cssText='font-size:13px;opacity:0.7;margin:0 0 10px;';
+    var fs=getFS(), m=makeModal('380px'), title=el('h3','editor-title'); title.textContent='🔥 Firebase Settings';
+    var info=el('p'); info.style.cssText='font-size:13px;opacity:0.7;margin:0 0 14px;';
     info.textContent='Your display name: '+(fs.getDisplayName()||'Not set');
-    var row=el('div','editor-btn-row');
-    row.appendChild(btn('Change Name',function(){ m.ov.remove(); openDisplayNameModal(function(n){ toast('Name updated to: '+n); }); },'notes-btn'));
-    row.appendChild(btn('Join a Shared List',function(){ m.ov.remove(); openJoinModal(); },'notes-btn'));
-    row.appendChild(btn('Disconnect',function(){
+    var row=el('div','editor-btn-row'); row.style.flexDirection='column'; row.style.gap='8px';
+    function optBtn(label, fn, cls) { var b=btn(label,fn,cls||'notes-btn'); b.style.width='100%'; b.style.textAlign='left'; b.style.padding='10px 14px'; return b; }
+    row.appendChild(optBtn('✏️  Change Name',function(){ m.ov.remove(); openDisplayNameModal(function(n){ toast('Name updated to: '+n); }); }));
+    row.appendChild(optBtn('🔗  Join a Shared List',function(){ m.ov.remove(); openJoinModal(); }));
+    row.appendChild(optBtn('🔌  Disconnect Firebase',function(){
       if(!confirm('Disconnect Firebase? Shared subjects will stop syncing.')) return;
       fs.clearConfig(); m.ov.remove(); var b=document.getElementById('firebaseConnectBtn');
       if(b){ b.textContent='🔥 Share'; b.classList.remove('firebase-connected'); } toast('Firebase disconnected');
     },'notes-btn notes-btn-danger'));
-    row.appendChild(btn('Close',function(){ m.ov.remove(); }));
+    row.appendChild(optBtn('✕  Close',function(){ m.ov.remove(); }));
     m.modal.appendChild(title); m.modal.appendChild(info); m.modal.appendChild(row);
     m.ov.appendChild(m.modal); m.show();
   }
@@ -352,7 +353,10 @@
     }).catch(function(e){ subject.shareId=null; toast('Share failed: '+e.message); });
   }
   function showShareModal(subject, shareId) {
-    var fs=getFS(), isOwner=fs&&fs.isConfigured();
+    var fs=getFS();
+    // Owner detection: subject.id equals shareId (we set shareId = subject.id when sharing)
+    // Recipients have id = 'shared_' + shareId
+    var isOwner = subject.id === shareId;
     var url=fs.getShareUrl(shareId), m=makeModal('500px');
     var title=el('h3','editor-title'); title.textContent='🔗 '+(isOwner?'Sharing: "'+subject.name+'"':'Connected: "'+subject.name+'"');
     var urlBox=el('div','share-url-box'); urlBox.textContent=url; urlBox.title='Click to copy';
@@ -394,9 +398,9 @@
     } else {
       var nameInfo=el('p'); nameInfo.style.cssText='font-size:13px;opacity:0.6;margin:8px 0 16px;'; nameInfo.textContent='Connected as: '+getIdentityForShare(shareId);
       row.appendChild(btn('Disconnect',function(){
-        if(!confirm('Disconnect from "'+subject.name+'"?')) return;
+        if(!confirm('Disconnect from "'+subject.name+'"? The subject stays in your list but will stop syncing.')) return;
         var fsInst=getFS(); if(fsInst) fsInst.unlisten(shareId); delete FB_LISTEN_ACTIVE[shareId];
-        data.subjects=data.subjects.filter(function(s){ return s.id!==subject.id; }); save(); render(); m.ov.remove(); toast('Disconnected from '+subject.name);
+        subject.shareId=null; save(); render(); m.ov.remove(); toast('Disconnected — subject kept locally');
       },'notes-btn notes-btn-danger'));
       m.modal.appendChild(nameInfo);
     }
