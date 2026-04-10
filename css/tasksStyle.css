@@ -916,6 +916,7 @@ body[data-theme="light"] .folder-card { background: rgba(255,255,255,0.6);  bord
 body[data-theme="dark"]  .folder-card-header:hover { background: rgba(255,255,255,0.04); }
 body[data-theme="light"] .folder-card-header:hover { background: rgba(0,0,0,0.02); }
 
+.folder-card-header:hover .subject-header-right { opacity: 1; pointer-events: auto; }
 .folder-card-expanded > .folder-card-header { border-radius: 12px 12px 0 0; }
 .folder-card-expanded > .folder-card-header .subject-chevron { transform: rotate(90deg); }
 
