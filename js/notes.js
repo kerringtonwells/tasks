@@ -834,6 +834,23 @@
     }) : data.folders;
     filteredFolders.forEach(function(f){ list.appendChild(buildFolderCard(f)); });
     // Then ungrouped subjects
+    // Allow dropping subjects onto the subjectList background to remove from folder
+    list.addEventListener('dragover', function(e){
+      if (!dragSubjectId) return;
+      if (data.folders.find(function(f){ return f.id === dragSubjectId; })) return;
+      var subject = data.subjects.find(function(s){ return s.id === dragSubjectId; });
+      if (!subject || !subject.folderId) return;
+      e.preventDefault();
+    });
+    list.addEventListener('drop', function(e){
+      if (!dragSubjectId) return;
+      var subject = data.subjects.find(function(s){ return s.id === dragSubjectId; });
+      if (!subject || !subject.folderId) return;
+      e.preventDefault();
+      data.folders.forEach(function(f){ f.subjectIds = f.subjectIds.filter(function(id){ return id !== subject.id; }); });
+      subject.folderId = null;
+      save(); render(); toast('Moved out of folder');
+    });
     var ungrouped = visible.filter(function(s){ return !folderedIds[s.id]; });
     ungrouped.forEach(function(s){ list.appendChild(buildSubjectCard(s)); });
     var eb=document.getElementById('exportbutton'); if(eb) eb.style.display=data.subjects.length?'':'none';
