@@ -8,7 +8,7 @@
   var IDB_NAME = 'kwells_notes', IDB_STORE = 'images';
   var data = { subjects: [], folders: [] }, lastSavedTs = 0, expandedSubject = null;
   var expandedFolder = null;
-  var dragNotePayload = null, dragSubjectId = null, dragSubjectToFolder = null, internalClipboard = { images: [] };
+  var dragNotePayload = null, dragSubjectId = null, dragSubjectToFolder = null, dragSubjectFromFolder = null, internalClipboard = { images: [] };
   var idb = null, FB_LISTEN_ACTIVE = {};
 
   // ── Identity ─────────────────────────────────────────────────────────────────
@@ -703,8 +703,8 @@
       if(from&&to&&idx!==-1){ var note=from.notes.splice(idx,1)[0]; to.notes.push(note); save(); render(); toast('Moved to "'+to.name+'"'); }
     });
     grip.addEventListener('mousedown',function(){ card.draggable=true; });
-    card.addEventListener('dragstart',function(e){ if(!card.draggable)return; dragSubjectId=subject.id; dragNotePayload=null; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain','subject:'+subject.id); setTimeout(function(){ card.classList.add('subject-dragging'); },0); });
-    card.addEventListener('dragend',function(){ card.classList.remove('subject-dragging'); card.draggable=false; dragSubjectId=null; });
+    card.addEventListener('dragstart',function(e){ if(!card.draggable)return; dragSubjectId=subject.id; dragSubjectFromFolder=subject.folderId||null; dragNotePayload=null; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain','subject:'+subject.id); setTimeout(function(){ card.classList.add('subject-dragging'); var ns=document.querySelector('.notes-section'); if(ns&&subject.folderId) ns.classList.add('dragging-from-folder'); },0); });
+    card.addEventListener('dragend',function(){ card.classList.remove('subject-dragging'); card.draggable=false; dragSubjectId=null; dragSubjectFromFolder=null; var ns=document.querySelector('.notes-section'); if(ns) ns.classList.remove('dragging-from-folder'); });
     card.addEventListener('dragover',function(e){ if(!dragSubjectId||dragSubjectId===subject.id)return; e.preventDefault(); card.classList.add('subject-drag-over'); });
     card.addEventListener('dragleave',function(){ card.classList.remove('subject-drag-over'); });
     card.addEventListener('drop',function(e){
@@ -838,6 +838,30 @@
     }) : data.folders;
     filteredFolders.forEach(function(f){ list.appendChild(buildFolderCard(f)); });
     // Then ungrouped subjects
+    // Eject zone — fixed strip at bottom, shown only when dragging from a folder
+    var ejectZone = document.getElementById('folder-eject-zone');
+    if (!ejectZone) {
+      ejectZone = el('div', 'folder-eject-zone'); ejectZone.id = 'folder-eject-zone';
+      ejectZone.textContent = '📤 Drop here to move out of folder';
+      ejectZone.addEventListener('dragover', function(e){
+        if (!dragSubjectId || !dragSubjectFromFolder) return;
+        e.preventDefault(); ejectZone.classList.add('folder-eject-active');
+      });
+      ejectZone.addEventListener('dragleave', function(){ ejectZone.classList.remove('folder-eject-active'); });
+      ejectZone.addEventListener('drop', function(e){
+        ejectZone.classList.remove('folder-eject-active');
+        if (!dragSubjectId || !dragSubjectFromFolder) return;
+        e.preventDefault();
+        var subject = data.subjects.find(function(s){ return s.id === dragSubjectId; });
+        if (!subject) return;
+        data.folders.forEach(function(f){ f.subjectIds = f.subjectIds.filter(function(id){ return id !== subject.id; }); });
+        subject.folderId = null; dragSubjectFromFolder = null;
+        save(); render(); toast('Moved out of folder');
+      });
+      var ns = document.querySelector('.notes-section');
+      if (ns) ns.appendChild(ejectZone);
+    }
+
     // Allow dropping subjects onto the subjectList background to remove from folder
     list.addEventListener('dragover', function(e){
       if (!dragSubjectId) return;
