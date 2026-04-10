@@ -6,8 +6,9 @@
 
   var LS_KEY = 'notes_v2', TS_KEY = 'notes_v2_ts', LEGACY_KEY = 'subjects';
   var IDB_NAME = 'kwells_notes', IDB_STORE = 'images';
-  var data = { subjects: [] }, lastSavedTs = 0, expandedSubject = null;
-  var dragNotePayload = null, dragSubjectId = null, internalClipboard = { images: [] };
+  var data = { subjects: [], folders: [] }, lastSavedTs = 0, expandedSubject = null;
+  var expandedFolder = null;
+  var dragNotePayload = null, dragSubjectId = null, dragSubjectToFolder = null, internalClipboard = { images: [] };
   var idb = null, FB_LISTEN_ACTIVE = {};
 
   // ── Identity ─────────────────────────────────────────────────────────────────
@@ -127,7 +128,8 @@
   }
   function parseSubjects(raw) {
     var p = JSON.parse(raw), subjects = Array.isArray(p) ? p : (p.subjects||[]);
-    return { subjects: subjects.map(function(s){
+    var folders = Array.isArray(p.folders) ? p.folders.map(function(f){ return { id:f.id||uid(), name:f.name||'Folder', subjectIds:Array.isArray(f.subjectIds)?f.subjectIds:[] }; }) : [];
+    return { folders: folders, subjects: subjects.map(function(s){
       return { id:s.id||uid(), name:s.name||'Untitled', type:s.type||'notes', shareId:s.shareId||null,
         notes:(s.notes||[]).map(function(n){
           if (typeof n==='string') return {id:uid(),content:decodeURIComponent(n),images:[],checked:false,checkedBy:null,checkedAt:null,createdAt:now(),updatedAt:now()};
@@ -162,6 +164,13 @@
     });
     return Object.values(map);
   }
+  function mergeFolders(local, incoming) {
+    var map = {};
+    (local||[]).forEach(function(f){ map[f.id]=f; });
+    (incoming||[]).forEach(function(f){ if(!map[f.id]) map[f.id]=f; else map[f.id].subjectIds=f.subjectIds; });
+    return Object.values(map);
+  }
+
   function cleanupListeners() {
     var fs=getFS();
     Object.keys(FB_LISTEN_ACTIVE).forEach(function(sid){
@@ -172,11 +181,11 @@
   }
   function startSync() {
     window.addEventListener('storage', function(e){
-      if (e.key===LS_KEY&&e.newValue) { try{ var inc=parseSubjects(e.newValue); data.subjects=mergeIn(data.subjects,inc.subjects); cleanupListeners(); render(); toast('Synced'); }catch(e){} }
+      if (e.key===LS_KEY&&e.newValue) { try{ var inc=parseSubjects(e.newValue); data.subjects=mergeIn(data.subjects,inc.subjects); data.folders=mergeFolders(data.folders,inc.folders); cleanupListeners(); render(); toast('Synced'); }catch(e){} }
     });
     setInterval(function(){
       var ts=parseInt(localStorage.getItem(TS_KEY)||'0',10);
-      if(ts>lastSavedTs){ var r=localStorage.getItem(LS_KEY); if(r){ try{ var inc=parseSubjects(r); data.subjects=mergeIn(data.subjects,inc.subjects); cleanupListeners(); render(); lastSavedTs=ts; }catch(e){} } }
+      if(ts>lastSavedTs){ var r=localStorage.getItem(LS_KEY); if(r){ try{ var inc=parseSubjects(r); data.subjects=mergeIn(data.subjects,inc.subjects); data.folders=mergeFolders(data.folders,inc.folders); cleanupListeners(); render(); lastSavedTs=ts; }catch(e){} } }
     }, 15000);
   }
 
@@ -354,8 +363,6 @@
   }
   function showShareModal(subject, shareId) {
     var fs=getFS();
-    // Owner detection: subject.id equals shareId (we set shareId = subject.id when sharing)
-    // Recipients have id = 'shared_' + shareId
     var isOwner = subject.id === shareId;
     var url=fs.getShareUrl(shareId), m=makeModal('500px');
     var title=el('h3','editor-title'); title.textContent='🔗 '+(isOwner?'Sharing: "'+subject.name+'"':'Connected: "'+subject.name+'"');
@@ -703,9 +710,110 @@
     card.addEventListener('drop',function(e){
       card.classList.remove('subject-drag-over'); if(!dragSubjectId||dragSubjectId===subject.id) return; e.preventDefault();
       var fi=data.subjects.findIndex(function(s){ return s.id===dragSubjectId; }), ti=data.subjects.findIndex(function(s){ return s.id===subject.id; });
-      if(fi!==-1&&ti!==-1){ data.subjects.splice(ti,0,data.subjects.splice(fi,1)[0]); save(); render(); }
+      if(fi!==-1&&ti!==-1){
+        // If dragged out of a folder to a top-level position, remove from folder
+        var draggedS = data.subjects[fi];
+        if (draggedS && draggedS.folderId) {
+          var srcFolder = data.folders.find(function(f){ return f.id===draggedS.folderId; });
+          if (srcFolder) srcFolder.subjectIds = srcFolder.subjectIds.filter(function(id){ return id!==draggedS.id; });
+          draggedS.folderId = null;
+        }
+        data.subjects.splice(ti,0,data.subjects.splice(fi,1)[0]); save(); render();
+      }
     });
     card.appendChild(header); card.appendChild(notesList); return card;
+  }
+
+  // ── Folder Card ──────────────────────────────────────────────────────────────
+  function buildFolderCard(folder) {
+    var isOpen = expandedFolder === folder.id;
+    var card = el('div', 'folder-card' + (isOpen ? ' folder-card-expanded' : ''));
+    card.dataset.id = folder.id;
+
+    // Header
+    var header = el('div', 'folder-card-header');
+    var chev = el('span', 'subject-chevron'); chev.textContent = '▶';
+    var icon = el('span', 'folder-icon'); icon.textContent = '📁';
+    var nameEl = el('span', 'subject-name'); nameEl.textContent = folder.name;
+    nameEl.style.cssText = 'font-weight:700;flex:1;';
+    var count = el('span', 'subject-count');
+    count.textContent = folder.subjectIds.length + ' subject' + (folder.subjectIds.length !== 1 ? 's' : '');
+    if (!folder.subjectIds.length) count.classList.add('subject-count-empty');
+
+    var left = el('div', 'subject-header-left');
+    [chev, icon, nameEl, count].forEach(function(x){ left.appendChild(x); });
+
+    var right = el('div', 'subject-header-right');
+    right.appendChild(btn('✎', function(e){
+      e.stopPropagation();
+      var n = prompt('Folder name:', folder.name); if (n && n.trim()) { folder.name = n.trim(); save(); render(); }
+    }));
+    var del = btn('✕', function(e){
+      e.stopPropagation();
+      if (!confirm('Delete folder "' + folder.name + '"? Subjects inside will be moved back to the top level.')) return;
+      folder.subjectIds.forEach(function(sid){
+        var s = data.subjects.find(function(s){ return s.id === sid; });
+        if (s) s.folderId = null;
+      });
+      data.folders = data.folders.filter(function(f){ return f.id !== folder.id; });
+      if (expandedFolder === folder.id) expandedFolder = null;
+      save(); render();
+    }); del.classList.add('notes-btn-danger'); right.appendChild(del);
+
+    header.appendChild(left); header.appendChild(right);
+
+    // Contents
+    var contents = el('div', 'folder-contents');
+    contents.style.display = isOpen ? 'block' : 'none';
+    if (isOpen) contents.classList.add('is-open');
+
+    if (isOpen) {
+      var folderSubjects = folder.subjectIds.map(function(sid){
+        return data.subjects.find(function(s){ return s.id === sid; });
+      }).filter(Boolean);
+      if (folderSubjects.length) {
+        folderSubjects.forEach(function(s){ contents.appendChild(buildSubjectCard(s)); });
+      } else {
+        var empty = el('div', 'folder-empty'); empty.textContent = 'Drag subjects here to add them';
+        contents.appendChild(empty);
+      }
+    }
+
+    // Drop zone — drag subject onto folder
+    card.addEventListener('dragover', function(e){
+      if (!dragSubjectId || dragSubjectId === folder.id) return;
+      // Don't allow if it's a folder being dragged
+      if (data.folders.find(function(f){ return f.id === dragSubjectId; })) return;
+      e.preventDefault(); card.classList.add('folder-drag-over');
+    });
+    card.addEventListener('dragleave', function(){ card.classList.remove('folder-drag-over'); });
+    card.addEventListener('drop', function(e){
+      card.classList.remove('folder-drag-over');
+      if (!dragSubjectId) return;
+      if (data.folders.find(function(f){ return f.id === dragSubjectId; })) return;
+      e.preventDefault();
+      var sid = dragSubjectId;
+      // Remove from any existing folder
+      data.folders.forEach(function(f){ f.subjectIds = f.subjectIds.filter(function(id){ return id !== sid; }); });
+      // Add to this folder
+      var subject = data.subjects.find(function(s){ return s.id === sid; });
+      if (subject) subject.folderId = folder.id;
+      if (folder.subjectIds.indexOf(sid) === -1) folder.subjectIds.push(sid);
+      expandedFolder = folder.id;
+      save(); render(); toast('Added to "' + folder.name + '"');
+    });
+
+    header.addEventListener('click', function(e){
+      if (e.target.closest('button')) return;
+      if (expandedFolder === folder.id) {
+        contents.classList.remove('is-open'); contents.classList.add('is-closing');
+        setTimeout(function(){ expandedFolder = null; render(); }, 280);
+      } else {
+        expandedFolder = folder.id; render();
+      }
+    });
+
+    card.appendChild(header); card.appendChild(contents); return card;
   }
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -715,7 +823,19 @@
     var term=((document.getElementById('searchBar')||{}).value||'').toLowerCase().trim();
     list.innerHTML='';
     var visible=term?data.subjects.filter(function(s){ return s.name.toLowerCase().includes(term)||s.notes.some(function(n){ return n.content.toLowerCase().includes(term); }); }):data.subjects;
-    visible.forEach(function(s){ list.appendChild(buildSubjectCard(s)); });
+    // Render folders first
+    var folderedIds = {};
+    data.folders.forEach(function(f){ f.subjectIds.forEach(function(id){ folderedIds[id]=true; }); });
+    var filteredFolders = term ? data.folders.filter(function(f){
+      return f.name.toLowerCase().includes(term) || f.subjectIds.some(function(sid){
+        var s = data.subjects.find(function(s){ return s.id===sid; });
+        return s && (s.name.toLowerCase().includes(term) || s.notes.some(function(n){ return n.content.toLowerCase().includes(term); }));
+      });
+    }) : data.folders;
+    filteredFolders.forEach(function(f){ list.appendChild(buildFolderCard(f)); });
+    // Then ungrouped subjects
+    var ungrouped = visible.filter(function(s){ return !folderedIds[s.id]; });
+    ungrouped.forEach(function(s){ list.appendChild(buildSubjectCard(s)); });
     var eb=document.getElementById('exportbutton'); if(eb) eb.style.display=data.subjects.length?'':'none';
     requestAnimationFrame(function(){ requestAnimationFrame(function(){ if(pageScroll>0) document.documentElement.scrollTop=pageScroll; var ns=getScroller(); if(ns&&innerScroll>0) ns.scrollTop=innerScroll; }); });
   }
@@ -756,6 +876,16 @@
       var fs=getFS(); if(fs&&fs.isConfigured()){ fbBtn.textContent='🔥 Connected'; fbBtn.classList.add('firebase-connected'); } else{ fbBtn.textContent='🔥 Share'; }
       fbBtn.addEventListener('click',function(){ var fs=getFS(); if(fs&&fs.isReady) showFirebaseOptionsModal(); else openFirebaseSetupModal(null); });
       bar.appendChild(fbBtn);
+      var folderBtn = document.createElement('button');
+      folderBtn.className = 'notes-btn firebase-connect-btn'; folderBtn.textContent = '📁';
+      folderBtn.title = 'New folder'; folderBtn.style.fontSize = '15px';
+      folderBtn.addEventListener('click', function(){
+        var name = prompt('Folder name:'); if (!name || !name.trim()) return;
+        if (!data.folders) data.folders = [];
+        data.folders.push({ id: uid(), name: name.trim(), subjectIds: [] });
+        save(); render();
+      });
+      bar.appendChild(folderBtn);
       var meter=document.createElement('div'); meter.id='notes-storage-meter'; meter.style.cssText='font-size:11px;font-weight:600;white-space:nowrap;padding:3px 10px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);margin-left:auto;flex-shrink:0;display:inline-block';
       bar.appendChild(meter); ns.insertBefore(bar,ns.firstChild); updateStorageMeter();
     }
