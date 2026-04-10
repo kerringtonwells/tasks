@@ -137,9 +137,20 @@
         })};
     })};
   }
+  function reconcileFolderIds() {
+    // After load, ensure every subject in a folder has folderId set correctly
+    data.subjects.forEach(function(s){ s.folderId = null; });
+    (data.folders||[]).forEach(function(f){
+      f.subjectIds.forEach(function(sid){
+        var s = data.subjects.find(function(s){ return s.id === sid; });
+        if (s) s.folderId = f.id;
+      });
+    });
+  }
   function load() {
     var raw = localStorage.getItem(LS_KEY)||localStorage.getItem(LEGACY_KEY);
     if (raw) { try { data=parseSubjects(raw); } catch(e) { console.error('Load error',e); } }
+    reconcileFolderIds();
     lastSavedTs = parseInt(localStorage.getItem(TS_KEY)||'0',10);
     var ps=[], needsSave=false;
     data.subjects.forEach(function(s){ s.notes.forEach(function(n){
@@ -181,11 +192,11 @@
   }
   function startSync() {
     window.addEventListener('storage', function(e){
-      if (e.key===LS_KEY&&e.newValue) { try{ var inc=parseSubjects(e.newValue); data.subjects=mergeIn(data.subjects,inc.subjects); data.folders=mergeFolders(data.folders,inc.folders); cleanupListeners(); render(); toast('Synced'); }catch(e){} }
+      if (e.key===LS_KEY&&e.newValue) { try{ var inc=parseSubjects(e.newValue); data.subjects=mergeIn(data.subjects,inc.subjects); data.folders=mergeFolders(data.folders,inc.folders); reconcileFolderIds(); cleanupListeners(); render(); toast('Synced'); }catch(e){} }
     });
     setInterval(function(){
       var ts=parseInt(localStorage.getItem(TS_KEY)||'0',10);
-      if(ts>lastSavedTs){ var r=localStorage.getItem(LS_KEY); if(r){ try{ var inc=parseSubjects(r); data.subjects=mergeIn(data.subjects,inc.subjects); data.folders=mergeFolders(data.folders,inc.folders); cleanupListeners(); render(); lastSavedTs=ts; }catch(e){} } }
+      if(ts>lastSavedTs){ var r=localStorage.getItem(LS_KEY); if(r){ try{ var inc=parseSubjects(r); data.subjects=mergeIn(data.subjects,inc.subjects); data.folders=mergeFolders(data.folders,inc.folders); reconcileFolderIds(); cleanupListeners(); render(); lastSavedTs=ts; }catch(e){} } }
     }, 15000);
   }
 
