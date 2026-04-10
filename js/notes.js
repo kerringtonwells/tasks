@@ -782,20 +782,20 @@
     // Drop zone — drag subject onto folder
     card.addEventListener('dragover', function(e){
       if (!dragSubjectId || dragSubjectId === folder.id) return;
-      // Don't allow if it's a folder being dragged
       if (data.folders.find(function(f){ return f.id === dragSubjectId; })) return;
-      e.preventDefault(); card.classList.add('folder-drag-over');
+      e.preventDefault(); e.stopPropagation(); card.classList.add('folder-drag-over');
     });
-    card.addEventListener('dragleave', function(){ card.classList.remove('folder-drag-over'); });
+    card.addEventListener('dragleave', function(e){
+      if (!card.contains(e.relatedTarget)) card.classList.remove('folder-drag-over');
+    });
     card.addEventListener('drop', function(e){
       card.classList.remove('folder-drag-over');
       if (!dragSubjectId) return;
       if (data.folders.find(function(f){ return f.id === dragSubjectId; })) return;
-      e.preventDefault();
+      e.preventDefault(); e.stopPropagation();
       var sid = dragSubjectId;
-      // Remove from any existing folder
+      // Remove from any existing folder first
       data.folders.forEach(function(f){ f.subjectIds = f.subjectIds.filter(function(id){ return id !== sid; }); });
-      // Add to this folder
       var subject = data.subjects.find(function(s){ return s.id === sid; });
       if (subject) subject.folderId = folder.id;
       if (folder.subjectIds.indexOf(sid) === -1) folder.subjectIds.push(sid);
@@ -838,12 +838,17 @@
     list.addEventListener('dragover', function(e){
       if (!dragSubjectId) return;
       if (data.folders.find(function(f){ return f.id === dragSubjectId; })) return;
+      // Only activate if dragging from inside a folder
       var subject = data.subjects.find(function(s){ return s.id === dragSubjectId; });
       if (!subject || !subject.folderId) return;
+      // Only if the drop target is NOT inside a folder-contents element
+      if (e.target.closest && e.target.closest('.folder-contents')) return;
       e.preventDefault();
     });
     list.addEventListener('drop', function(e){
       if (!dragSubjectId) return;
+      if (e.target.closest && e.target.closest('.folder-contents')) return;
+      if (e.target.closest && e.target.closest('.folder-card')) return;
       var subject = data.subjects.find(function(s){ return s.id === dragSubjectId; });
       if (!subject || !subject.folderId) return;
       e.preventDefault();
