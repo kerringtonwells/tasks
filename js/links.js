@@ -87,7 +87,7 @@ const openFolderModal = async (dirHandle) => {
 
     // File list
     const fileList = document.createElement('div');
-    fileList.style.cssText = 'overflow-y:auto;flex:1;padding:10px;';
+    fileList.style.cssText = 'overflow-y:auto;flex:1;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;align-content:start;';
 
     modal.appendChild(header); modal.appendChild(fileList);
     overlay.appendChild(modal);
@@ -136,13 +136,16 @@ const openFolderModal = async (dirHandle) => {
 
         entries.forEach(entry => {
             const row = document.createElement('div');
-            row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;transition:background 0.1s;';
-            row.addEventListener('mouseenter', () => row.style.background = 'rgba(255,255,255,0.06)');
+            row.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:12px 8px;border-radius:10px;cursor:pointer;font-size:11px;text-align:center;word-break:break-word;transition:background 0.1s;';
+            row.addEventListener('mouseenter', () => row.style.background = 'rgba(255,255,255,0.08)');
             row.addEventListener('mouseleave', () => row.style.background = '');
 
-            const icon = document.createElement('span');
+            const icon = document.createElement('div');
+            icon.style.cssText = 'font-size:32px;line-height:1;';
             icon.textContent = entry.kind === 'directory' ? '📁' : getFileIcon(entry.name);
-            const name = document.createElement('span'); name.textContent = entry.name;
+            const name = document.createElement('div');
+            name.style.cssText = 'max-width:90px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;opacity:0.85;';
+            name.textContent = entry.name;
             row.appendChild(icon); row.appendChild(name);
 
             row.addEventListener('click', async () => {
@@ -356,7 +359,14 @@ const openAddLinkModal = () => {
             addLink({ text: name, url: '#', handleId }, linksListElement);
             saveLinksList(linksListElement);
             overlay.remove();
-        } catch(e) { if (e.name !== 'AbortError') alert('Could not open folder: ' + e.message); }
+        } catch(e) {
+            if (e.name === 'AbortError') return;
+            if (e.message && e.message.includes('system')) {
+                alert('Chrome blocks access to Downloads, Desktop, and Documents directly.\n\nWorkaround: create a subfolder inside Downloads (e.g. "My Files") and pick that instead. Chrome allows subfolders.');
+            } else {
+                alert('Could not open folder: ' + e.message);
+            }
+        }
     });
 
     pickRow.appendChild(pickFileBtn); pickRow.appendChild(pickFolderBtn);
