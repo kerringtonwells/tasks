@@ -552,6 +552,49 @@
     m.ov.appendChild(m.modal); m.show(); ta.focus();
   }
 
+  // ── Video URL helpers ─────────────────────────────────────────────────────────
+  function getVideoEmbed(url) {
+    // YouTube
+    var yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    if (yt) return { type: 'iframe', src: 'https://www.youtube.com/embed/' + yt[1] + '?rel=0' };
+    // Vimeo
+    var vi = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+    if (vi) return { type: 'iframe', src: 'https://player.vimeo.com/video/' + vi[1] };
+    // Direct video file
+    if (/\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(url)) return { type: 'video', src: url };
+    return null;
+  }
+
+  function buildVideoPlayer(embedInfo) {
+    var wrap = el('div', 'note-video-wrap');
+    wrap.addEventListener('click', function(e){ e.stopPropagation(); });
+    if (embedInfo.type === 'iframe') {
+      var iframe = document.createElement('iframe');
+      iframe.src = embedInfo.src; iframe.className = 'note-video-iframe';
+      iframe.allowFullscreen = true; iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture';
+      iframe.setAttribute('loading', 'lazy');
+      wrap.appendChild(iframe);
+    } else {
+      var vid = document.createElement('video');
+      vid.src = embedInfo.src; vid.controls = true; vid.className = 'note-video-direct';
+      vid.setAttribute('loading', 'lazy');
+      wrap.appendChild(vid);
+    }
+    return wrap;
+  }
+
+  function extractVideoUrls(text) {
+    // Find all URLs in the text that are video embeds
+    var urlPattern = /https?:\/\/[^\s<>"]+/g;
+    var matches = text.match(urlPattern) || [];
+    var found = [];
+    matches.forEach(function(url) {
+      var embed = getVideoEmbed(url);
+      if (embed) found.push({ url: url, embed: embed });
+    });
+    return found;
+  }
+
   // ── Note Row ──────────────────────────────────────────────────────────────────
   function buildNoteRow(note, subjectId) {
     var subject=data.subjects.find(function(s){ return s.id===subjectId; });
@@ -567,6 +610,11 @@
       });
       content.appendChild(wrap);
     }
+    // Render inline video players for any video URLs found in the note text
+    var videoUrls = extractVideoUrls(note.content || '');
+    videoUrls.forEach(function(v){
+      content.appendChild(buildVideoPlayer(v.embed));
+    });
     var txt=el('div','note-row-text'); txt.innerHTML=esc(note.content).replace(/\n/g,'<br>'); content.appendChild(txt);
     var modEl=el('div','note-last-modified'); modEl.textContent=note.updatedAt?'Modified: '+new Date(note.updatedAt).toLocaleString():''; content.appendChild(modEl);
     var actions=el('div','note-row-actions');
